@@ -3,6 +3,8 @@ using System;
 using static GlobalEnums;
 using System.Collections.Generic;
 using System.Linq;
+using Tower_001.Scripts.GameLogic.Balance;
+
 /// <summary>
 /// Represents the difficulty configuration for a floor, including scaling factors, modifiers, and adjustments for specific conditions.
 /// Provides functionality to calculate final difficulty values for rooms, floors, and bosses based on various parameters.
@@ -92,7 +94,7 @@ public class FloorDifficulty
 	public float CalculateFinalDifficulty(int playerLevel = 1, ElementType? playerElement = null)
 	{
 		// Start with the base difficulty adjusted by the floor number
-		float difficulty = CalculateDifficulty(FloorNumber);
+		float difficulty = CalculateDifficulty(FloorNumber, IsMilestoneFloor);
 
 		// Apply all global difficulty modifiers
 		foreach (var modifier in Modifiers)
@@ -137,20 +139,27 @@ public class FloorDifficulty
 	/// Calculates the difficulty of the floor based on its base value and scaling factors.
 	/// Applies milestone multipliers for milestone floors (e.g., every 10th floor).
 	/// </summary>
-	/// <param name="floorNumber">The floor number for which the difficulty is calculated.</param>
+	/// <param name="floorPosition">The floor number for which the difficulty is calculated.</param>
+	/// <param name="isMilestoneFloor">Whether the floor is a milestone floor.</param>
 	/// <returns>The calculated base difficulty for the floor.</returns>
-	public float CalculateDifficulty(int floorNumber = 1)
+	public float CalculateDifficulty(int floorPosition, bool isMilestoneFloor)
 	{
-		// Calculate the base difficulty adjusted by the floor scaling factor
-		float difficulty = BaseValue * (1 + (floorNumber - 1) * ScalingFactor);
-
-		// Apply milestone multiplier for milestone floors
-		if (floorNumber % 10 == 0)
+		// Apply exponential base scaling
+		float baseScaling = Mathf.Pow(GameBalanceConfig.FloorDifficulty.BaseScalingFactor, floorPosition);
+		
+		// Add position bonus
+		float positionBonus = floorPosition * GameBalanceConfig.FloorDifficulty.PositionBonus;
+		
+		// Calculate total difficulty
+		float totalDifficulty = BaseValue * baseScaling * (1 + positionBonus);
+		
+		// Apply milestone multiplier if applicable
+		if (isMilestoneFloor)
 		{
-			difficulty *= MilestoneDifficultyMultiplier; // Increase difficulty for milestone floors
+			totalDifficulty *= GameBalanceConfig.FloorDifficulty.MilestoneMultiplier;
 		}
-
-		return difficulty;
+		
+		return totalDifficulty;
 	}
 
 	/// <summary>

@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using static GlobalEnums;
+using Tower_001.Scripts.GameLogic.Balance;
 
 /// <summary>
 /// A specific implementation of the Character class representing a Mage.
@@ -23,35 +24,41 @@ public class Mage : Character
 	/// </summary>
 	protected override void InitializeStats()
 	{
-		Stats[StatType.Health] = new CharacterStat(
-			Id,
-			StatType.Health,
-			80,   // Base health value
-			0.08f // Growth rate for health
-		);
+		// Initialize base health
+        Stats[StatType.Health] = new CharacterStat(
+            Id,
+            StatType.Health,
+            GameBalanceConfig.CharacterStats.Mage.BaseHealth,
+            GameBalanceConfig.CharacterStats.Mage.HealthGrowth,
+            new List<float> { 40, 20 }
+        );
 
-		Stats[StatType.Mana] = new CharacterStat(
-			Id,
-			StatType.Mana,
-			100,  // Base mana value
-			0.12f // Growth rate for mana
-		);
+        // Initialize base mana
+        Stats[StatType.Mana] = new CharacterStat(
+            Id,
+            StatType.Mana,
+            GameBalanceConfig.CharacterStats.Mage.BaseMana,
+            GameBalanceConfig.CharacterStats.Mage.ManaGrowth,
+            new List<float> { 50, 25 }
+        );
 
-		Stats[StatType.Defense] = new CharacterStat(
-		   Id,
-		   StatType.Defense,
-		   6,    // base value
-		   0.08f, // growth rate
-		   null
-	   );
+        // Initialize base defense
+        Stats[StatType.Defense] = new CharacterStat(
+            Id,
+            StatType.Defense,
+            GameBalanceConfig.CharacterStats.Mage.BaseDefense,
+            GameBalanceConfig.CharacterStats.Mage.DefenseGrowth,
+            null
+        );
 
-		Stats[StatType.Speed] = new CharacterStat(
-			Id,
-			StatType.Speed,
-			7,    // base value
-			0.09f, // growth rate
-			null
-		);
+        // Initialize base speed
+        Stats[StatType.Speed] = new CharacterStat(
+            Id,
+            StatType.Speed,
+            GameBalanceConfig.CharacterStats.Mage.BaseSpeed,
+            GameBalanceConfig.CharacterStats.Mage.SpeedGrowth,
+            null
+        );
 		// Additional stats can be added here
 		//Power = CalculatePower();
 	}
