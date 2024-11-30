@@ -1,4 +1,4 @@
-﻿using Godot;
+using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -228,8 +228,9 @@ public partial class TowerManager : BaseManager
 			MilestoneDifficultyMultiplier = 1.5f // Apply a 1.5x multiplier for milestone floors
 		};
 
-		// Generate 100 floors for the sample tower
-		GenerateFloorsForTower(tower.Id, 10000, floorConfig);
+		// Generate a reasonable number of floors for the sample tower
+		// Changed from 10000 to 10 floors for better startup performance
+		GenerateFloorsForTower(tower.Id, 10, floorConfig);
 	}
 
 
@@ -700,6 +701,7 @@ public partial class TowerManager : BaseManager
 	//	return _floorManagers.TryGetValue(towerId, out var floorManager) &&
 	//		   floorManager.CompleteFloor(floorId); // Mark the specified floor as completed
 	//}
+
 	/// <summary>
 	/// Marks a floor as failed for a specified tower.
 	/// This method is called when a character fails a floor and the floor needs to be reset.
