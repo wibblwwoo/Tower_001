@@ -1,0 +1,239 @@
+Room-Related Classes
+RoomData
+No methods (data class).
+RoomEventArgs
+No methods (event arguments class).
+RoomStateChangedArgs
+No methods (event arguments class).
+RoomCompletionEventArgs
+No methods (event arguments class).
+RoomPathEventArgs
+No methods (event arguments class).
+Room Management
+RoomManager
+GenerateRooms
+GenerateBossOnlyFloor
+GenerateNormalFloor
+CreateRoom
+RaiseRoomDiscoveredEvent
+RaiseRoomStateChangedEvent
+RaiseRoomCompletionEvent
+RaiseRoomEnteredEvent
+RaiseRoomPathEvent
+SelectRoomType
+IsValidRoomPlacement
+CalculateRoomDifficulty
+OnRoomEntered
+OnRoomExited
+OnRoomStateChanged
+OnRoomCompleted
+OnRoomFailed
+RoomGenerator
+No methods (not implemented fully in the provided code).
+RoomStateManager
+No methods (placeholder in the provided code).
+Floor and Tower Integration
+FloorData
+No methods (data class).
+FloorEventArgs
+CreateGenerationComplete
+FloorManager
+Setup
+CreateFloor
+TryEnterFloor
+CompleteFloor
+FailFloor
+GetFloorDifficulty
+GetFloor
+GetNextFloorId
+HandleFloorStateChanged
+HandleFloorEntered
+HandleFloorCompleted
+GetAllFloors
+GetFloorsByState
+ResetFloorState
+GetCurrentFloorId
+TowerData
+No methods (data class).
+TowerEventArgs
+No methods (event arguments class).
+TowerManager
+Setup
+GenerateFloorsForTower
+CreateDefaultConfig
+CreateSampleTower
+TryEnterTower
+LockTower
+CanEnterTower
+EnterTower
+GetTowerDifficulty
+HandleTowerStateChanged
+HandleTowerInitialized
+GetTowersByState
+GetAvailableTowers
+GetLockedTowers
+GetTowerState
+UnlockTower
+ExitTower
+FailTower
+TryEnterFloor
+CompleteFloor
+FailFloor
+HandleFloorsGenerated
+HandleFloorInitialized
+ResetFloorState
+Shared Concepts and Utilities
+RoomConfiguration
+No methods (configuration class).
+FloorDifficulty
+CalculateFinalDifficulty
+GetRoomDifficulty
+CalculateDifficulty
+GetBossDifficulty
+AddModifier
+SetRoomTypeModifier
+SetElementalModifier
+GetDifficultyInfo
+InheritSettings
+DifficultyModifier
+Apply
+ApplyComplexModification
+AddSpecialValue
+AddSubModifier
+SetExpiration
+CheckConditions
+Clone
+GetModifierInfo
+HasTag
+AddTag
+RemoveTag
+Other Classes
+LevelRequirement
+MeetsRequirements
+GetDifficultyForLevel
+EventManager (Assumed functionality from context)
+RaiseEvent
+AddHandler
+
+UI-Related Classes
+UIPanel_Visibility_EventArgs
+UIPanel_Visibility_EventArgs (Constructor)
+Initializes event arguments with a reference to a UI panel.
+UIButton_Click_EventArgs
+UIButton_Click_EventArgs (Constructor)
+Initializes event arguments for a button click with the specified panel type to show.
+IUIItem (Interface)
+Setup
+Initializes the UI item if it requires setup.
+EventFire
+Responds to a triggered event associated with this UI item.
+Refresh
+Refreshes the UI item to reflect updated data.
+Visiblity
+Changes the visibility of the UI item.
+CallEvent
+Triggers an event from this UI item.
+IPanel (Interface)
+Inherits all methods from IUIItem.
+This list consolidates all UI-related classes and their methods/interfaces for quick reference. Let me know if you need additional details or expansions!
+
+
+GameEventArgs (Base Class)
+The base class for all event arguments in the system.
+Purpose: Provides a common structure for all game events, with support for timestamps and additional context.
+Key Properties:
+Timestamp: The UTC time when the event was created.
+Context: A dictionary for storing additional context about the event.
+Event Argument Classes
+ErrorEventArgs
+Purpose: Represents arguments for error events triggered during event processing.
+Key Properties:
+OriginalEventType: The type of the event that caused the error.
+OriginalEventArgs: The arguments of the original event.
+Error: The exception thrown during processing.
+RoomEventArgs
+Purpose: Represents events related to rooms in the tower, such as entry, state changes, and path discoveries.
+Key Properties:
+RoomId: The ID of the room.
+Type: The type of the room (e.g., Combat, Rest, Boss).
+State: The current state of the room (e.g., Locked, InProgress, Cleared).
+RoomState: A dictionary capturing additional state details for the room.
+RoomStateChangedArgs
+Purpose: Represents state transitions for a specific room.
+Key Properties:
+OldState: The previous state of the room.
+NewState: The new state of the room.
+RoomCompletionEventArgs
+Purpose: Represents the completion of a room, capturing success or failure details.
+Key Properties:
+Success: Whether the room was successfully completed.
+CompletionTime: The time taken to complete the room.
+RoomPathEventArgs
+Purpose: Represents events where new paths are discovered within a room.
+Key Properties:
+AvailablePaths: A list of room IDs representing possible paths from the current room.
+FloorEventArgs
+Purpose: Represents events related to floors in the tower, such as initialization, entry, and completion.
+Key Properties:
+TowerId: The ID of the tower to which the floor belongs.
+FloorId: The ID of the floor.
+FloorNumber: The floor's position in the tower sequence.
+PreviousState: The state of the floor before the event.
+NewState: The state of the floor after the event.
+Difficulty: Optional difficulty level for the floor.
+Message: An optional message providing additional context.
+TowerEventArgs
+Purpose: Represents events related to towers, such as state changes, initialization, and failures.
+Key Properties:
+TowerId: The unique identifier of the tower.
+PreviousState: The state of the tower before the event.
+NewState: The state of the tower after the event.
+Message: An optional message providing additional context.
+Difficulty: Optional difficulty level at the time of the event.
+CharacterEventArgs
+Purpose: Represents general events related to characters, such as creation and interactions.
+Key Properties:
+CharacterId: The unique identifier of the character.
+CharacterStatEventArgs
+Purpose: Represents changes in a character's stats.
+Key Properties:
+StatType: The type of stat that changed (e.g., Health, Attack).
+OldValue: The value of the stat before the change.
+NewValue: The value of the stat after the change.
+CharacterStatBuffEventArgs
+Purpose: Represents the application or removal of a stat buff on a character.
+Key Properties:
+StatType: The type of stat affected.
+Modifier: The specific stat modifier applied or removed.
+CharacterStatThresholdEventArgs
+Purpose: Represents events where a character's stat crosses a defined threshold.
+Key Properties:
+StatType: The type of stat that crossed the threshold.
+Threshold: The threshold value that was crossed.
+CurrentValue: The current value of the stat after crossing the threshold.
+CharacterLevelEventArgs
+Purpose: Represents level-up events for characters.
+Key Properties:
+OldLevel: The character's level before leveling up.
+NewLevel: The character's new level after leveling up.
+UIPanel_Visibility_EventArgs
+Purpose: Represents events related to the visibility of UI panels.
+Key Properties:
+window: The UI panel associated with the visibility change.
+UIButton_Click_EventArgs
+Purpose: Represents events triggered by button clicks in the UI.
+Key Properties:
+ShowPanels: The type of UI panel to show after the button click.
+Event Categories Summary
+Room Events:
+Room state changes, entry, completions, and path discoveries.
+Floor Events:
+Floor initialization, state changes, and completions.
+Tower Events:
+Tower initialization, state changes, and failures.
+Character Events:
+Character creation, stat changes, buffs, and level-ups.
+UI Events:
+UI panel visibility and button click interactions.
+Error Handling:
+Captures and reports processing errors in event handling.

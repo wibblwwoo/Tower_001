@@ -1,0 +1,1 @@
+for /R %F in (*.cs) do type "%F" >> d:\output.txt

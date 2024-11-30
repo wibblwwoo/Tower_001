@@ -1,0 +1,77 @@
+Suggested Additional Test Categories
+Progress & Save System Tests
+
+Save State Persistence
+Character Progress Saving
+Tower Progress Saving
+Achievement Progress
+Statistics Tracking
+Cross-Session State Management
+Save Data Migration
+Save Data Corruption Recovery
+
+Combat System Tests
+
+Damage Calculation
+Status Effect Application
+Combat State Transitions
+Turn Order Management
+Action Resolution
+Combat Rewards
+Death/Revival Mechanics
+Combat Log Accuracy
+
+Reward System Tests
+
+Reward Generation
+Reward Scaling
+Rare Item Distribution
+Currency Balance
+Achievement Rewards
+Milestone Rewards
+Quest Rewards
+Special Event Rewards
+
+UI System Tests
+
+Menu Navigation
+UI State Management
+UI Event Propagation
+UI Element Visibility
+UI Data Binding
+UI Animation States
+UI Performance
+UI Accessibility
+
+Performance Tests
+
+Room Generation Performance
+Combat Calculation Performance
+Save/Load Performance
+UI Rendering Performance
+Memory Usage Tracking
+Resource Loading
+Large Dataset Handling
+Network Operation Performance
+
+Integration Tests
+
+Character-Combat Integration
+Tower-Floor Integration
+Floor-Room Integration
+UI-Game State Integration
+Save-Load Integration
+Achievement-Progress Integration
+Quest-Reward Integration
+Player-World Integration
+
+Edge Case Tests
+
+Maximum Value Handling
+Minimum Value Handling
+Null/Empty State Handling
+Invalid Input Handling
+Connection Loss Recovery
+State Recovery
+Error Recovery
+Resource Exhaustion
