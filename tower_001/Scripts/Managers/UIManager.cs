@@ -1,156 +1,133 @@
 using Godot;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using static GlobalEnums;
+using static Godot.Label;
+using Tower_001.Scripts.UI.Menus;
 
+/// <summary>
+/// Core UI manager for the idle game.
+/// Handles the display and interaction with game elements in a streamlined manner.
+/// </summary>
 public partial class UIManager : BaseManager
 {
+    // The main UI scene root
+    private Control _uiRoot;
+    private Dictionary<Type, BaseMenu> _menus;
+    private BaseMenu _currentMenu;
 
-	private readonly Dictionary<GlobalEnums.EnumUIPanelParentType, List<Node>> _panelsByParent = new();
-	private readonly Dictionary<GlobalEnums.EnumUIButtonType, Button> _buttons = new();
-	private readonly HashSet<GlobalEnums.EnumUIPanelType> _visiblePanels = new();
-	private Node _parent;
-	private List<IUIItem> _uiitems;
+    public UIManager()
+    {
+        RegisterEventHandlers();
+    }
 
-	public UIManager()
-	{
-		base.Setup();
-	}
+    public override void Setup()
+    {
+        base.Setup();
+        
+        // Get the root node from game manager
+        _uiRoot = (Control)Globals.Instance.RootNode;
+        if (_uiRoot == null)
+        {
+            GD.PrintErr("UIManager: Root node not found!");
+            return;
+        }
 
-	public override void Setup()
-	{
-		
-	}
+        InitializeMenus();
+        ShowMenu<MainMenu>();
+    }
+
+    private void InitializeMenus()
+    {
+        _menus = new Dictionary<Type, BaseMenu>
+        {
+            { typeof(MainMenu), new MainMenu() },
+            { typeof(SettingsMenu), new SettingsMenu() }
+        };
+
+        foreach (var menu in _menus.Values)
+        {
+            menu.Initialize(_uiRoot);
+            menu.Hide();
+        }
+    }
+
+    private void ShowMenu<T>() where T : BaseMenu
+    {
+        if (_currentMenu != null)
+        {
+            _currentMenu.Hide();
+        }
+
+        if (_menus.TryGetValue(typeof(T), out BaseMenu menu))
+        {
+            _currentMenu = menu;
+            _currentMenu.Show();
+        }
+    }
+
+
+    private void OnMenuAction(EventArgs args)
+    {
+        if (args is MenuEventArgs menuArgs)
+        {
+            switch (menuArgs.Action)
+            {
+                case MenuAction.NewGame:
+                    HandleNewGame();
+                    break;
+                case MenuAction.Settings:
+                    ShowMenu<SettingsMenu>();
+                    break;
+                case MenuAction.LoadGame:
+                    HandleLoadGame();
+                    break;
+                case MenuAction.SaveGame:
+                    HandleSaveGame();
+                    break;
+                case MenuAction.Exit:
+                    HandleExit();
+                    break;
+                case MenuAction.Back:
+                    ShowMenu<MainMenu>();
+                    break;
+            }
+        }
+    }
+
+    private void HandleNewGame()
+    {
+        // TODO: Implement new game logic
+    }
+
+    private void HandleSettings()
+    {
+        // Already handled by ShowMenu<SettingsMenu>()
+    }
+
+    private void HandleLoadGame()
+    {
+        // TODO: Implement load game logic
+    }
+
+    private void HandleSaveGame()
+    {
+        // TODO: Implement save game logic
+    }
+
+    private void HandleExit()
+    {
+        // TODO: Add cleanup logic if needed
+        // 1. Save settings
+        // 2. Clean up resources
+        //(GetNode("/root") as SceneTree).Quit();
+    }
 
 	protected override void RegisterEventHandlers()
 	{
-		Setup_Panels();
-	}
-
-
-	public void Setup_Panels()
-	{
-		_uiitems = new List<IUIItem>();
-		//_leftGameButtons = new List<UILeftButton_Item>();
-
-		//load all the UI items into a collection
-		Utils.FindNodesWithClass(Globals.Instance.RootNode, _uiitems);
-		//Utils.FindNodesWithClass(Globals.Instance.RootNode, _leftGameButtons);
-
-		//now lets turn on and off any that need to be visible.
-		ShowHideMenuItems(useDefaultSetting: true, visible: false);
-		//Setup_LeftButtons();
-
-		foreach (var IPanel in _uiitems)
+		if (Globals.Instance?.gameMangers?.Events != null)
 		{
-			if (IPanel is UIPanel panel)
-			{
-
-				RegisterPanelsFromNode(panel);
-			}
-			if (IPanel is UIButton_Item button)
-			{
-
-				RegisterButtonFromNode(button);
-			}
-			if (IPanel is UIContainer container)
-			{
-
-				RegisterButtonFromNode(container);
-			}
-
-
-		}
-
-	}
-
-	public void ShowHideMenuItems(bool useDefaultSetting, bool visible, List<IPanel> ToShow = null)
-	{
-		// Iterate over each menu item in GameMenus
-		_uiitems.ForEach(item =>
-			// Set visibility based on the specified setting
-			item.Visiblity(
-				// If useDefaultSetting is true, use the item's own IsVisible property
-				// Otherwise, use the provided 'visible' parameter
-				useDefaultSetting ? item.IsVisibleonStartup : visible
-			)
-		);
-		//if (ToShow != null)
-		//{
-		//	_uiitems.ForEach(item =>
-		//		// Set visibility based on the specified setting
-		//		item.Visiblity(ToShow.Contains(item)
-		//		)
-		//	);
-		//}
-	}
-
-	public void RegisterPanelsFromNode(UIPanel panel)
-	{
-		RegisterPanel(panel, panel.PanelParent);
-	}
-
-	public void RegisterButtonFromNode(UIButton_Item button)
-	{
-		RegisterPanel(button, button.ShowButtonByParent);
-	}
-
-	public void RegisterButtonFromNode(UIContainer container)
-	{
-		RegisterPanel(container, container.PanelParent);
-	}
-	public void RegisterPanel(Node panel, EnumUIPanelParentType parentType)
-	{
-		// Get all flag values that are set
-		foreach (var flag in parentType.GetFlags())
-		{
-			if (!_panelsByParent.ContainsKey(flag))
-			{
-				_panelsByParent[flag] = new List<Node>();
-			}
-			_panelsByParent[flag].Add(panel);
+			Globals.Instance.gameMangers.Events.AddHandler<MenuEventArgs>(EventType.MenuAction, OnMenuAction);
 		}
 	}
-
-
-
-	// Get all panels for a specific parent type
-	public List<Node> GetPanelsByParentType(EnumUIPanelParentType parentType)
-	{
-		return _panelsByParent.TryGetValue(parentType, out var panels)
-			? panels
-			: new List<Node>();
-	}
-
-	// Example method to show/hide panels by parent type
-	public void SetPanelsVisibility(EnumUIPanelParentType parentType, bool visible)
-	{
-
-		_uiitems.ForEach(item => item.Visiblity(false));
-
-		foreach (var flag in parentType.GetFlags())
-		{
-			if (_panelsByParent.TryGetValue(flag, out var panels))
-			{
-				foreach (var _panel in panels)
-				{
-					if (_panel is UIPanel panel)
-					{
-
-						panel.Visiblity(visible);
-					}
-					else
-					if (_panel is UIButton_Item button)
-					{
-
-						button.Visiblity(visible);
-					}
-
-				}
-			}
-		}
-	}
-
-
 }
