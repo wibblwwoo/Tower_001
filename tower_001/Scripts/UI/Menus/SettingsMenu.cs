@@ -10,7 +10,6 @@ namespace Tower_001.Scripts.UI.Menus
     {
         private List<Button> _menuButtons;
         private Control _currentSettingsPanel;
-        private Random _random;
 
         // Constants for UI layout
         private const int BUTTON_WIDTH = 154;
@@ -25,25 +24,26 @@ namespace Tower_001.Scripts.UI.Menus
         public override void Initialize(Control uiRoot)
         {
             base.Initialize(uiRoot);
-            _random = new Random(1221313);
-            CreateNavigationButtons();
-            PrintNodeTree();
+
+            SetupSettingsMenu();
         }
 
-        private void CreateNavigationButtons()
+        private void SetupSettingsMenu()
         {
-            ClearLeftPanel();
+            _menuButtons = new List<Button>();
 
-            // Add a fun message to the top section
-            var messageLabel = new Label { 
+            // Add message to top panel
+            var messageLabel = new Label 
+            { 
                 Text = "Time to tweak some settings!",
                 Name = "SettingsMessageLabel",
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
                 SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter
             };
-            messageLabel.HorizontalAlignment = HorizontalAlignment.Center;
-            messageLabel.VerticalAlignment = VerticalAlignment.Center;
-            AddToLeftPanelTop(messageLabel);
+            Globals.Instance.MenuPanelContainer_Left.AddToTop(messageLabel);
 
+            // Add menu buttons
             var menuButtonData = new[]
             {
                 (text: "Graphics", action: MenuAction.Graphics),
@@ -51,41 +51,18 @@ namespace Tower_001.Scripts.UI.Menus
                 (text: "Controls", action: MenuAction.Controls)
             };
 
-            _menuButtons = new List<Button>();
-
-            // OLD CODE - For rollback if needed
-            /*
-            var buttonContainer = new VBoxContainer
-            {
-                Name = "ButtonContainer",
-                SizeFlagsHorizontal = Control.SizeFlags.Expand,
-                SizeFlagsVertical = Control.SizeFlags.Fill,
-                CustomMinimumSize = new Vector2(120, 0),
-                MouseFilter = Control.MouseFilterEnum.Ignore
-            };
-            */
-
-            // NEW CODE - Adjusted container settings
-            var buttonContainer = new VBoxContainer
-            {
-                Name = "ButtonContainer",
-                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand,
-                SizeFlagsVertical = Control.SizeFlags.Fill,
-                CustomMinimumSize = new Vector2(154, 0),
-                MouseFilter = Control.MouseFilterEnum.Ignore
-            };
-            AddToLeftPanelMiddle(buttonContainer);
-
             foreach (var (text, action) in menuButtonData)
             {
                 var button = CreateMenuButton(text);
-                buttonContainer.AddChild(button);
+
+				Globals.Instance.MenuPanelContainer_Left.AddButton(button);
                 _menuButtons.Add(button);
             }
-
-            var backButton = CreateMenuButton("Back");
+			
+			// Add back button to bottom
+			var backButton = CreateMenuButton("Back");
             backButton.Name = "BackButton";
-            AddToLeftPanelBottom(backButton);
+            Globals.Instance.MenuPanelContainer_Left.AddToBottom(backButton);
             _menuButtons.Add(backButton);
             backButton.Pressed += () => HandleMenuButtonPressed(MenuAction.Back);
         }
@@ -95,16 +72,11 @@ namespace Tower_001.Scripts.UI.Menus
             var button = new Button
             {
                 Text = text,
-                Name = $"{text}Button{_random.Next(1, 99)}",
-                CustomMinimumSize = new Vector2(BUTTON_WIDTH, BUTTON_HEIGHT),
-                SizeFlagsHorizontal = Control.SizeFlags.Expand,
-                SizeFlagsVertical = Control.SizeFlags.Expand,
-                MouseFilter = Control.MouseFilterEnum.Stop
+                Name = $"{text}Button",
             };
 
             button.AddThemeFontSizeOverride("font_size", FONT_SIZE);
             button.Alignment = HorizontalAlignment.Center;
-
             button.Pressed += () => HandleMenuButtonPressed(GetActionForButton(text));
 
             return button;
@@ -130,27 +102,37 @@ namespace Tower_001.Scripts.UI.Menus
                 return;
             }
 
-            ClearRightPanel();
+            Globals.Instance.MenuPanelContainer_Right.ClearMiddle();
+            Globals.Instance.MenuPanelContainer_Right.ClearTop();
+            Globals.Instance.MenuPanelContainer_Right.ClearBottom();
 
             switch (action)
             {
                 case MenuAction.Graphics:
-                    AddToRightPanelMiddle(CreateGraphicsPanel());
+                    var graphicsPanel = CreateGraphicsPanel();
+                    Globals.Instance.MenuPanelContainer_Right.AddToMiddle(graphicsPanel);
                     break;
                 case MenuAction.Audio:
-                    AddToRightPanelMiddle(CreateAudioPanel());
+                    var audioPanel = CreateAudioPanel();
+                    Globals.Instance.MenuPanelContainer_Right.AddToMiddle(audioPanel);
                     break;
                 case MenuAction.Controls:
-                    AddToRightPanelMiddle(CreateControlsPanel());
+                    var controlsPanel = CreateControlsPanel();
+                    Globals.Instance.MenuPanelContainer_Right.AddToMiddle(controlsPanel);
                     break;
             }
+        }
+
+        private void RaiseMenuEvent(MenuAction action)
+        {
+            var eventArgs = new MenuEventArgs(action);
+            Globals.Instance.gameMangers.Events.RaiseEvent(EventType.MenuAction, eventArgs);
         }
 
         private Control CreateGraphicsPanel()
         {
             var container = new VBoxContainer();
             
-            // Add graphics settings controls
             var resolutionLabel = new Label { 
                 Text = "Resolution",
                 Name = "ResolutionLabel"
@@ -183,41 +165,37 @@ namespace Tower_001.Scripts.UI.Menus
         {
             var container = new VBoxContainer();
             
-            // Add audio settings controls
             var masterLabel = new Label { 
                 Text = "Master Volume",
                 Name = "MasterVolumeLabel"
             };
-            var masterSlider = new HSlider
-            {
+            var masterSlider = new HSlider { 
                 Name = "MasterVolumeSlider",
                 MinValue = 0,
                 MaxValue = 100,
-                Value = 100
+                Value = 80
             };
             
             var musicLabel = new Label { 
                 Text = "Music Volume",
                 Name = "MusicVolumeLabel"
             };
-            var musicSlider = new HSlider
-            {
+            var musicSlider = new HSlider { 
                 Name = "MusicVolumeSlider",
                 MinValue = 0,
                 MaxValue = 100,
-                Value = 100
+                Value = 70
             };
             
             var sfxLabel = new Label { 
                 Text = "SFX Volume",
                 Name = "SFXVolumeLabel"
             };
-            var sfxSlider = new HSlider
-            {
+            var sfxSlider = new HSlider { 
                 Name = "SFXVolumeSlider",
                 MinValue = 0,
                 MaxValue = 100,
-                Value = 100
+                Value = 90
             };
             
             container.AddChild(masterLabel);
@@ -234,13 +212,11 @@ namespace Tower_001.Scripts.UI.Menus
         {
             var container = new VBoxContainer();
             
-            // Add controls settings
             var mouseSensLabel = new Label { 
                 Text = "Mouse Sensitivity",
                 Name = "MouseSensitivityLabel"
             };
-            var mouseSensSlider = new HSlider
-            {
+            var mouseSensSlider = new HSlider { 
                 Name = "MouseSensitivitySlider",
                 MinValue = 1,
                 MaxValue = 10,
@@ -251,51 +227,12 @@ namespace Tower_001.Scripts.UI.Menus
                 Text = "Invert Y-Axis",
                 Name = "InvertYCheck"
             };
-            var showTooltipsCheck = new CheckBox { 
-                Text = "Show Tooltips",
-                Name = "ShowTooltipsCheck"
-            };
             
             container.AddChild(mouseSensLabel);
             container.AddChild(mouseSensSlider);
             container.AddChild(invertYCheck);
-            container.AddChild(showTooltipsCheck);
             
             return container;
         }
-
-        private void PrintNodeTree()
-        {
-            GD.Print("\n=== SettingsMenu Node Tree ===");
-            PrintNodeRecursive(_menuRoot, 0);
-            GD.Print("=== End Node Tree ===\n");
-        }
-
-        private void PrintNodeRecursive(Node node, int depth)
-        {
-            var indent = new string(' ', depth * 2);
-            var info = $"{node.Name} ({node.GetType()})";
-            
-            if (node is Control control)
-            {
-                info += $" - Size: {control.Size}, MinSize: {control.CustomMinimumSize}";
-                info += $", Flags: H={control.SizeFlagsHorizontal}, V={control.SizeFlagsVertical}";
-            }
-            
-            GD.Print($"{indent}{info}");
-            
-            foreach (var child in node.GetChildren())
-            {
-                PrintNodeRecursive(child, depth + 1);
-            }
-        }
-
-        private void RaiseMenuEvent(MenuAction action)
-        {
-            GD.Print($"SettingsMenu: Raising menu event {action}");
-			var eventArgs = new MenuEventArgs(action);
-			Globals.Instance.gameMangers.Events.RaiseEvent(EventType.MenuAction, eventArgs);
-
-		}
-	}
+    }
 }

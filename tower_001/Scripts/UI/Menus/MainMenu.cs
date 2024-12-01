@@ -5,7 +5,7 @@ using static GlobalEnums;
 
 namespace Tower_001.Scripts.UI.Menus
 {
-    public class MainMenu : BaseMenu
+    public class MainMenu : CenteredMenu
     {
         private List<Button> _menuButtons;
 
@@ -41,7 +41,7 @@ namespace Tower_001.Scripts.UI.Menus
             foreach (var (text, action) in buttonData)
             {
                 var button = CreateMenuButton(text);
-                _buttonContainer.AddChild(button);
+                AddButton(button);  
                 _menuButtons.Add(button);
 
                 // Connect button pressed signal
@@ -51,10 +51,12 @@ namespace Tower_001.Scripts.UI.Menus
 
         private Button CreateMenuButton(string text)
         {
-            var button = new Button();
-            button.Text = text;
-            button.Size = new Vector2(BUTTON_WIDTH, BUTTON_HEIGHT);
-            
+            var button = new Button
+            {
+                Text = text,
+                CustomMinimumSize = new Vector2(BUTTON_WIDTH, BUTTON_HEIGHT)
+            };
+
             // Style the button
             button.AddThemeFontSizeOverride("font_size", FONT_SIZE);
             button.Alignment = HorizontalAlignment.Center;
