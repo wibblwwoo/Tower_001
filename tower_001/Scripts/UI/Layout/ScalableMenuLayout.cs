@@ -4,215 +4,358 @@ using static Tower_001.Scripts.GameLogic.Balance.GameBalanceConfig.CharacterStat
 
 namespace Tower_001.Scripts.UI.Layout
 {
-	public partial class ScalableMenuLayout : Control
-	{
-		// Fields for the controls we need to access later
-		private Panel _leftTopPanel;
-		private Panel _leftMiddlePanel;
-		private CenterContainer _leftMiddleCenter;
-		private Panel _leftBottomPanel;
+    public partial class ScalableMenuLayout : Control
+    {
+        // Fields for the controls we need to access later
+        private Panel _leftTopPanel;
+        private Panel _leftMiddlePanel;
+        private CenterContainer _leftMiddleCenter;
+        private Panel _leftBottomPanel;
 
-		private Panel _rightTopPanel;
-		private Panel _rightMiddlePanel;
-		private Panel _rightBottomPanel;
+        private Panel _rightTopPanel;
+        private Panel _rightMiddlePanel;
+        private Panel _rightBottomPanel;
 
-		private void BuildLeftPanelHierarchy(Control leftControl)
-		{
-			var leftMarginContainer = new MarginContainer { Name = "LeftMarginContainer" };
-			leftMarginContainer.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+        private void BuildLeftPanelHierarchy(Control leftPanel)
+        {
+            var leftHBox = new HBoxContainer 
+            { 
+                Name = "LeftHBoxContainer",
+                LayoutMode = 1,
+                AnchorsPreset = (int)Control.LayoutPreset.FullRect,  // 15
+                AnchorRight = 1.0f,
+                AnchorBottom = 1.0f,
+                GrowHorizontal = Control.GrowDirection.Both,
+                GrowVertical = Control.GrowDirection.Both,
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
 
-			var leftMainPanel = new Panel
-			{
-				Name = "LeftMainPanel",
-				CustomMinimumSize = new Vector2(150, 0)
-			};
+            var leftContentPanel = new Panel
+            {
+                Name = "LeftContentPanel",
+                CustomMinimumSize = new Vector2(150, 0),
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
 
-			var leftHBox = new HBoxContainer { Name = "LeftHBoxContainer" };
-			leftHBox.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+            var leftVBox = new VBoxContainer 
+            { 
+                Name = "LeftVBoxContainer",
+                LayoutMode = 1,
+                AnchorsPreset = (int)Control.LayoutPreset.FullRect,  // 15
+                AnchorRight = 1.0f,
+                AnchorBottom = 1.0f,
+                GrowHorizontal = Control.GrowDirection.Both,
+                GrowVertical = Control.GrowDirection.Both,
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
 
-			var leftContentPanel = new Panel
-			{
-				Name = "LeftContentPanel",
-				CustomMinimumSize = new Vector2(150, 0),
-				SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
-			};
+            _leftTopPanel = new Panel
+            {
+                Name = "LeftTopPanel",
+                CustomMinimumSize = new Vector2(0, 40),
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
 
-			var leftVBox = new VBoxContainer { Name = "LeftVBoxContainer" };
-			leftVBox.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+            _leftMiddlePanel = new Panel
+            {
+                Name = "LeftMiddlePanel",
+                CustomMinimumSize = new Vector2(0, 80),
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand,
+                SizeFlagsVertical = Control.SizeFlags.Expand
+            };
 
-			_leftTopPanel = new Panel
-			{
-				Name = "LeftTopPanel",
-				CustomMinimumSize = new Vector2(0, 40)
-			};
+            _leftBottomPanel = new Panel
+            {
+                Name = "LeftBottomPanel",
+                CustomMinimumSize = new Vector2(0, 40),
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
 
-			_leftMiddlePanel = new Panel
-			{
-				Name = "LeftMiddlePanel",
-				CustomMinimumSize = new Vector2(0, 80),
-				SizeFlagsVertical = Control.SizeFlags.Expand
-			};
+            var leftBottomCenter = new CenterContainer
+            {
+                Name = "LeftBottomCenterContainer",
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
 
-			_leftMiddleCenter = new CenterContainer { Name = "LeftMiddleCenterContainer" };
-			_leftMiddleCenter.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+            _leftMiddleCenter = new CenterContainer
+            {
+                Name = "LeftMiddleCenterContainer",
+                LayoutMode = 1,
+                AnchorsPreset = (int)Control.LayoutPreset.FullRect,  // 15
+                AnchorRight = 1.0f,
+                AnchorBottom = 1.0f,
+                GrowHorizontal = Control.GrowDirection.Both,
+                GrowVertical = Control.GrowDirection.Both,
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
 
-			_leftBottomPanel = new Panel
-			{
-				Name = "LeftBottomPanel",
-				CustomMinimumSize = new Vector2(0, 40),
-				ClipContents = true
-			};
+            // Build the hierarchy
+            _leftMiddlePanel.AddChild(_leftMiddleCenter);
 
-			var leftBottomCenter = new CenterContainer { Name = "LeftBottomCenterContainer" };
+            leftVBox.AddChild(_leftTopPanel);
+            leftVBox.AddChild(_leftMiddlePanel);
+            leftVBox.AddChild(_leftBottomPanel);
+            leftVBox.AddChild(leftBottomCenter);
 
-			// Build the hierarchy
-			_leftMiddlePanel.AddChild(_leftMiddleCenter);
+            leftContentPanel.AddChild(leftVBox);
+            leftHBox.AddChild(leftContentPanel);
+            leftPanel.AddChild(leftHBox);
+        }
 
-			leftVBox.AddChild(_leftTopPanel);
-			leftVBox.AddChild(_leftMiddlePanel);
-			leftVBox.AddChild(_leftBottomPanel);
-			leftVBox.AddChild(leftBottomCenter);
+        private void BuildRightPanelHierarchy(Control gameAreaControl)
+        {
+            // OLD CODE - For rollback if needed
+            /*
+            var gameMarginContainer = new MarginContainer { Name = "GameMarginContainer" };
+            gameMarginContainer.SetAnchorsPreset(Control.LayoutPreset.FullRect);
 
-			leftContentPanel.AddChild(leftVBox);
-			leftHBox.AddChild(leftContentPanel);
-			leftMainPanel.AddChild(leftHBox);
-			leftMarginContainer.AddChild(leftMainPanel);
-			leftControl.AddChild(leftMarginContainer);
-		}
+            var gameMainPanel = new Panel
+            {
+                Name = "GameMainPanel",
+                CustomMinimumSize = new Vector2(150, 0)
+            };
 
-		private void BuildRightPanelHierarchy(Control gameAreaControl)
-		{
-			var gameMarginContainer = new MarginContainer { Name = "GameMarginContainer" };
-			gameMarginContainer.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+            var gameHBox = new HBoxContainer { Name = "GameHBoxContainer" };
+            gameHBox.SetAnchorsPreset(Control.LayoutPreset.FullRect);
 
-			var gameMainPanel = new Panel
-			{
-				Name = "GameMainPanel",
-				CustomMinimumSize = new Vector2(150, 0)
-			};
+            var gameContentPanel = new Panel
+            {
+                Name = "GameContentPanel",
+                CustomMinimumSize = new Vector2(150, 0),
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
 
-			var gameHBox = new HBoxContainer { Name = "GameHBoxContainer" };
-			gameHBox.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+            var gameVBox = new VBoxContainer { Name = "GameVBoxContainer" };
+            gameVBox.SetAnchorsPreset(Control.LayoutPreset.FullRect);
 
-			var gameContentPanel = new Panel
-			{
-				Name = "GameContentPanel",
-				CustomMinimumSize = new Vector2(150, 0),
-				SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
-			};
+            _rightTopPanel = new Panel
+            {
+                Name = "GameTopPanel",
+                CustomMinimumSize = new Vector2(0, 40)
+            };
 
-			var gameVBox = new VBoxContainer { Name = "GameVBoxContainer" };
-			gameVBox.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+            _rightMiddlePanel = new Panel
+            {
+                Name = "GameMiddlePanel",
+                CustomMinimumSize = new Vector2(0, 80),
+                SizeFlagsVertical = Control.SizeFlags.Expand
+            };
 
-			_rightTopPanel = new Panel
-			{
-				Name = "GameTopPanel",
-				CustomMinimumSize = new Vector2(0, 40)
-			};
+            var gameMiddleCenter = new CenterContainer { Name = "GameMiddleCenterContainer" };
+            gameMiddleCenter.SetAnchorsPreset(Control.LayoutPreset.FullRect);
 
-			_rightMiddlePanel = new Panel
-			{
-				Name = "GameMiddlePanel",
-				CustomMinimumSize = new Vector2(0, 80),
-				SizeFlagsVertical = Control.SizeFlags.Expand
-			};
+            _rightBottomPanel = new Panel
+            {
+                Name = "GameBottomPanel",
+                CustomMinimumSize = new Vector2(0, 40),
+                ClipContents = true
+            };
 
-			var gameMiddleCenter = new CenterContainer { Name = "GameMiddleCenterContainer" };
-			gameMiddleCenter.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+            var gameBottomCenter = new CenterContainer { Name = "GameBottomCenterContainer" };
+            */
 
-			_rightBottomPanel = new Panel
-			{
-				Name = "GameBottomPanel",
-				CustomMinimumSize = new Vector2(0, 40),
-				ClipContents = true
-			};
+            // NEW CODE - Adjusted container settings
+            var gameMarginContainer = new MarginContainer 
+            { 
+                Name = "GameMarginContainer",
+                CustomMinimumSize = new Vector2(154, 0),
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
+            gameMarginContainer.SetAnchorsPreset(Control.LayoutPreset.FullRect);
 
-			var gameBottomCenter = new CenterContainer { Name = "GameBottomCenterContainer" };
+            var gameMainPanel = new Panel
+            {
+                Name = "GameMainPanel",
+                CustomMinimumSize = new Vector2(154, 0),
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
 
-			// Build the hierarchy
-			_rightMiddlePanel.AddChild(gameMiddleCenter);
+            var gameHBox = new HBoxContainer 
+            { 
+                Name = "GameHBoxContainer",
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
+            gameHBox.SetAnchorsPreset(Control.LayoutPreset.FullRect);
 
-			gameVBox.AddChild(_rightTopPanel);
-			gameVBox.AddChild(_rightMiddlePanel);
-			gameVBox.AddChild(_rightBottomPanel);
-			gameVBox.AddChild(gameBottomCenter);
+            var gameContentPanel = new Panel
+            {
+                Name = "GameContentPanel",
+                CustomMinimumSize = new Vector2(154, 0),
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
 
-			gameContentPanel.AddChild(gameVBox);
-			gameHBox.AddChild(gameContentPanel);
-			gameMainPanel.AddChild(gameHBox);
-			gameMarginContainer.AddChild(gameMainPanel);
-			gameAreaControl.AddChild(gameMarginContainer);
-		}
+            var gameVBox = new VBoxContainer 
+            { 
+                Name = "GameVBoxContainer",
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
+            gameVBox.SetAnchorsPreset(Control.LayoutPreset.FullRect);
 
-		private void CreateLayout()
-		{
-			var gameAreaControl = new Control
-			{
-				Name = "GameAreaControl",
-				AnchorLeft = 0.13f,
-				AnchorRight = 1.0f,
-				AnchorBottom = 1.0f,
-				OffsetLeft = 0.23999f,
-				GrowHorizontal = Control.GrowDirection.Both,
-				GrowVertical = Control.GrowDirection.Both
-			};
+            _rightTopPanel = new Panel
+            {
+                Name = "GameTopPanel",
+                CustomMinimumSize = new Vector2(154, 40),
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
 
-			var leftControl = new Control
-			{
-				Name = "LeftSideControl",
-				AnchorLeft = 0f,
-				AnchorRight = 0.13f,
-				AnchorBottom = 1.0f,
-				GrowHorizontal = Control.GrowDirection.Both,
-				GrowVertical = Control.GrowDirection.Both
-			};
+            _rightMiddlePanel = new Panel
+            {
+                Name = "GameMiddlePanel",
+                CustomMinimumSize = new Vector2(154, 80),
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand,
+                SizeFlagsVertical = Control.SizeFlags.Expand
+            };
 
-			BuildRightPanelHierarchy(gameAreaControl);
-			BuildLeftPanelHierarchy(leftControl);
+            var gameMiddleCenter = new CenterContainer 
+            { 
+                Name = "GameMiddleCenterContainer",
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
+            gameMiddleCenter.SetAnchorsPreset(Control.LayoutPreset.FullRect);
 
-			Globals.Instance.RootNode.AddChild(gameAreaControl);
-			Globals.Instance.RootNode.AddChild(leftControl);
-		}
+            _rightBottomPanel = new Panel
+            {
+                Name = "GameBottomPanel",
+                CustomMinimumSize = new Vector2(154, 40),
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand,
+                ClipContents = true
+            };
 
-		public override void _Ready()
-		{
-			CreateLayout();
-		}
+            var gameBottomCenter = new CenterContainer 
+            { 
+                Name = "GameBottomCenterContainer",
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
 
-		public void AddToLeftPanelTop(Control node)
-		{
-			_leftTopPanel.AddChild(node);
-		}
+            // Build the hierarchy
+            _rightMiddlePanel.AddChild(gameMiddleCenter);
 
-		public void AddToLeftPanelMiddle(Control node)
-		{
-			_leftMiddleCenter.AddChild(node);
-		}
+            gameVBox.AddChild(_rightTopPanel);
+            gameVBox.AddChild(_rightMiddlePanel);
+            gameVBox.AddChild(_rightBottomPanel);
+            gameVBox.AddChild(gameBottomCenter);
 
-		public void AddToLeftPanelBottom(Control node)
-		{
-			node.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-			node.GrowHorizontal = Control.GrowDirection.Both;
-			node.GrowVertical = Control.GrowDirection.Both;
-			_leftBottomPanel.AddChild(node);
-		}
+            gameContentPanel.AddChild(gameVBox);
+            gameHBox.AddChild(gameContentPanel);
+            gameMainPanel.AddChild(gameHBox);
+            gameMarginContainer.AddChild(gameMainPanel);
+            gameAreaControl.AddChild(gameMarginContainer);
+        }
 
-		public void AddToRightPanelTop(Control node)
-		{
-			_rightTopPanel.AddChild(node);
-		}
+        private void CreateLayout()
+        {
+            // Create main control that will contain both left and game area
+            var mainControl = new Control
+            {
+                Name = "MainControl",
+                LayoutMode = 1,
+                AnchorsPreset = (int)Control.LayoutPreset.FullRect,  // 15
+                AnchorRight = 1.0f,
+                AnchorBottom = 1.0f,
+                GrowHorizontal = Control.GrowDirection.Both,
+                GrowVertical = Control.GrowDirection.Both
+            };
 
-		public void AddToRightPanelMiddle(Control node)
-		{
-			_rightMiddlePanel.AddChild(node);
-		}
+            // Create left control as child of main control with negative anchor
+            var leftControl = new Control
+            {
+                Name = "LeftControl",
+                LayoutMode = 1,
+                AnchorLeft = -0.148f,
+                AnchorRight = 0.002f,
+                AnchorBottom = 1.0f,
+                OffsetLeft = 0.296005f,
+                OffsetRight = -0.00400019f,
+                GrowHorizontal = Control.GrowDirection.Both,
+                GrowVertical = Control.GrowDirection.Both
+            };
 
-		public void AddToRightPanelBottom(Control node)
-		{
-			_rightBottomPanel.AddChild(node);
-		}
-	
-	public virtual void ClearLeftPanel()
+            var leftMarginContainer = new MarginContainer
+            {
+                Name = "LeftMarginContainer",
+                LayoutMode = 1,
+                AnchorsPreset = (int)Control.LayoutPreset.FullRect,  // 15
+                AnchorRight = 1.0f,
+                AnchorBottom = 1.0f,
+                GrowHorizontal = Control.GrowDirection.Both,
+                GrowVertical = Control.GrowDirection.Both,
+                CustomMinimumSize = new Vector2(150, 0)
+            };
+
+            var leftPanel = new Panel
+            {
+                Name = "LeftMainPanel",
+                CustomMinimumSize = new Vector2(150, 0),
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand
+            };
+
+            // Create game area control as child of main control
+            var gameAreaControl = new Control
+            {
+                Name = "GameAreaControl",
+                LayoutMode = 1,
+                AnchorLeft = 0f,
+                AnchorRight = 1.0f,
+                AnchorBottom = 1.0f,
+                GrowHorizontal = Control.GrowDirection.Both,
+                GrowVertical = Control.GrowDirection.Both
+            };
+
+            // Build the hierarchies
+            BuildRightPanelHierarchy(gameAreaControl);
+            
+            // Build left panel hierarchy with exact TSCN values
+            leftControl.AddChild(leftMarginContainer);
+            leftMarginContainer.AddChild(leftPanel);
+            BuildLeftPanelHierarchy(leftPanel);
+
+            // Add controls to main control
+            mainControl.AddChild(leftControl);
+            mainControl.AddChild(gameAreaControl);
+
+            // Add main control to this node
+            AddChild(mainControl);
+        }
+
+        public override void _Ready()
+        {
+            CreateLayout();
+        }
+
+        public void AddToLeftPanelTop(Control node)
+        {
+            _leftTopPanel.AddChild(node);
+        }
+
+        public void AddToLeftPanelMiddle(Control node)
+        {
+            _leftMiddleCenter.AddChild(node);
+        }
+
+        public void AddToLeftPanelBottom(Control node)
+        {
+            node.SetAnchorsPreset(Control.LayoutPreset.FullRect);
+            node.GrowHorizontal = Control.GrowDirection.Both;
+            node.GrowVertical = Control.GrowDirection.Both;
+            _leftBottomPanel.AddChild(node);
+        }
+
+        public void AddToRightPanelTop(Control node)
+        {
+            _rightTopPanel.AddChild(node);
+        }
+
+        public void AddToRightPanelMiddle(Control node)
+        {
+            _rightMiddlePanel.AddChild(node);
+        }
+
+        public void AddToRightPanelBottom(Control node)
+        {
+            _rightBottomPanel.AddChild(node);
+        }
+
+        public virtual void ClearLeftPanel()
         {
             if (_leftTopPanel == null) return;
             foreach (Node child in _leftTopPanel.GetChildren())
@@ -243,21 +386,15 @@ namespace Tower_001.Scripts.UI.Layout
             }
         }
 
-        //public override void _Process(double delta)
-        //{
-        //    if (_leftPanel != null)
-        //    {
-        //        _leftPanel.Size = Size;
-        //    }
-        //}
-
         public virtual void Show()
         {
+            GD.Print($"ScalableMenuLayout: Showing");
             Visible = true;
         }
 
         public virtual void Hide()
         {
+            GD.Print($"ScalableMenuLayout: Hiding");
             Visible = false;
         }
     }

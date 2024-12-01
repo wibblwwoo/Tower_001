@@ -2,107 +2,48 @@ using Godot;
 using System.Collections.Generic;
 using static GlobalEnums;
 using Tower_001.Scripts.UI.Layout;
-using System.Diagnostics;
 using System;
-using System.Security.Cryptography;
 
 namespace Tower_001.Scripts.UI.Menus
 {
-    public partial class SettingsMenu : BaseMenu
+    public partial class SettingsMenu : GameLayoutMenu
     {
         private List<Button> _menuButtons;
         private Control _currentSettingsPanel;
-        private ScalableMenuLayout _layout;
-		private Random _random;
+        private Random _random;
 
-
-		// Constants for UI layout
-		private const int BUTTON_WIDTH = 154;
+        // Constants for UI layout
+        private const int BUTTON_WIDTH = 154;
         private const int BUTTON_HEIGHT = 31;
         private const int BUTTON_SPACING = 4;
         private const int FONT_SIZE = 16;
 
-		
-		public SettingsMenu() : base("SettingsMenu") 
+        public SettingsMenu() : base("SettingsMenu") 
         {
-            // Create the layout immediately to avoid null reference
-            _layout = new ScalableMenuLayout();
-		}
+        }
 
         public override void Initialize(Control uiRoot)
         {
-
-			GD.Print($"Initialize called from:\n{System.Environment.StackTrace}");
-
-			base.Initialize(uiRoot);
-
-			_random = new Random(1221313);
-
-            
-
-
-			GD.Print($"Settings Menu Process Mode: {uiRoot}");
-
-			// Add the layout to the container
-			_container.AddChild(_layout);
-            
-            // Create navigation buttons in left panel
+            base.Initialize(uiRoot);
+            _random = new Random(1221313);
             CreateNavigationButtons();
-
-
-            foreach (var button in _menuButtons)
-            {
-                GD.Print($"Button {button.Text} has {button.GetSignalConnectionList("pressed").Count} pressed connections");
-            }
-
-
-            // Hide the layout initially
-            _layout.Hide();
-		}
-
-        public override void Show()
-        {
-            base.Show();
-            if (_layout != null)
-            {
-
-				_layout.Show();
-            }
-        }
-		private void PrintNodeHierarchy(Node node, string indent)
-		{
-			GD.Print($"{indent}{node.Name} ({node.GetType()})");
-			foreach (var child in node.GetChildren())
-			{
-				PrintNodeHierarchy(child, indent + "  ");
-			}
-		}
-		public override void Hide()
-        {
-            base.Hide();
-            if (_layout != null)
-            {
-                _layout.Hide();
-            }
+            PrintNodeTree();
         }
 
-		private void CreateNavigationButtons()
+        private void CreateNavigationButtons()
         {
-            GD.Print("\n=== Creating Navigation Buttons ===");
-            _layout.ClearLeftPanel();
+            ClearLeftPanel();
 
             // Add a fun message to the top section
-            GD.Print("Creating top section message...");
             var messageLabel = new Label { 
-                Text = "Time to tweak some settings! ",
-                Name = "SettingsMessageLabel"
+                Text = "Time to tweak some settings!",
+                Name = "SettingsMessageLabel",
+                SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter
             };
             messageLabel.HorizontalAlignment = HorizontalAlignment.Center;
             messageLabel.VerticalAlignment = VerticalAlignment.Center;
-            _layout.AddToLeftPanelTop(messageLabel);
+            AddToLeftPanelTop(messageLabel);
 
-			// Create menu buttons for the middle section
-			GD.Print("Creating middle section buttons...");
             var menuButtonData = new[]
             {
                 (text: "Graphics", action: MenuAction.Graphics),
@@ -112,97 +53,76 @@ namespace Tower_001.Scripts.UI.Menus
 
             _menuButtons = new List<Button>();
 
-			var buttonContainer = new VBoxContainer
-			{
-				Name = "ButtonContainer",
-				// Make it use expand but not fill horizontally
-				SizeFlagsHorizontal = Control.SizeFlags.Expand,
-				SizeFlagsVertical = Control.SizeFlags.Fill,
-				// Add some spacing between buttons
-				CustomMinimumSize = new Vector2(120, 0), // Set a minimum width for the container
-				MouseFilter = Control.MouseFilterEnum.Ignore  // Add this to let input pass through
-			};
-			_layout.AddToLeftPanelMiddle(buttonContainer);
+            // OLD CODE - For rollback if needed
+            /*
+            var buttonContainer = new VBoxContainer
+            {
+                Name = "ButtonContainer",
+                SizeFlagsHorizontal = Control.SizeFlags.Expand,
+                SizeFlagsVertical = Control.SizeFlags.Fill,
+                CustomMinimumSize = new Vector2(120, 0),
+                MouseFilter = Control.MouseFilterEnum.Ignore
+            };
+            */
 
-			// Create and add back button directly
-			GD.Print("Creating bottom section with back button...");
-
-            // Add menu buttons to middle section
+            // NEW CODE - Adjusted container settings
+            var buttonContainer = new VBoxContainer
+            {
+                Name = "ButtonContainer",
+                SizeFlagsHorizontal = Control.SizeFlags.Fill | Control.SizeFlags.Expand,
+                SizeFlagsVertical = Control.SizeFlags.Fill,
+                CustomMinimumSize = new Vector2(154, 0),
+                MouseFilter = Control.MouseFilterEnum.Ignore
+            };
+            AddToLeftPanelMiddle(buttonContainer);
 
             foreach (var (text, action) in menuButtonData)
             {
-                GD.Print($"Creating button: {text}");
                 var button = CreateMenuButton(text);
                 buttonContainer.AddChild(button);
-
                 _menuButtons.Add(button);
             }
 
-			var backButton = CreateMenuButton("Back");
-			backButton.Name = "BackButton";
-
-			// Only add it to the bottom center, not the button container
-			_layout.AddToLeftPanelBottom(backButton);
-			//buttonContainer.AddChild(backButton);
-			_menuButtons.Add(backButton);
-			backButton.Pressed += () => HandleMenuButtonPressed(MenuAction.Back);
-
-			_random = new Random(155513);
-
-
-			GD.Print($"Total buttons created: {_menuButtons.Count}");
-            GD.Print("=== Navigation Buttons Creation Complete ===\n");
+            var backButton = CreateMenuButton("Back");
+            backButton.Name = "BackButton";
+            AddToLeftPanelBottom(backButton);
+            _menuButtons.Add(backButton);
+            backButton.Pressed += () => HandleMenuButtonPressed(MenuAction.Back);
         }
-		private MenuAction GetActionForButton(string text)
-		{
-			return text switch
-			{
-				"Graphics" => MenuAction.Graphics,
-				"Audio" => MenuAction.Audio,
-				"Controls" => MenuAction.Controls,
-				"Back" => MenuAction.Back,
-				_ => throw new ArgumentException($"Unknown button text: {text}")
-			};
-		}
 
-		private Button CreateMenuButton(string text)
-		{
-			var button = new Button
-			{
-				Text = text,
-				Name = $"{text}Button{_random.Next(1, 99)}",
-				CustomMinimumSize = new Vector2(140, 30),  // Use final size directly
-				SizeFlagsHorizontal = Control.SizeFlags.Expand,  // Use final flags directly
-				SizeFlagsVertical = Control.SizeFlags.Expand,
-				MouseFilter = Control.MouseFilterEnum.Stop
-			};
+        private Button CreateMenuButton(string text)
+        {
+            var button = new Button
+            {
+                Text = text,
+                Name = $"{text}Button{_random.Next(1, 99)}",
+                CustomMinimumSize = new Vector2(BUTTON_WIDTH, BUTTON_HEIGHT),
+                SizeFlagsHorizontal = Control.SizeFlags.Expand,
+                SizeFlagsVertical = Control.SizeFlags.Expand,
+                MouseFilter = Control.MouseFilterEnum.Stop
+            };
 
-			// Add all the event handlers here
-			button.GuiInput += (InputEvent @event) =>
-			{
-				//GD.Print($"GUI Input received on {text} button: {@event.GetType()}");
-			};
+            button.AddThemeFontSizeOverride("font_size", FONT_SIZE);
+            button.Alignment = HorizontalAlignment.Center;
 
-			button.MouseEntered += () =>
-			{
-				//GD.Print($"Mouse entered {text} button");
-			};
+            button.Pressed += () => HandleMenuButtonPressed(GetActionForButton(text));
 
-			button.Pressed += () =>
-			{
-				GD.Print($"Button {text} was pressed!");
-				HandleMenuButtonPressed(GetActionForButton(text));  // Add this line
-			};
+            return button;
+        }
 
-			button.AddThemeConstantOverride("font_size", FONT_SIZE);
+        private MenuAction GetActionForButton(string text)
+        {
+            return text switch
+            {
+                "Graphics" => MenuAction.Graphics,
+                "Audio" => MenuAction.Audio,
+                "Controls" => MenuAction.Controls,
+                "Back" => MenuAction.Back,
+                _ => throw new ArgumentException($"Unknown button text: {text}")
+            };
+        }
 
-			GD.Print($"Created button '{text}' - Name: {button.Name}, Size: {button.CustomMinimumSize}, Flags: {button.SizeFlagsHorizontal}");
-
-			return button;
-		}
-
-	
-		private void HandleMenuButtonPressed(MenuAction action)
+        private void HandleMenuButtonPressed(MenuAction action)
         {
             if (action == MenuAction.Back)
             {
@@ -210,25 +130,23 @@ namespace Tower_001.Scripts.UI.Menus
                 return;
             }
 
-            // Clear the right panel
-            _layout.ClearRightPanel();
+            ClearRightPanel();
 
-            // Create the appropriate settings panel based on the action
             switch (action)
             {
                 case MenuAction.Graphics:
-                    CreateGraphicsPanel();
+                    AddToRightPanelMiddle(CreateGraphicsPanel());
                     break;
                 case MenuAction.Audio:
-                    CreateAudioPanel();
+                    AddToRightPanelMiddle(CreateAudioPanel());
                     break;
                 case MenuAction.Controls:
-                    CreateControlsPanel();
+                    AddToRightPanelMiddle(CreateControlsPanel());
                     break;
             }
         }
 
-        private void CreateGraphicsPanel()
+        private Control CreateGraphicsPanel()
         {
             var container = new VBoxContainer();
             
@@ -258,10 +176,10 @@ namespace Tower_001.Scripts.UI.Menus
             container.AddChild(fullscreenCheck);
             container.AddChild(vsyncCheck);
             
-            _layout.AddToRightPanelMiddle(container);
+            return container;
         }
 
-        private void CreateAudioPanel()
+        private Control CreateAudioPanel()
         {
             var container = new VBoxContainer();
             
@@ -309,10 +227,10 @@ namespace Tower_001.Scripts.UI.Menus
             container.AddChild(sfxLabel);
             container.AddChild(sfxSlider);
             
-            _layout.AddToRightPanelMiddle(container);
+            return container;
         }
 
-        private void CreateControlsPanel()
+        private Control CreateControlsPanel()
         {
             var container = new VBoxContainer();
             
@@ -343,13 +261,41 @@ namespace Tower_001.Scripts.UI.Menus
             container.AddChild(invertYCheck);
             container.AddChild(showTooltipsCheck);
             
-            _layout.AddToRightPanelMiddle(container);
+            return container;
+        }
+
+        private void PrintNodeTree()
+        {
+            GD.Print("\n=== SettingsMenu Node Tree ===");
+            PrintNodeRecursive(_menuRoot, 0);
+            GD.Print("=== End Node Tree ===\n");
+        }
+
+        private void PrintNodeRecursive(Node node, int depth)
+        {
+            var indent = new string(' ', depth * 2);
+            var info = $"{node.Name} ({node.GetType()})";
+            
+            if (node is Control control)
+            {
+                info += $" - Size: {control.Size}, MinSize: {control.CustomMinimumSize}";
+                info += $", Flags: H={control.SizeFlagsHorizontal}, V={control.SizeFlagsVertical}";
+            }
+            
+            GD.Print($"{indent}{info}");
+            
+            foreach (var child in node.GetChildren())
+            {
+                PrintNodeRecursive(child, depth + 1);
+            }
         }
 
         private void RaiseMenuEvent(MenuAction action)
         {
-            var eventArgs = new MenuEventArgs(action);
-            Globals.Instance.gameMangers.Events.RaiseEvent(EventType.MenuAction, eventArgs);
-        }
-    }
+            GD.Print($"SettingsMenu: Raising menu event {action}");
+			var eventArgs = new MenuEventArgs(action);
+			Globals.Instance.gameMangers.Events.RaiseEvent(EventType.MenuAction, eventArgs);
+
+		}
+	}
 }
