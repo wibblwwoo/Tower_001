@@ -1,5 +1,6 @@
 using Godot;
 using System.Collections.Generic;
+using Tower_001.Scripts.UI.Layout;
 using static GlobalEnums;
 
 namespace Tower_001.Scripts.UI.Menus
@@ -7,9 +8,9 @@ namespace Tower_001.Scripts.UI.Menus
     public class MainMenu : BaseMenu
     {
         private List<Button> _menuButtons;
-        
-        // Constants for UI layout
-        private const int BUTTON_WIDTH = 154;
+
+		// Constants for UI layout
+		private const int BUTTON_WIDTH = 154;
         private const int BUTTON_HEIGHT = 31;
         private const int BUTTON_SPACING = 4;
         private const int FONT_SIZE = 16;
@@ -18,7 +19,7 @@ namespace Tower_001.Scripts.UI.Menus
 
         public override void Initialize(Control uiRoot)
         {
-            base.Initialize(uiRoot);
+			base.Initialize(uiRoot);
             CreateButtons();
         }
 

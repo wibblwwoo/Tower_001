@@ -49,9 +49,7 @@ public partial class EventManager : IManager
 		// Register system-level events
 		AddHandler<GameEventArgs>(EventType.None, OnSystemEvent);
 
-		// Register UI events
-		RegisterUIEvents();
-
+		
 		//// Register tower events
 		//RegisterTowerEvents();
 
@@ -65,36 +63,6 @@ public partial class EventManager : IManager
 		//RegisterCharacterEvents();
 	}
 
-	private void RegisterUIEvents()
-	{
-		AddHandler<UIButton_Click_EventArgs>(GlobalEnums.EventType.UIButton_Click, HandleUIButton_Click);
-		AddHandler<UIPanel_Visibility_EventArgs>(GlobalEnums.EventType.UIPanel_Visibility, HandleUIPanels_Visiblity);
-
-
-	}
-
-	private void HandleUIButton_Click(UIButton_Click_EventArgs args)
-	{
-		//	// Your tower setup logic here
-		if (Globals.Instance != null){
-			Globals.Instance.gameMangers.UI.SetPanelsVisibility(args.ShowPanels, true);
-		}
-	}
-	private void HandleUIPanels_Visiblity(UIPanel_Visibility_EventArgs args)
-	{
-		// Your tower setup logic here
-		if (args.window != null)
-		{
-			args.window.Visible = true;
-
-		}
-	}
-
-	public bool RaiseHandleUIButton_Click(GlobalEnums.EnumUIPanelParentType showPanels)
-	{
-		var args = new UIButton_Click_EventArgs(showPanels);
-		return RaiseEvent(GlobalEnums.EventType.UIButton_Click, args);
-	}
 
 	///// <summary>
 	///// Adds a new event handler for the specified event type

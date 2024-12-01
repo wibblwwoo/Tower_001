@@ -17,44 +17,4 @@ public class GameEventArgs : EventArgs
 }
 
 
-#region UI WIndows EventArgs
-public class UIPanel_Visibility_EventArgs : GameEventArgs 
-{
-	// Base class for all game event arguments
-	public UIPanel window;
 
-	public UIPanel_Visibility_EventArgs(UIPanel window)
-	{
-		this.window = window;
-	}
-}
-
-#endregion
-
-//#region UI Button Event Args
-public partial class UIButton_Click_EventArgs : GameEventArgs
-{
-	// Called when the node enters the scene tree for the first time.
-	public GlobalEnums.EnumUIPanelParentType ShowPanels;
-
-	public UIButton_Click_EventArgs(GlobalEnums.EnumUIPanelParentType showPanels)
-	{
-		ShowPanels = showPanels;
-	}
-}
-
-
-//public partial class UIButton_Visible_EventArgs : GameEventArgs
-//{
-//	// Called when the node enters the scene tree for the first time.
-//	public List<UIButton_Item> MakeVisible;
-//	public bool Visibility;
-
-//	public UIButton_Visible_EventArgs(List<UIButton_Item> makeVisible, bool visibility)
-//	{
-//		MakeVisible = makeVisible;
-//		Visibility = visibility;
-//	}
-
-//}
-//#endregion

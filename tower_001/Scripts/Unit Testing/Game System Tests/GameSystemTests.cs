@@ -115,11 +115,11 @@ public partial class GameSystemTests : Node
 
 		//_ascensionSystemTests.RunAllTests();
 
-		//_towerSystemTests.RunAllTests();
+		_towerSystemTests.RunAllTests();
 
-		//_floorSystemTests.RunAllTests();
+		_floorSystemTests.RunAllTests();
 
-		//_roomSystemTests.RunAllTests();
+		_roomSystemTests.RunAllTests();
 
 
 		//_eventSystemTests.RunAllTests();

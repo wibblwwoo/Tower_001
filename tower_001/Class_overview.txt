@@ -237,3 +237,55 @@ UI Events:
 UI panel visibility and button click interactions.
 Error Handling:
 Captures and reports processing errors in event handling.
+
+Version Control and Testing Setup
+===============================
+
+Git Repository
+-------------
+Repository: https://github.com/wibblwwoo/Tower_001.git
+Structure:
+- Main branch: Protected branch for stable code
+- Feature branches: Create for new features/fixes
+
+Key Files:
+- .gitignore: Configured for Godot, C#, and Visual Studio
+- README.md: Project documentation and setup instructions
+
+Unit Testing (NUnit)
+------------------
+Test Project: Tower_001.Tests
+Location: E:/Development/Projects/Tower_001/Tests
+
+Test Structure:
+1. Base Test Class (TestBase.cs)
+   - OneTimeSetUp: Run once before all tests
+   - OneTimeTearDown: Run once after all tests
+   - SetUp: Run before each test
+   - TearDown: Run after each test
+
+2. Test Categories:
+   a) Character Tests (GameLogic/Character/)
+	  - Character creation and initialization
+	  - Health and damage system
+	  - Character stats and scaling
+	  
+   b) Tower Tests (GameLogic/Tower/)
+	  - Tower creation and configuration
+	  - Level progression
+	  - Tower upgrades
+	  
+   c) Resource System Tests (GameLogic/ResourceSystem/)
+	  - Resource initialization
+	  - Resource management
+	  - Resource collection events
+
+Running Tests:
+- Command: dotnet test Tests/Tower_001.Tests.csproj
+- CI/CD: Tests run automatically on GitHub Actions
+
+Test Guidelines:
+1. Create new test classes for new features
+2. Follow Arrange-Act-Assert pattern
+3. Use meaningful test names describing the scenario
+4. Keep tests independent and isolated

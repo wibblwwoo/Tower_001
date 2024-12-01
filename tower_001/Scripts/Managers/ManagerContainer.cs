@@ -36,6 +36,7 @@ public partial class ManagerContainer : IManagerContainer
 		// EventManager already setup in InitializeManagers
 		Player.Setup();
 		World.Setup();
+		UI.Setup();
 	}
 }
 //public partial class ManagerContainer : IManagerContainer

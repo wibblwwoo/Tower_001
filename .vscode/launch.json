@@ -1,0 +1,40 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Godot",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "E:\\Development\\Godot\\Godot_v4.3-stable_mono_win64.exe",
+            "args": [
+                "--path",
+                "${workspaceRoot}/tower_001"
+            ],
+            "cwd": "${workspaceRoot}",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
+            "name": "Launch Scene",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "E:\\Development\\Godot\\Godot_v4.3-stable_mono_win64.exe",
+            "args": [
+                "--path",
+                "${workspaceRoot}/tower_001",
+                "${command:godot.csharp.getLaunchScene}"
+            ],
+            "cwd": "${workspaceRoot}",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
+            "name": "Attach to Godot",
+            "type": "coreclr",
+            "request": "attach",
+            "processName": "Godot_v4.3-stable_mono_win64.exe"
+        }
+    ]
+}

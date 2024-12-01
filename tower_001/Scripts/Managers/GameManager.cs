@@ -32,6 +32,13 @@ public partial class GameManager : Control, IManager
 		//set the rootnode to this object
 		RootNode = this;
 
+
+		if (Globals.Instance.RootNode != null)
+		{
+
+		} 
+
+		
 		// Initialize manager container
 		gameMangers = new ManagerContainer();
 		gameMangers.Setup();

@@ -21,7 +21,7 @@ namespace Tower_001.Scripts.UI.Menus
             // Create a unique container for this menu
             _container = new MarginContainer();
             _container.Name = $"{_menuName}Container";
-            _uiRoot.GetNode<Control>("Control").AddChild(_container);
+            _uiRoot.GetNode<Control>("Control2").AddChild(_container);
             
             // Set container properties
             _container.AnchorRight = 1;
@@ -47,7 +47,10 @@ namespace Tower_001.Scripts.UI.Menus
 
         public virtual void Hide()
         {
-            _container.Visible = false;
+            if (_container != null)
+            {
+                _container.Visible = false;
+            }
         }
 
         protected virtual void ClearButtons()

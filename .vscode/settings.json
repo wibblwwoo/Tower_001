@@ -1,0 +1,25 @@
+{
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/*.import": true,
+        "**/.godot/": true
+    },
+    "editor.formatOnSave": true,
+    "editor.rulers": [120],
+    "omnisharp.enableRoslynAnalyzers": true,
+    "omnisharp.enableEditorConfigSupport": true,
+    "csharp.format.enable": true,
+    "godot.csharp.executablePath": "C:\\Program Files\\Godot\\Godot_v4.0-stable_mono_win64.exe",
+    "[gdscript]": {
+        "editor.insertSpaces": false,
+        "editor.detectIndentation": false
+    },
+    "[csharp]": {
+        "editor.defaultFormatter": "ms-dotnettools.csharp",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    }
+}

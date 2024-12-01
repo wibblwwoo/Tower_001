@@ -1,0 +1,10 @@
+{
+    "recommendations": [
+        "ms-dotnettools.csharp",
+        "chickensoft.csharp-to-godotsharp",
+        "streetsidesoftware.code-spell-checker",
+        "josefpihrt-vscode.roslynator",
+        "formulahendry.dotnet-test-explorer",
+        "k--kato.docomment"
+    ]
+}
