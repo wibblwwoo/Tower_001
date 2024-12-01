@@ -4,17 +4,20 @@ namespace Tower_001.Scripts.UI.Layout
 {
     public partial class MenuPanelContainer : VBoxContainer
     {
-        [Export] private Panel _topPanel;
+
+		[Export] private Panel _topPanel;
         [Export] private Panel _middlePanel;
         [Export] private VBoxContainer _middleCenterContainer;
         [Export] private Panel _bottomPanel;
+		[Export] private Panel _parentPanel; //toshow or hide section
 
-        public Panel TopPanel => _topPanel;
+		public Panel TopPanel => _topPanel;
         public Panel MiddlePanel => _middlePanel;
         public VBoxContainer MiddleCenterContainer => _middleCenterContainer;
         public Panel BottomPanel => _bottomPanel;
+		public Panel ParentPanel => _parentPanel;
 
-        public override void _Ready()
+		public override void _Ready()
         {
             base._Ready();
             

@@ -127,6 +127,10 @@ namespace Tower_001.Scripts.UI.Menus
         {
             var eventArgs = new MenuEventArgs(action);
             Globals.Instance.gameMangers.Events.RaiseEvent(EventType.MenuAction, eventArgs);
+            if (action == MenuAction.Back)
+            {
+                this.Hide();
+            }
         }
 
         private Control CreateGraphicsPanel()
@@ -234,5 +238,21 @@ namespace Tower_001.Scripts.UI.Menus
             
             return container;
         }
-    }
+
+		public override void Show()
+		{
+			_menuRoot.Show();
+			_menuRoot.MoveToFront(); // Ensure this menu is on top
+            Globals.Instance.MenuPanelContainer_Left.ParentPanel.Visible = true;
+			Globals.Instance.MenuPanelContainer_Right.ParentPanel.Visible = true;
+		}
+		public override void Hide()
+		{
+			_menuRoot.Hide();
+			Globals.Instance.MenuPanelContainer_Left.ParentPanel.Visible = false;
+			Globals.Instance.MenuPanelContainer_Right.ParentPanel.Visible = false;
+		}
+
+
+	}
 }

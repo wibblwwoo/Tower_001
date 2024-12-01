@@ -127,25 +127,42 @@ public partial class UIManager : BaseManager
             { typeof(SettingsMenu), new SettingsMenu() }
         };
 
+        // First initialize all menus
         foreach (var menu in _menus.Values)
         {
             menu.Initialize(_uiRoot);
+        }
+        
+        // Then hide all menus after they're added to the scene tree
+        foreach (var menu in _menus.Values)
+        {
             menu.Hide();
         }
+        
+        // Ensure no menu is current at start
+        _currentMenu = null;
     }
 
     private void ShowMenu<T>() where T : BaseMenu
     {
-        if (_currentMenu != null)
+        var newMenu = _menus.GetValueOrDefault(typeof(T));
+        if (newMenu == null)
         {
-            _currentMenu.Hide();
+            GD.PrintErr($"UIManager: Menu of type {typeof(T)} not found!");
+            return;
         }
 
-        if (_menus.TryGetValue(typeof(T), out BaseMenu menu))
-        {
-            _currentMenu = menu;
-            _currentMenu.Show();
-        }
+        // First hide current menu if it exists
+        //if (_currentMenu != null)
+        //{
+        //    _currentMenu.Hide();
+        //    _currentMenu = null;
+        //}
+
+        // Then show the new menu
+        _currentMenu = newMenu;
+        _currentMenu.Show();
+        GD.Print($"UIManager: Showing menu of type {typeof(T)}");
     }
 
 
