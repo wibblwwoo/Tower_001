@@ -68,6 +68,21 @@ namespace Tower_001.Scripts.UI.Menus
         {
             var eventArgs = new MenuEventArgs(action);
             Globals.Instance.gameMangers.Events.RaiseEvent(EventType.MenuAction, eventArgs);
+            this.Hide();
         }
-    }
+
+		public override void Show()
+		{
+			base.Show();
+			_menuRoot.Show();
+			_menuRoot.MoveToFront(); // Ensure this menu is on top
+			_container.Visible = true;
+		}
+		public override void Hide()
+		{
+			_menuRoot.Hide();
+            _container.Visible = false;
+		}
+
+	}
 }

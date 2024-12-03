@@ -6,6 +6,13 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Scripts\UI\Menus\BaseMenu.cs" />
+    <Compile Remove="Scripts\UI\Menus\CenteredMenu.cs" />
+    <Compile Remove="Scripts\UI\Menus\GameLayoutMenu.cs" />
+    <Compile Remove="Scripts\UI\Menus\MainMenu.cs" />
+    <Compile Remove="Scripts\UI\Menus\SettingsMenu.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Folder Include="Scripts\GameLogic\Resource System\" />
     <Folder Include="Scripts\Unit Testing\Tower\" />
   </ItemGroup>

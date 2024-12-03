@@ -1,0 +1,132 @@
+{
+    "tower_instance": {
+        "tower_id": 3005,
+        "tower_name": "Dream Spiral",
+        "total_floors": 100,
+        "tower_boss": {
+            "boss_id": 1008,
+            "name": "The Dreamwalker",
+            "location": "floor_100",
+            "difficulty": "Legendary",
+            "phase_triggers": ["75% HP - Nightmare Phase", "50% HP - Dream Merge", "25% HP - Reality Warp"]
+        },
+        "mini_bosses": [
+            {
+                "floor": 11,
+                "boss_id": 2045,
+                "name": "Lucid Guardian",
+                "difficulty": "Elite",
+                "theme": "Lucid Gateway",
+                "special_ability": "Dream State Manipulation"
+            },
+            {
+                "floor": 27,
+                "boss_id": 2046,
+                "name": "Nightmare Weaver",
+                "difficulty": "Elite+",
+                "theme": "Nightmare Corridor",
+                "special_ability": "Fear Manifestation"
+            },
+            {
+                "floor": 48,
+                "boss_id": 2047,
+                "name": "REM Warden",
+                "difficulty": "Elite++",
+                "theme": "REM Chambers",
+                "special_ability": "Sleep Paralysis"
+            },
+            {
+                "floor": 72,
+                "boss_id": 2048,
+                "name": "Dream Architect",
+                "difficulty": "Champion",
+                "theme": "Dream Weavers Path",
+                "special_ability": "Reality Reconstruction"
+            },
+            {
+                "floor": 95,
+                "boss_id": 2049,
+                "name": "Subconscious Emperor",
+                "difficulty": "Champion+",
+                "theme": "Subconscious Depths",
+                "special_ability": "Memory Manipulation"
+            }
+        ],
+        "floor_layout": [
+            {
+                "floor": 1,
+                "name": "Entry Dream",
+                "type": "tutorial",
+                "description": "A gentle introduction to dream manipulation",
+                "enemies": ["Dream Wisps", "Memory Fragments"],
+                "hazards": ["Floating Platforms", "Dream Mist"]
+            },
+            {
+                "floor": 10,
+                "name": "Memories of Home",
+                "type": "challenge",
+                "description": "Familiar settings twisted by dream logic",
+                "enemies": ["Nostalgic Phantoms", "Home Guardians"],
+                "hazards": ["Shifting Furniture", "Family Portraits"]
+            },
+            {
+                "floor": 11,
+                "name": "Lucid Gateway",
+                "type": "boss_floor",
+                "description": "First test of dream mastery",
+                "boss_ref": "Lucid Guardian",
+                "special_mechanics": ["Reality Bending", "Dream Control"]
+            },
+            {
+                "floor": 25,
+                "name": "Nightmare's Edge",
+                "type": "challenge",
+                "description": "Where dreams begin to darken",
+                "enemies": ["Shadow Doubts", "Fear Manifestations"],
+                "hazards": ["Dark Whispers", "Creeping Shadows"]
+            },
+            {
+                "floor": 27,
+                "name": "Nightmare Corridor",
+                "type": "boss_floor",
+                "description": "Face your deepest fears",
+                "boss_ref": "Nightmare Weaver",
+                "special_mechanics": ["Fear Amplification", "Shadow Manipulation"]
+            }
+        ],
+        "special_floors": {
+            "rest_areas": [20, 40, 60, 80],
+            "challenge_floors": [15, 35, 55, 75, 90],
+            "treasure_floors": [10, 30, 50, 70, 85],
+            "puzzle_floors": [5, 25, 45, 65, 88]
+        },
+        "environmental_effects": {
+            "dream_state": {
+                "effect": "Players can double jump and float",
+                "floors": [1, 20]
+            },
+            "nightmare_phase": {
+                "effect": "Reduced visibility, increased damage",
+                "floors": [21, 40]
+            },
+            "lucid_control": {
+                "effect": "Players can manipulate small parts of environment",
+                "floors": [41, 60]
+            },
+            "deep_sleep": {
+                "effect": "Slower movement, enhanced abilities",
+                "floors": [61, 80]
+            },
+            "awakening": {
+                "effect": "Reality becomes unstable, random effects occur",
+                "floors": [81, 100]
+            }
+        },
+        "progression_milestones": {
+            "floor_25": "Unlock Dream Manipulation",
+            "floor_50": "Unlock Nightmare Control",
+            "floor_75": "Unlock Reality Bending",
+            "floor_100": "Complete Dream Mastery"
+        }
+    }
+}

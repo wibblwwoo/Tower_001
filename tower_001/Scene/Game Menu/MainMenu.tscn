@@ -1,7 +1,12 @@
-[gd_scene load_steps=4 format=3 uid="uid://b6s1avw7v6dvf"]
+[gd_scene load_steps=9 format=3 uid="uid://b6s1avw7v6dvf"]
 
 [ext_resource type="Script" path="res://Scripts/Managers/GameManager.cs" id="1_eg8jl"]
+[ext_resource type="PackedScene" uid="uid://b1umxi5dyone8" path="res://Scene/Panels/SinglePanel.tscn" id="2_e7u2q"]
 [ext_resource type="Script" path="res://Scripts/UI/Layout/MenuPanelContainer.cs" id="3_cd7qw"]
+[ext_resource type="PackedScene" uid="uid://8ww8twaunm0l" path="res://Scene/Panels/DualPanel.tscn" id="3_q8vt2"]
+[ext_resource type="PackedScene" uid="uid://c4k2r8y3n5m6p" path="res://Scene/Panels/MultiPanel.tscn" id="4_ivc05"]
+[ext_resource type="PackedScene" uid="uid://d0uvjg4krcek0" path="res://Scene/Panels/VerticalSplitPanel.tscn" id="5_cnk0r"]
+[ext_resource type="PackedScene" uid="uid://c6uejn3lhmvdt" path="res://Scene/Panels/TripleVerticalPanel.tscn" id="6_xcjrp"]
 [ext_resource type="Script" path="res://Scripts/Unit Testing/Game System Tests/GameSystemTests.cs" id="8_5idim"]
 
 [node name="MainControl" type="Control" node_paths=PackedStringArray("MenuPanelContainer_Left", "MenuPanelContainer_Right", "_eventSystemTests")]
@@ -15,6 +20,11 @@ script = ExtResource("1_eg8jl")
 MenuPanelContainer_Left = NodePath("Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel/VBoxContainer")
 MenuPanelContainer_Right = NodePath("Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer")
 _eventSystemTests = NodePath("UnitTests")
+PanelType_Single = ExtResource("2_e7u2q")
+PanelType_Dual_Horizontal = ExtResource("3_q8vt2")
+PanelType_Multi_Horizontal = ExtResource("4_ivc05")
+PanelType_Dual_Vertical = ExtResource("5_cnk0r")
+PanelType_Multi_Vertical = ExtResource("6_xcjrp")
 
 [node name="UnitTests" type="Node" parent="."]
 script = ExtResource("8_5idim")
@@ -53,7 +63,7 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel" node_paths=PackedStringArray("_topPanel", "_middlePanel", "_middleCenterContainer", "_bottomPanel")]
+[node name="VBoxContainer" type="VBoxContainer" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel" node_paths=PackedStringArray("_topPanel", "_middlePanel", "_middleCenterContainer", "_bottomPanel", "_parentPanel")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -63,8 +73,9 @@ grow_vertical = 2
 script = ExtResource("3_cd7qw")
 _topPanel = NodePath("Middle_Top_Panel")
 _middlePanel = NodePath("Middle")
-_middleCenterContainer = NodePath("Middle/VBoxContainer")
+_middleCenterContainer = NodePath("Middle/Middle_Middle_VBoxContainer")
 _bottomPanel = NodePath("Middle_Bottom_Panel")
+_parentPanel = NodePath("../../..")
 
 [node name="Middle_Top_Panel" type="Panel" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 40)
@@ -75,13 +86,25 @@ custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle"]
+[node name="Middle_Middle_VBoxContainer" type="VBoxContainer" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="Button" type="Button" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle/Middle_Middle_VBoxContainer"]
+layout_mode = 2
+text = "tesitng"
+
+[node name="Button2" type="Button" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle/Middle_Middle_VBoxContainer"]
+layout_mode = 2
+text = "tesitng"
+
+[node name="Button3" type="Button" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle/Middle_Middle_VBoxContainer"]
+layout_mode = 2
+text = "tesitng"
 
 [node name="Middle_Bottom_Panel" type="Panel" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer"]
 clip_contents = true
@@ -126,7 +149,7 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel" node_paths=PackedStringArray("_topPanel", "_middlePanel", "_middleCenterContainer", "_bottomPanel")]
+[node name="VBoxContainer" type="VBoxContainer" parent="Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel" node_paths=PackedStringArray("_topPanel", "_middlePanel", "_middleCenterContainer", "_bottomPanel", "_parentPanel")]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -138,6 +161,7 @@ _topPanel = NodePath("Left_Top_Panel")
 _middlePanel = NodePath("Middle")
 _middleCenterContainer = NodePath("Middle/VBoxContainer")
 _bottomPanel = NodePath("Left_Bottom")
+_parentPanel = NodePath("../../..")
 
 [node name="Left_Top_Panel" type="Panel" parent="Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 40)
@@ -156,14 +180,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 alignment = 1
-
-[node name="Button" type="Button" parent="Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel/VBoxContainer/Middle/VBoxContainer"]
-layout_mode = 2
-text = "zxCzXCzasdaSDads"
-
-[node name="Button2" type="Button" parent="Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel/VBoxContainer/Middle/VBoxContainer"]
-layout_mode = 2
-text = "zxCzXCzasdaSDads"
 
 [node name="Left_Middle_CenterContainer" type="CenterContainer" parent="Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel/VBoxContainer/Middle"]
 visible = false

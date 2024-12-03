@@ -82,5 +82,7 @@ public static partial class GlobalEnums
 		ResourceUnlocked = 1003,
 		MenuAction = 1004,
 		ProgressionUpdated = 1005,
+
+		GameAction = 2000,
 	}
 }

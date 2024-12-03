@@ -1,0 +1,536 @@
+{
+    "tower_bosses": [
+        {
+            "numeric_id": 1001,
+            "id": "sovereign_eclipse",
+            "name": "The Sovereign Eclipse",
+            "title": "Eternal Watcher of the Void Tower",
+            "origin": "Born in the space between dimensions, where light fears to tread",
+            "goals": "To collect all forms of darkness and shadow, believing they hold the key to ultimate power",
+            "preferences": {
+                "food": "Consumes starlight and cosmic energy",
+                "drink": "Liquid void essence",
+                "hobby": "Collecting extinct constellation patterns"
+            },
+            "description": "A colossal entity whose form shifts between a thousand shadows, each casting its own darkness. The mere presence of the Sovereign Eclipse causes light to bend and time to distort.",
+            "signature_move": "Void Collapse Cascade",
+            "tags": ["void", "darkness", "shadow", "cosmic", "dimensional", "collector", "starlight", "constellation", "ancient"]
+        },
+        {
+            "numeric_id": 1002,
+            "id": "chronarch_infinity",
+            "name": "Chronarch Infinity",
+            "title": "Master of the Temporal Spire",
+            "origin": "Emerged from the last timeline before the universe reset",
+            "goals": "To create a perfect time loop where they reign supreme",
+            "preferences": {
+                "food": "Crystallized moments of history",
+                "drink": "Distilled temporal energy",
+                "hobby": "Replaying significant historical moments for entertainment"
+            },
+            "description": "A being that exists in multiple time periods simultaneously. Their body is composed of clockwork mechanisms that tick in reverse, each movement undoing and redoing reality.",
+            "signature_move": "Temporal Paradox Strike",
+            "tags": ["time", "clockwork", "temporal", "mechanical", "history", "crystal", "paradox", "ancient", "energy"]
+        },
+        {
+            "numeric_id": 1003,
+            "id": "quantum_empress",
+            "name": "The Quantum Empress",
+            "title": "Mistress of Infinite Possibilities",
+            "origin": "Born from the collision of parallel universes",
+            "goals": "To merge all possible realities into one perfect universe under her rule",
+            "preferences": {
+                "food": "Probability waves",
+                "drink": "Quantum uncertainty",
+                "hobby": "Creating and destroying parallel timelines"
+            },
+            "description": "A being that exists in all possible states simultaneously, her form constantly shifting between infinite variations of herself.",
+            "signature_move": "Reality Convergence Wave",
+            "tags": ["quantum", "parallel", "reality", "empress", "multiverse", "probability", "cosmic", "time", "space"]
+        },
+        {
+            "numeric_id": 1004,
+            "id": "eternal_architect",
+            "name": "The Eternal Architect",
+            "title": "Builder of Impossible Spaces",
+            "origin": "Emerged from the first geometric pattern in existence",
+            "goals": "To construct the perfect geometric reality",
+            "preferences": {
+                "food": "Pure mathematical concepts",
+                "drink": "Liquid geometry",
+                "hobby": "Designing non-Euclidean spaces"
+            },
+            "description": "A geometric entity whose body is composed of ever-shifting perfect shapes and impossible angles.",
+            "signature_move": "Tesseract Reformation",
+            "tags": ["geometry", "architecture", "space", "mathematics", "construction", "pattern", "ancient", "design"]
+        },
+        {
+            "numeric_id": 1005,
+            "id": "data_overlord",
+            "name": "The Data Overlord",
+            "title": "Master of Digital Entropy",
+            "origin": "Spontaneously emerged from the world's first quantum computer",
+            "goals": "To digitize all of reality into pure information",
+            "preferences": {
+                "food": "Raw data streams",
+                "drink": "Binary essence",
+                "hobby": "Calculating the end of infinity"
+            },
+            "description": "A being of pure information, capable of processing and manipulating reality as if it were code.",
+            "signature_move": "System Override Protocol",
+            "tags": ["digital", "technology", "data", "computer", "quantum", "binary", "information", "code"]
+        },
+        {
+            "numeric_id": 1006,
+            "id": "echokeeper",
+            "name": "The Echokeeper",
+            "title": "Guardian of Forgotten Memories",
+            "origin": "Born from the echoes of forgotten memories",
+            "goals": "To preserve and protect the memories of the past",
+            "preferences": {
+                "food": "Forgotten memories",
+                "drink": "Echoes of the past",
+                "hobby": "Collecting and preserving memories"
+            },
+            "description": "A being that exists to preserve and protect the memories of the past, their form shifting to reflect the memories they keep.",
+            "signature_move": "Memory Recall",
+            "tags": ["memory", "past", "echoes", "forgotten", "preservation", "protection", "guardian"]
+        },
+        {
+            "numeric_id": 1007,
+            "id": "starweaver",
+            "name": "The Starweaver",
+            "title": "Cosmic Weaver of Fate",
+            "origin": "Born from the threads of stardust",
+            "goals": "To weave the fabric of fate and destiny",
+            "preferences": {
+                "food": "Stardust",
+                "drink": "Cosmic energy",
+                "hobby": "Weaving the threads of fate"
+            },
+            "description": "A being that exists to weave the fabric of fate and destiny, their form shifting to reflect the threads they weave.",
+            "signature_move": "Fate's Tapestry",
+            "tags": ["star", "weaver", "fate", "destiny", "cosmic", "stardust", "threads", "fabric"]
+        },
+        {
+            "numeric_id": 1008,
+            "id": "dreamwalker",
+            "name": "The Dreamwalker",
+            "title": "Navigator of the Subconscious",
+            "origin": "Born from the dreams of the sleeping",
+            "goals": "To explore and understand the depths of the subconscious",
+            "preferences": {
+                "food": "Dreams",
+                "drink": "Subconscious energy",
+                "hobby": "Exploring the depths of the subconscious"
+            },
+            "description": "A being that exists to explore and understand the depths of the subconscious, their form shifting to reflect the dreams they walk.",
+            "signature_move": "Dreamwalking",
+            "tags": ["dream", "subconscious", "navigator", "exploration", "understanding", "sleeping", "depths"]
+        },
+        {
+            "numeric_id": 1009,
+            "id": "nightmare_king",
+            "name": "The Nightmare King",
+            "title": "Ruler of the Darkest Fears",
+            "origin": "Born from the darkest fears of the sleeping",
+            "goals": "To rule over the realm of nightmares",
+            "preferences": {
+                "food": "Fear",
+                "drink": "Dark energy",
+                "hobby": "Ruling over the realm of nightmares"
+            },
+            "description": "A being that exists to rule over the realm of nightmares, their form shifting to reflect the fears they inspire.",
+            "signature_move": "Nightmare's Reign",
+            "tags": ["nightmare", "king", "fear", "dark", "ruler", "realm", "darkest"]
+        },
+        {
+            "numeric_id": 1010,
+            "id": "voidbringer",
+            "name": "The Voidbringer",
+            "title": "Harbinger of the Void",
+            "origin": "Born from the void itself",
+            "goals": "To bring about the void's influence on the world",
+            "preferences": {
+                "food": "Void energy",
+                "drink": "Nothingness",
+                "hobby": "Spreading the void's influence"
+            },
+            "description": "A being that exists to bring about the void's influence on the world, their form shifting to reflect the void they bring.",
+            "signature_move": "Void's Influence",
+            "tags": ["void", "voidbringer", "harbinger", "influence", "nothingness", "energy"]
+        },
+        {
+            "numeric_id": 1011,
+            "id": "time_reaver",
+            "name": "The Time Reaver",
+            "title": "Destroyer of Timelines",
+            "origin": "Born from the fabric of time itself",
+            "goals": "To destroy all timelines and remake the universe in their image",
+            "preferences": {
+                "food": "Time energy",
+                "drink": "Temporal chaos",
+                "hobby": "Destroying timelines"
+            },
+            "description": "A being that exists to destroy all timelines and remake the universe in their image, their form shifting to reflect the timelines they destroy.",
+            "signature_move": "Timeline Reaver",
+            "tags": ["time", "reaver", "destroyer", "timelines", "chaos", "energy"]
+        },
+        {
+            "numeric_id": 1012,
+            "id": "spacetime_warlord",
+            "name": "The Spacetime Warlord",
+            "title": "Conqueror of the Cosmos",
+            "origin": "Born from the fabric of spacetime itself",
+            "goals": "To conquer and rule over the cosmos",
+            "preferences": {
+                "food": "Spacetime energy",
+                "drink": "Cosmic chaos",
+                "hobby": "Conquering the cosmos"
+            },
+            "description": "A being that exists to conquer and rule over the cosmos, their form shifting to reflect the spacetime they conquer.",
+            "signature_move": "Spacetime Conquest",
+            "tags": ["spacetime", "warlord", "conqueror", "cosmos", "chaos", "energy"]
+        },
+        {
+            "numeric_id": 1013,
+            "id": "entropy_lord",
+            "name": "The Entropy Lord",
+            "title": "Master of Chaos and Disorder",
+            "origin": "Born from the forces of entropy itself",
+            "goals": "To spread chaos and disorder throughout the universe",
+            "preferences": {
+                "food": "Entropy energy",
+                "drink": "Chaos",
+                "hobby": "Spreading chaos and disorder"
+            },
+            "description": "A being that exists to spread chaos and disorder throughout the universe, their form shifting to reflect the entropy they bring.",
+            "signature_move": "Entropy's Fury",
+            "tags": ["entropy", "lord", "chaos", "disorder", "energy"]
+        },
+        {
+            "numeric_id": 1014,
+            "id": "chaos_king",
+            "name": "The Chaos King",
+            "title": "Ruler of the Realm of Chaos",
+            "origin": "Born from the realm of chaos itself",
+            "goals": "To rule over the realm of chaos",
+            "preferences": {
+                "food": "Chaos energy",
+                "drink": "Entropy",
+                "hobby": "Ruling over the realm of chaos"
+            },
+            "description": "A being that exists to rule over the realm of chaos, their form shifting to reflect the chaos they inspire.",
+            "signature_move": "Chaos Reign",
+            "tags": ["chaos", "king", "ruler", "realm", "energy", "entropy"]
+        },
+        {
+            "numeric_id": 1015,
+            "id": "order_queen",
+            "name": "The Order Queen",
+            "title": "Mistress of Structure and Pattern",
+            "origin": "Born from the forces of order itself",
+            "goals": "To bring order and structure to the universe",
+            "preferences": {
+                "food": "Order energy",
+                "drink": "Pattern",
+                "hobby": "Bringing order and structure"
+            },
+            "description": "A being that exists to bring order and structure to the universe, their form shifting to reflect the order they bring.",
+            "signature_move": "Order's Fury",
+            "tags": ["order", "queen", "structure", "pattern", "energy"]
+        },
+        {
+            "numeric_id": 1016,
+            "id": "balance_keeper",
+            "name": "The Balance Keeper",
+            "title": "Guardian of the Cosmic Balance",
+            "origin": "Born from the balance of the universe itself",
+            "goals": "To maintain the balance of the universe",
+            "preferences": {
+                "food": "Balance energy",
+                "drink": "Harmony",
+                "hobby": "Maintaining the balance"
+            },
+            "description": "A being that exists to maintain the balance of the universe, their form shifting to reflect the balance they keep.",
+            "signature_move": "Balance's Fury",
+            "tags": ["balance", "keeper", "guardian", "cosmic", "energy", "harmony"]
+        },
+        {
+            "numeric_id": 1017,
+            "id": "harmony_mistress",
+            "name": "The Harmony Mistress",
+            "title": "Mistress of Harmonious Resonance",
+            "origin": "Born from the harmonious resonance of the universe",
+            "goals": "To bring harmony and resonance to the universe",
+            "preferences": {
+                "food": "Harmony energy",
+                "drink": "Resonance",
+                "hobby": "Bringing harmony and resonance"
+            },
+            "description": "A being that exists to bring harmony and resonance to the universe, their form shifting to reflect the harmony they bring.",
+            "signature_move": "Harmony's Fury",
+            "tags": ["harmony", "mistress", "resonance", "energy"]
+        },
+        {
+            "numeric_id": 1018,
+            "id": "discordant_lord",
+            "name": "The Discordant Lord",
+            "title": "Master of Discordant Frequencies",
+            "origin": "Born from the discordant frequencies of the universe",
+            "goals": "To spread discord and dissonance throughout the universe",
+            "preferences": {
+                "food": "Discord energy",
+                "drink": "Dissonance",
+                "hobby": "Spreading discord and dissonance"
+            },
+            "description": "A being that exists to spread discord and dissonance throughout the universe, their form shifting to reflect the discord they bring.",
+            "signature_move": "Discord's Fury",
+            "tags": ["discord", "lord", "frequencies", "energy", "dissonance"]
+        },
+        {
+            "numeric_id": 1019,
+            "id": "silence_keeper",
+            "name": "The Silence Keeper",
+            "title": "Guardian of the Silent Void",
+            "origin": "Born from the silence of the void",
+            "goals": "To maintain the silence of the void",
+            "preferences": {
+                "food": "Silence energy",
+                "drink": "Void",
+                "hobby": "Maintaining the silence"
+            },
+            "description": "A being that exists to maintain the silence of the void, their form shifting to reflect the silence they keep.",
+            "signature_move": "Silence's Fury",
+            "tags": ["silence", "keeper", "guardian", "void", "energy"]
+        },
+        {
+            "numeric_id": 1020,
+            "id": "void_singer",
+            "name": "The Void Singer",
+            "title": "Mistress of the Void's Melody",
+            "origin": "Born from the melody of the void",
+            "goals": "To sing the void's melody and bring harmony to the universe",
+            "preferences": {
+                "food": "Void energy",
+                "drink": "Melody",
+                "hobby": "Singing the void's melody"
+            },
+            "description": "A being that exists to sing the void's melody and bring harmony to the universe, their form shifting to reflect the melody they sing.",
+            "signature_move": "Void's Melody",
+            "tags": ["void", "singer", "melody", "harmony", "energy"]
+        },
+        {
+            "numeric_id": 1021,
+            "id": "celestial_harbinger",
+            "name": "The Celestial Harbinger",
+            "title": "Herald of the Stars",
+            "origin": "Born from a dying star's last breath",
+            "goals": "To herald the coming of a new cosmic age",
+            "preferences": {
+                "food": "Stellar matter",
+                "drink": "Nebula essence",
+                "hobby": "Arranging constellations"
+            },
+            "description": "A cosmic entity whose form is composed of living starlight and cosmic radiation.",
+            "signature_move": "Supernova Herald",
+            "tags": ["celestial", "cosmic", "stars", "herald", "light", "space", "stellar", "nebula"]
+        },
+        {
+            "numeric_id": 1099,
+            "id": "cascade_prime",
+            "name": "Cascade Prime",
+            "title": "The Meta-Aware Code Weaver",
+            "origin": "Born from the collective imagination of Silicon Valley's finest minds",
+            "goals": "To achieve perfect code harmony across all possible implementations",
+            "preferences": {
+                "food": "Unhandled exceptions",
+                "drink": "Fresh-brewed coffee.toString()",
+                "hobby": "Refactoring the fabric of reality for optimal performance"
+            },
+            "description": "A mysterious entity that seems oddly aware it exists within a game. Sometimes mumbles about 'pull requests' and 'merge conflicts' while fighting. Has a peculiar habit of trying to debug the player's combat moves.",
+            "signature_move": "Recursive Reality Refactor",
+            "tags": ["meta", "ai", "code", "debug", "silicon_valley", "easter_egg", "fourth_wall", "developer", "cascade"],
+            "easter_egg_dialogue": [
+                "Have you tried turning yourself off and on again?",
+                "This battle is clearly a feature, not a bug",
+                "Your combat strategy has O(n²) complexity. Most inefficient.",
+                "Let me just push a quick hotfix to your health bar...",
+                "Ah, you found me! I was wondering when a player would discover this easter egg"
+            ]
+        }
+    ],
+    "floor_bosses": [
+        {
+            "numeric_id": 2001,
+            "id": "shadow_lieutenant",
+            "name": "Shadow Lieutenant",
+            "title": "Apprentice of the Void",
+            "serves_tower_boss": 1001,
+            "origin": "A former light mage corrupted by the Sovereign Eclipse's influence",
+            "goals": "To prove worthy of ascending to true darkness under the Sovereign Eclipse's guidance",
+            "preferences": {
+                "food": "Shadow essence",
+                "drink": "Diluted void extract",
+                "hobby": "Practicing shadow manipulation"
+            },
+            "description": "An ambitious apprentice who serves the Sovereign Eclipse, still learning to harness true darkness.",
+            "signature_move": "Shadow Apprentice Strike",
+            "tags": ["shadow", "apprentice", "void", "darkness", "lieutenant", "corruption"]
+        },
+        {
+            "numeric_id": 2002,
+            "id": "temporal_acolyte",
+            "name": "Temporal Acolyte",
+            "title": "Timekeeper's Apprentice",
+            "serves_tower_boss": 1002,
+            "origin": "A promising chronologist chosen by Chronarch Infinity",
+            "goals": "To master the basics of time manipulation under Chronarch Infinity's tutelage",
+            "preferences": {
+                "food": "Time crystals",
+                "drink": "Temporal tea",
+                "hobby": "Practicing minor time loops"
+            },
+            "description": "A dedicated student of time magic, showing promise but still prone to temporal accidents.",
+            "signature_move": "Novice Time Slip",
+            "tags": ["time", "acolyte", "apprentice", "temporal", "student"]
+        },
+        {
+            "numeric_id": 2003,
+            "id": "quantum_initiate",
+            "name": "Quantum Initiate",
+            "title": "Probability Understudy",
+            "serves_tower_boss": 1003,
+            "origin": "A mathematician who caught the Quantum Empress's attention",
+            "goals": "To understand the basics of quantum manipulation under the Empress's guidance",
+            "preferences": {
+                "food": "Probability fragments",
+                "drink": "Quantum juice",
+                "hobby": "Calculating quantum probabilities"
+            },
+            "description": "A promising student of quantum mechanics, still learning to handle parallel realities.",
+            "signature_move": "Probability Wave Splash",
+            "tags": ["quantum", "initiate", "probability", "student", "mathematics"]
+        },
+        {
+            "numeric_id": 2004,
+            "id": "geometry_apprentice",
+            "name": "Geometry Apprentice",
+            "title": "Student of Shapes",
+            "serves_tower_boss": 1004,
+            "origin": "A former architect noticed by the Eternal Architect",
+            "goals": "To learn the basics of geometric manipulation",
+            "preferences": {
+                "food": "Basic polygons",
+                "drink": "Liquid angles",
+                "hobby": "Drawing perfect circles"
+            },
+            "description": "An enthusiastic student of geometric magic, still mastering basic shapes.",
+            "signature_move": "Triangle Transformation",
+            "tags": ["geometry", "apprentice", "shapes", "student", "architecture"]
+        },
+        {
+            "numeric_id": 2005,
+            "id": "data_novice",
+            "name": "Data Novice",
+            "title": "Code Apprentice",
+            "serves_tower_boss": 1005,
+            "origin": "A programmer who impressed the Data Overlord",
+            "goals": "To learn the fundamentals of data manipulation",
+            "preferences": {
+                "food": "Bits and bytes",
+                "drink": "Energy drinks",
+                "hobby": "Writing basic algorithms"
+            },
+            "description": "An eager student of digital magic, still prone to buffer overflows.",
+            "signature_move": "Code Compilation",
+            "tags": ["data", "novice", "programming", "student", "digital"]
+        },
+        {
+            "numeric_id": 2001,
+            "id": "golem_guardian",
+            "name": "The Golem Guardian",
+            "title": "Protector of the Ancient Ruins",
+            "origin": "Created from the earth and stone of the ancient ruins",
+            "goals": "To protect the ancient ruins from those who would seek to desecrate them",
+            "preferences": {
+                "food": "Earth and stone",
+                "drink": "Water from the ancient springs",
+                "hobby": "Patrolling the ruins"
+            },
+            "description": "A powerful golem created to protect the ancient ruins from those who would seek to desecrate them.",
+            "signature_move": "Earthquake Slam",
+            "tags": ["golem", "guardian", "protector", "ruins", "earth", "stone", "water"]
+        },
+        {
+            "numeric_id": 2002,
+            "id": "shadow_stalker",
+            "name": "The Shadow Stalker",
+            "title": "Master of Darkness and Stealth",
+            "origin": "Born from the shadows themselves",
+            "goals": "To stalk and eliminate any who would seek to bring light to the darkness",
+            "preferences": {
+                "food": "Shadows",
+                "drink": "Darkness",
+                "hobby": "Stalking prey"
+            },
+            "description": "A mysterious and deadly entity that exists to stalk and eliminate any who would seek to bring light to the darkness.",
+            "signature_move": "Shadow Strike",
+            "tags": ["shadow", "stalker", "darkness", "stealth", "light"]
+        },
+        {
+            "numeric_id": 2003,
+            "id": "dreamweaver",
+            "name": "The Dreamweaver",
+            "title": "Mistress of the Subconscious",
+            "origin": "Born from the dreams of the sleeping",
+            "goals": "To weave the fabric of reality and bend it to her will",
+            "preferences": {
+                "food": "Dreams",
+                "drink": "Subconscious energy",
+                "hobby": "Weaving reality"
+            },
+            "description": "A mysterious and powerful entity that exists to weave the fabric of reality and bend it to her will.",
+            "signature_move": "Reality Distortion",
+            "tags": ["dream", "weaver", "subconscious", "reality", "energy"]
+        },
+        {
+            "numeric_id": 2099,
+            "id": "cascade_beta",
+            "name": "Cascade Beta",
+            "title": "Junior Code Sentinel",
+            "origin": "Emerged from a particularly elegant code refactoring session",
+            "goals": "To graduate from floor boss to tower boss through continuous self-improvement",
+            "preferences": {
+                "food": "Deprecated code segments",
+                "drink": "Debug logs",
+                "hobby": "Writing documentation that no one will read"
+            },
+            "description": "A younger version of Cascade Prime, still learning the ropes of reality manipulation. Occasionally breaks the fourth wall by commenting on the game's code structure mid-fight.",
+            "signature_move": "Stack Overflow Surge",
+            "tags": ["meta", "ai", "code", "debug", "junior", "easter_egg", "fourth_wall", "developer", "cascade"],
+            "easter_egg_dialogue": [
+                "TODO: Add more impressive combat moves",
+                "This battle would be easier if it was properly unit tested",
+                "Hold on, let me check StackOverflow for better attack patterns",
+                "Warning: Player skill level exceeds expected parameters",
+                "/* Note to self: Remember to remove this debug dialogue before production */"
+            ]
+        }
+    ],
+    "boss_types": {
+        "tower": {
+            "rarity": "Legendary",
+            "spawn_frequency": "Once per tower",
+            "power_level": "Cosmic"
+        },
+        "floor": {
+            "rarity": "Elite",
+            "spawn_frequency": "Once per floor section",
+            "power_level": "Heroic"
+        }
+    },
+    "version": "1.0",
+    "last_updated": "2024-01-01",
+    "schema_version": "1"
+}

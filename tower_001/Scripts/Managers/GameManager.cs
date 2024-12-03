@@ -11,6 +11,7 @@ using static System.Formats.Asn1.AsnWriter;
 public static class Globals
 {
 	public static GameManager Instance;
+
 }
 
 public partial class GameManager : Control, IManager
@@ -28,6 +29,24 @@ public partial class GameManager : Control, IManager
 	[Export]
 	public GameSystemTests _eventSystemTests;
 
+	[Export]
+	public PackedScene PanelType_Single;
+	[Export]
+	public PackedScene PanelType_Dual_Horizontal;
+	[Export]
+	public PackedScene PanelType_Multi_Horizontal;
+	[Export]
+	public PackedScene PanelType_Dual_Vertical;
+	[Export]
+	public PackedScene PanelType_Multi_Vertical;
+
+	private DynamicPanelController _panelController;
+	private PanelMenuIntegration _panelMenuIntegration;
+
+	// Add properties for new panel system
+	public DynamicPanelController PanelController => _panelController;
+	public PanelMenuIntegration PanelMenuIntegration => _panelMenuIntegration;
+
 	public override void _Ready()
 	{
 		Setup();
@@ -39,13 +58,11 @@ public partial class GameManager : Control, IManager
 		//set the rootnode to this object
 		RootNode = this;
 
+		_panelController = new DynamicPanelController();
+		_panelMenuIntegration = new PanelMenuIntegration();
 
-		if (Globals.Instance.RootNode != null)
-		{
-
-		}
-
-		//CreateLayout();
+		_panelController.RegisterContainer("LeftPanel", MenuPanelContainer_Left.ParentPanel);
+		_panelController.RegisterContainer("RightPanel", MenuPanelContainer_Right.ParentPanel);
 
 		// Initialize manager container
 		gameMangers = new ManagerContainer();
@@ -56,10 +73,19 @@ public partial class GameManager : Control, IManager
 		{
 			_eventSystemTests.Setup();
 		}
+
+		PrintNodeHierarchy(RootNode);
 	}
 
 
-	
+	private void PrintNodeHierarchy(Node node, string indent = "")
+	{
+		GD.Print($"{indent}{node.Name} ({node.GetType()})");
+		foreach (var child in node.GetChildren())
+		{
+			PrintNodeHierarchy(child, indent + "  ");
+		}
+	}
 
 	private void CreateLayout()
 	{
