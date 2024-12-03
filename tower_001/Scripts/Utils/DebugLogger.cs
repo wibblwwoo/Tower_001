@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using static GlobalEnums;
 
 /// <summary>
@@ -11,7 +12,12 @@ public static class DebugLogger
 {
 	// Controls whether logging is enabled
 	private static bool _isEnabled = false;
+	private static bool _fileLoggingEnabled = false;
+	private static readonly object _fileLock = new object();
 
+	// Logging paths
+	public static string BaseLogPath { get; private set; } = @"D:\Project_Output\Logging";
+	private static string _currentLogFile = string.Empty;
 
 	[Flags]
 	public enum LogCategory
@@ -47,6 +53,63 @@ public static class DebugLogger
 	}
 
 	/// <summary>
+	/// Sets the base directory path for log files
+	/// </summary>
+	public static void SetBaseLogPath(string path)
+	{
+		if (!string.IsNullOrEmpty(path))
+		{
+			BaseLogPath = path;
+			if (_fileLoggingEnabled)
+			{
+				InitializeLogFile(); // Reinitialize with new base path
+			}
+		}
+	}
+
+	/// <summary>
+	/// Enables or disables file logging
+	/// </summary>
+	public static void SetFileLogging(bool enabled)
+	{
+		_fileLoggingEnabled = enabled;
+		if (_fileLoggingEnabled)
+		{
+			InitializeLogFile();
+		}
+	}
+
+	/// <summary>
+	/// Initializes a new log file with timestamp in filename
+	/// </summary>
+	private static void InitializeLogFile()
+	{
+		try
+		{
+			// Create base directory if it doesn't exist
+			if (!Directory.Exists(BaseLogPath))
+			{
+				Directory.CreateDirectory(BaseLogPath);
+			}
+
+			// Generate timestamp for filename
+			string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");
+			_currentLogFile = Path.Combine(BaseLogPath, $"Debug-{timestamp}.log");
+
+			// Create the file and write header
+			using (StreamWriter writer = File.CreateText(_currentLogFile))
+			{
+				writer.WriteLine($"=== Debug Log Started at {DateTime.Now:yyyy-MM-dd HH:mm:ss} ===");
+			}
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"Failed to initialize log file: {ex.Message}");
+			_fileLoggingEnabled = false;
+		}
+	}
+
+	/// <summary>
 	/// Sets which categories of logs should be shown
 	/// </summary>
 	public static void SetLogCategories(LogCategory categories)
@@ -63,7 +126,16 @@ public static class DebugLogger
 		{
 			string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
 			string categoryName = category.ToString();
-			GD.Print($"[{timestamp}][{categoryName}] {message}");
+			string logMessage = $"[{timestamp}][{categoryName}] {message}";
+			
+			// Console logging
+			GD.Print(logMessage);
+			
+			// File logging
+			if (_fileLoggingEnabled)
+			{
+				WriteToLogFile(logMessage);
+			}
 		}
 	}
 
@@ -78,7 +150,15 @@ public static class DebugLogger
 		{
 			errorMessage += $"\nException: {ex.Message}\nStackTrace: {ex.StackTrace}";
 		}
+		
+		// Console logging
 		GD.PrintErr(errorMessage);
+		
+		// File logging
+		if (_fileLoggingEnabled)
+		{
+			WriteToLogFile(errorMessage);
+		}
 	}
 
 	/// <summary>
@@ -89,7 +169,40 @@ public static class DebugLogger
 		if (_isEnabled)
 		{
 			string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-			GD.PrintErr($"[{timestamp}][WARNING] {message}", "DebugLogger", "");
+			string warningMessage = $"[{timestamp}][WARNING] {message}";
+			
+			// Console logging
+			GD.PrintErr(warningMessage, "DebugLogger", "");
+			
+			// File logging
+			if (_fileLoggingEnabled)
+			{
+				WriteToLogFile(warningMessage);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Writes a message to the log file
+	/// </summary>
+	private static void WriteToLogFile(string message)
+	{
+		if (string.IsNullOrEmpty(_currentLogFile))
+		{
+			InitializeLogFile();
+		}
+
+		try
+		{
+			lock (_fileLock)
+			{
+				File.AppendAllText(_currentLogFile, message + Environment.NewLine);
+			}
+		}
+		catch (Exception ex)
+		{
+			GD.PrintErr($"Failed to write to log file: {ex.Message}");
+			_fileLoggingEnabled = false;
 		}
 	}
 
