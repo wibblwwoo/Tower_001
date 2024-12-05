@@ -16,11 +16,11 @@ public partial class PlayerManager : BaseManager
 
 	public PlayerManager()
 	{
-		base.Setup(); //
+		
 	}
 	public override void Setup()
 	{
-		
+		base.Setup(); 
 	}
 
 	protected override void RegisterEventHandlers()

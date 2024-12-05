@@ -10,7 +10,7 @@ using System.Linq;
 /// Core UI manager for the idle game.
 /// Handles the display and interaction with game elements in a streamlined manner.
 /// </summary>
-public partial class UIManager : BaseManager
+public partial class UIManager : BaseManager, IDisposable
 {
     /// <summary>
     /// The main UI scene root control node
@@ -40,32 +40,7 @@ public partial class UIManager : BaseManager
     /// </summary>
 	public UIManager()
 	{
-		List<IPanel> _uiitems = new List<IPanel>();
-		_UIControls = new Dictionary<string, IUIObject>();
-        _UIMenus = new Dictionary<string, List<IUIObject>>();
-
-		RegisterHandlers();
-
-		Utils.FindNodesWithClass(Globals.Instance.RootNode, _uiitems);
-
-		foreach (var item in _uiitems)
-        {
-
-            if (item is UIControlItem _ucontrol)
-            {
-                if (_ucontrol.ControlType == UIControlType.Container)
-                {
-                    _ucontrol.RegisterControl();
-                    _ucontrol.Visible = _ucontrol.IsVisibleByDefault;
-
-                    if (!_ucontrol.Visible)
-                    {
-                        GD.PrintErr(_ucontrol.Name + " " + _ucontrol.ObjectID + " is hidden ");
-
-                    }
-				}
-            }
-        }
+		
 	}
 
 
@@ -112,7 +87,34 @@ public partial class UIManager : BaseManager
     /// </summary>
 	public override void Setup()
     {
-        base.Setup();
+		List<IPanel> _uiitems = new List<IPanel>();
+		_UIControls = new Dictionary<string, IUIObject>();
+		_UIMenus = new Dictionary<string, List<IUIObject>>();
+
+		base.Setup();
+
+
+		Utils.FindNodesWithClass(Globals.Instance.RootNode, _uiitems);
+
+		foreach (var item in _uiitems)
+		{
+
+			if (item is UIControlItem _ucontrol)
+			{
+				if (_ucontrol.ControlType == UIControlType.Container)
+				{
+					_ucontrol.RegisterControl();
+					_ucontrol.Visible = _ucontrol.IsVisibleByDefault;
+
+					if (!_ucontrol.Visible)
+					{
+						GD.PrintErr(_ucontrol.Name + " " + _ucontrol.ObjectID + " is hidden ");
+
+					}
+				}
+			}
+		}
+
         
         // Get the root node from game manager
         _uiRoot = (Control)Globals.Instance.RootNode;
@@ -132,7 +134,7 @@ public partial class UIManager : BaseManager
     /// Registers event handlers for UI-related events.
     /// Sets up handlers for control registration and container assignment.
     /// </summary>
-	protected void RegisterHandlers()
+	protected override void RegisterEventHandlers()
 	{
         // Move event registration to Setup() where we know the event system exists
         if (Globals.Instance?.gameMangers?.Events == null)
@@ -200,12 +202,11 @@ public partial class UIManager : BaseManager
                 resultList?.Add(control as T);
             }
         }
-
         return matchingObjects;
     }
 
-	protected override void RegisterEventHandlers()
+	public void Dispose()
 	{
-
+		
 	}
 }

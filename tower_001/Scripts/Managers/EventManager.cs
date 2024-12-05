@@ -16,7 +16,8 @@ public partial class EventManager : IManager
 	/// Dictionary storing all event handlers mapped to their event types
 	/// </summary>
 	private readonly Dictionary<EventType, List<Delegate>> _eventHandlers = new();
-	
+
+	public IEnumerable<Type> Dependencies { get; }
 
 	/// <summary>
 	/// Queue for events that need to be processed asynchronously

@@ -13,6 +13,8 @@ public partial class ManagerContainer : IManagerContainer
 	public UIManager UI { get; private set; }
 	public HeartbeatManager Heartbeat { get; set; }
 
+	public UIResourceManager ResourceManager { get; set; }
+
 	public ManagerContainer()
 	{
 		InitializeManagers();
@@ -28,15 +30,17 @@ public partial class ManagerContainer : IManagerContainer
 
 	public void Setup()
 	{
+		ResourceManager = new UIResourceManager();
 		UI = new UIManager();
 		Player = new PlayerManager();
 		World = new WorldManager();
 
 		Heartbeat = new HeartbeatManager();
 		// EventManager already setup in InitializeManagers
+		UI.Setup();
+		ResourceManager.Setup();
 		Player.Setup();
 		World.Setup();
-		UI.Setup();
 	}
 }
 //public partial class ManagerContainer : IManagerContainer

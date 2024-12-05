@@ -29,10 +29,7 @@ public partial class HeartbeatManager : BaseManager
 
 	public HeartbeatManager()
 	{
-		_tickStopwatch = new Stopwatch();
-		_gameStartTime = DateTime.UtcNow;
-		Pause();
-		base.Setup();
+		
 	}
 
 	protected override void RegisterEventHandlers()
@@ -42,6 +39,10 @@ public partial class HeartbeatManager : BaseManager
 	}
 	public override void Setup()
 	{
+		base.Setup();
+		_tickStopwatch = new Stopwatch();
+		_gameStartTime = DateTime.UtcNow;
+		Pause();
 	}
 
 	/// <summary>
