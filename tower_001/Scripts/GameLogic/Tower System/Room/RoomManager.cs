@@ -11,8 +11,16 @@ using Tower_001.Scripts.GameLogic.Balance;
 /// </summary>
 public partial class RoomManager : BaseManager
 {
+
+	public override IEnumerable<Type> Dependencies => new[]
+	{
+		typeof(EventManager),
+		typeof(FloorManager)  // Rooms need Floor info
+    };
+	
+    
     // Fields
-    private readonly RoomConfiguration _config; // Configuration settings for room generation and difficulty
+	private readonly RoomConfiguration _config; // Configuration settings for room generation and difficulty
     private readonly Random _random; // Random number generator for selecting room types and room count
 
     /// <summary>

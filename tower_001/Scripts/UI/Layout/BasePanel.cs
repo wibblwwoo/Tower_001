@@ -9,6 +9,16 @@ public abstract partial class BasePanel : Control, IPanel
 
 	public string PanelId => _panelId;
 	public bool IsVisible => _isVisible;
+	protected BasePanel()
+	{
+		_isInitialized = false;
+		_isVisible = false;
+	}
+
+	public void SetPanelID(string panelID)
+	{
+		_panelId = panelID;
+	}
 
 	protected BasePanel(string panelId)
 	{
@@ -21,9 +31,6 @@ public abstract partial class BasePanel : Control, IPanel
 	{
 		if (_isInitialized) return;
 
-		// Set up basic control properties
-		CustomMinimumSize = new Vector2(150, 0);
-		SizeFlagsHorizontal = SizeFlags.Fill | SizeFlags.Expand;
 
 		_isInitialized = true;
 	}

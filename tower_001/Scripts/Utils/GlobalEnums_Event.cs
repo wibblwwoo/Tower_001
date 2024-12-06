@@ -45,9 +45,10 @@ public static partial class GlobalEnums
 		CharacterStatBuffRemoved = 503,
 		CharacterStatBuffExpired = 504,
 		CharacterStatThresholdCrossed = 505,
-		CharacterLevelUp = 506,
-		CharacterPrestige = 507,
-		CharacterAscension = 508,
+		CharacterStatThresholdReached = 506,
+		CharacterLevelUp = 507,
+		CharacterPrestige = 508,
+		CharacterAscension = 509,
 
 		// Combat and Reward Events (600-699)
 		CombatStarted = 600,
@@ -84,5 +85,13 @@ public static partial class GlobalEnums
 		ProgressionUpdated = 1005,
 
 		GameAction = 2000,
+
+		UIControlRegister = 4000,
+		UIControlAssignToContainer = 4003,
+
+		UIResourcePanelRegistration = 4000,
+
+
+		System_ManagerError = 5000,
 	}
 }

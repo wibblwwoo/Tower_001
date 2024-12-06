@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Runtime.CompilerServices;
+using Tower_001.Scripts.Events;
 using static GlobalEnums;
 
 public class BaseLevelingSystemTests : BaseTestSuite

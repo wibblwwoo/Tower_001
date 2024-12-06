@@ -1,0 +1,24 @@
+using static GlobalEnums;
+
+public class CharacterStatThresholdEventArgs : GameEventArgs
+{
+    public string CharacterId { get; }
+    public StatType StatType { get; }
+    public float ThresholdPercent { get; }
+    public float CurrentValue { get; }
+    public bool CrossingUp { get; }
+
+    public CharacterStatThresholdEventArgs(
+        string characterId,
+        StatType statType,
+        float thresholdPercent,
+        float currentValue,
+        bool crossingUp)
+    {
+        CharacterId = characterId;
+        StatType = statType;
+        ThresholdPercent = thresholdPercent;
+        CurrentValue = currentValue;
+        CrossingUp = crossingUp;
+    }
+}

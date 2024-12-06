@@ -11,11 +11,23 @@ using static GlobalEnums;
 
 public partial class TowerManager : BaseManager
 {
+
+	public override IEnumerable<Type> Dependencies => new[]
+	{
+		typeof(EventManager)
+	};
+
+
 	private Dictionary<string, TowerData> _towers = new();
 	private TowerProgressionManager _progressionManager;
-    private TowerEventManager _eventManager;
+    private TowerEventManager _TowerEventManager; // changed name as it was confusing with 2 eventmanagers
     private TowerDifficultyManager _difficultyManager;
     private TowerDataManager _dataManager;
+
+	public TowerManager(EventManager eventManager)
+	{
+		this.EventManager = eventManager;	
+	}
 
 	/// <summary>
 	/// Sets up the TowerManager, including event registration and data loading.
@@ -23,6 +35,7 @@ public partial class TowerManager : BaseManager
 
 	public override void Setup()
 	{
+		
 		base.Setup();
 		RegisterEventHandlers();
 		InitializeSubManagers();
@@ -37,10 +50,10 @@ public partial class TowerManager : BaseManager
 	private void InitializeSubManagers()
 	{
 		_progressionManager = new TowerProgressionManager(EventManager, _towers);
-        _eventManager = new TowerEventManager(EventManager, _towers);
+		_TowerEventManager = new TowerEventManager(EventManager, _towers);
         _difficultyManager = new TowerDifficultyManager(_towers);
         _dataManager = new TowerDataManager(EventManager, _towers);
-        _eventManager.RegisterEventHandlers();
+		_TowerEventManager.RegisterEventHandlers();
 	}
 
 	/// <summary>

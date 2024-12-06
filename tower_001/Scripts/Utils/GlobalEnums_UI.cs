@@ -21,15 +21,26 @@ public static partial class GlobalEnums
 		Controls,
 		Graphics,
 		Audio,
-		MainMenu
+		MainMenu,
+		GameSettings,
+		TowerSettings,
+		CharacterSettings,
+
+
+
+
+		TowerSettings_Floor,
+		TowerSettings_Room,
+		TowerSettings_Events,
+		TowerSettings_Style,
+		TowerSettings_Tower,
 	}
-	public enum PanelType
+	public enum UIPanelEvent
 	{
-		Single,     // Full middle section
-		Dual_Horizontal, // Split middle section horizontal
-		Multi_Horizontal, // 3+ panels horizontal
-		Dual_Vertical, // Split middle section horizontal
-		Multi_Vertical // 3+ panels horizontal	
+		Register,
+		Visible,
+		Hide,
+		Refresh,
 	}
 
 	public enum PanelPosition
@@ -37,6 +48,32 @@ public static partial class GlobalEnums
 		Top,
 		Middle,
 		Bottom
+	}
+
+	public enum PanelSection
+	{
+		Left,
+		Right,
+	}
+
+	public enum UIControlType
+	{
+		Container,
+		Control,
+	}
+
+	public enum UIControlDataContainer
+	{
+
+		Resource_Top_HBox
+	}
+	public enum UIElementType
+	{
+		ResourcePanel,
+		InventorySlot,
+		MenuButton,
+		DialogWindow,
+		// Add other types as needed
 	}
 
 }

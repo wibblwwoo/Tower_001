@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using Tower_001.Scripts.Events;
 using static GlobalEnums;
 
 /// <summary>
@@ -11,6 +12,7 @@ public partial class ProgressionManager : IManager
 {
 	private readonly Dictionary<string, ProgressionData> _characterProgress;
 	private AscensionManager ascensionManager;
+	public IEnumerable<Type> Dependencies { get; }
 
 	private ProgressionConfig _config;
 	private readonly EventManager _eventManager;

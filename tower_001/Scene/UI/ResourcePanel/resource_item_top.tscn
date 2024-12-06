@@ -1,0 +1,30 @@
+[gd_scene load_steps=3 format=3 uid="uid://cf02r8l17k3p2"]
+
+[ext_resource type="Script" path="res://Scripts/UI/Controls/ResourceControl.cs" id="1_fpxd6"]
+[ext_resource type="Texture2D" uid="uid://clc2o3k3n1xjx" path="res://icon.svg" id="2_1wk77"]
+
+[node name="ResourceItem_Top" type="Panel" node_paths=PackedStringArray("_icon", "_valueLabel")]
+size_flags_horizontal = 3
+script = ExtResource("1_fpxd6")
+_icon = NodePath("HBoxContainer/TextureRect")
+_valueLabel = NodePath("HBoxContainer/testlabel")
+ObjectID = "Resource_1"
+PanelSection = 1
+ControlType = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer"]
+layout_mode = 2
+texture = ExtResource("2_1wk77")
+expand_mode = 2
+
+[node name="testlabel" type="Label" parent="HBoxContainer"]
+layout_mode = 2
+text = "dssadfsafdsadf"

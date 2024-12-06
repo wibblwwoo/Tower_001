@@ -1,30 +1,22 @@
-[gd_scene load_steps=9 format=3 uid="uid://b6s1avw7v6dvf"]
+[gd_scene load_steps=7 format=3 uid="uid://b6s1avw7v6dvf"]
 
 [ext_resource type="Script" path="res://Scripts/Managers/GameManager.cs" id="1_eg8jl"]
-[ext_resource type="PackedScene" uid="uid://b1umxi5dyone8" path="res://Scene/Panels/SinglePanel.tscn" id="2_e7u2q"]
-[ext_resource type="Script" path="res://Scripts/UI/Layout/MenuPanelContainer.cs" id="3_cd7qw"]
-[ext_resource type="PackedScene" uid="uid://8ww8twaunm0l" path="res://Scene/Panels/DualPanel.tscn" id="3_q8vt2"]
-[ext_resource type="PackedScene" uid="uid://c4k2r8y3n5m6p" path="res://Scene/Panels/MultiPanel.tscn" id="4_ivc05"]
-[ext_resource type="PackedScene" uid="uid://d0uvjg4krcek0" path="res://Scene/Panels/VerticalSplitPanel.tscn" id="5_cnk0r"]
-[ext_resource type="PackedScene" uid="uid://c6uejn3lhmvdt" path="res://Scene/Panels/TripleVerticalPanel.tscn" id="6_xcjrp"]
+[ext_resource type="Script" path="res://Scripts/Managers/Game Managers/ResourcePanelManager.cs" id="4_gga4b"]
+[ext_resource type="Script" path="res://Scripts/UI/Controls/UIControlItem.cs" id="4_gt2yn"]
+[ext_resource type="Texture2D" uid="uid://clc2o3k3n1xjx" path="res://icon.svg" id="5_uedmv"]
+[ext_resource type="PackedScene" uid="uid://cf02r8l17k3p2" path="res://Scene/UI/ResourcePanel/resource_item_top.tscn" id="5_vuqwm"]
 [ext_resource type="Script" path="res://Scripts/Unit Testing/Game System Tests/GameSystemTests.cs" id="8_5idim"]
 
-[node name="MainControl" type="Control" node_paths=PackedStringArray("MenuPanelContainer_Left", "MenuPanelContainer_Right", "_eventSystemTests")]
+[node name="MainControl" type="Control" node_paths=PackedStringArray("_eventSystemTests")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_eg8jl")
-MenuPanelContainer_Left = NodePath("Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel/VBoxContainer")
-MenuPanelContainer_Right = NodePath("Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer")
 _eventSystemTests = NodePath("UnitTests")
-PanelType_Single = ExtResource("2_e7u2q")
-PanelType_Dual_Horizontal = ExtResource("3_q8vt2")
-PanelType_Multi_Horizontal = ExtResource("4_ivc05")
-PanelType_Dual_Vertical = ExtResource("5_cnk0r")
-PanelType_Multi_Vertical = ExtResource("6_xcjrp")
 
 [node name="UnitTests" type="Node" parent="."]
 script = ExtResource("8_5idim")
@@ -37,6 +29,7 @@ anchor_bottom = 1.0
 offset_left = 0.23999
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="Control2"]
 layout_mode = 1
@@ -45,12 +38,15 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
 [node name="MiddleControl_Panel" type="Panel" parent="Control2/MarginContainer"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(150, 500)
 layout_mode = 2
+mouse_filter = 1
 
 [node name="HBoxContainer_Middle_Panel" type="HBoxContainer" parent="Control2/MarginContainer/MiddleControl_Panel"]
+custom_minimum_size = Vector2(150, 500)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -59,34 +55,44 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Panel" type="Panel" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(150, 500)
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 1
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel" node_paths=PackedStringArray("_topPanel", "_middlePanel", "_middleCenterContainer", "_bottomPanel", "_parentPanel")]
+[node name="VBoxContainer" type="VBoxContainer" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel"]
+custom_minimum_size = Vector2(150, 500)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("3_cd7qw")
-_topPanel = NodePath("Middle_Top_Panel")
-_middlePanel = NodePath("Middle")
-_middleCenterContainer = NodePath("Middle/Middle_Middle_VBoxContainer")
-_bottomPanel = NodePath("Middle_Bottom_Panel")
-_parentPanel = NodePath("../../..")
 
 [node name="Middle_Top_Panel" type="Panel" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
+script = ExtResource("4_gt2yn")
+ObjectID = "Middle_Top_Panel"
+PanelSection = 1
+IsVisibleByDefault = true
 
-[node name="Middle" type="Panel" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer"]
-custom_minimum_size = Vector2(0, 80)
-layout_mode = 2
-size_flags_vertical = 3
+[node name="ResourcePanelManager" type="Panel" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle_Top_Panel" node_paths=PackedStringArray("_resourceContainer")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("4_gga4b")
+MAX_RESOURCES = 6
+_resourceContainer = NodePath("Middle_Top_Panel_ResourcePanel")
+_ResourceItem = ExtResource("5_vuqwm")
+ObjectID = "ResourcePanelManager"
+PanelSection = 1
+IsVisibleByDefault = true
 
-[node name="Middle_Middle_VBoxContainer" type="VBoxContainer" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle"]
+[node name="Middle_Top_Panel_ResourcePanel" type="HBoxContainer" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle_Top_Panel/ResourcePanelManager"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -94,25 +100,64 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Button" type="Button" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle/Middle_Middle_VBoxContainer"]
+[node name="ResourceItem_Top" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle_Top_Panel/ResourcePanelManager/Middle_Top_Panel_ResourcePanel" instance=ExtResource("5_vuqwm")]
 layout_mode = 2
-text = "tesitng"
 
-[node name="Button2" type="Button" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle/Middle_Middle_VBoxContainer"]
+[node name="Panel2" type="Panel" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle_Top_Panel/ResourcePanelManager/Middle_Top_Panel_ResourcePanel"]
 layout_mode = 2
-text = "tesitng"
+size_flags_horizontal = 3
 
-[node name="Button3" type="Button" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle/Middle_Middle_VBoxContainer"]
-layout_mode = 2
-text = "tesitng"
+[node name="HBoxContainer" type="HBoxContainer" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle_Top_Panel/ResourcePanelManager/Middle_Top_Panel_ResourcePanel/Panel2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="Middle_Bottom_Panel" type="Panel" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer"]
-clip_contents = true
-custom_minimum_size = Vector2(0, 40)
+[node name="TextureRect" type="TextureRect" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle_Top_Panel/ResourcePanelManager/Middle_Top_Panel_ResourcePanel/Panel2/HBoxContainer"]
 layout_mode = 2
+texture = ExtResource("5_uedmv")
+expand_mode = 2
+
+[node name="testlabel" type="Label" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle_Top_Panel/ResourcePanelManager/Middle_Top_Panel_ResourcePanel/Panel2/HBoxContainer"]
+layout_mode = 2
+text = "dssadfsafdsadf"
 
 [node name="CenterContainer" type="CenterContainer" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer"]
+visible = false
 layout_mode = 2
+
+[node name="Middle_Middle_Panel" type="Panel" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 9)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("4_gt2yn")
+ObjectID = "Middle_Middle_Panel"
+PanelLocation = 1
+PanelSection = 1
+IsVisibleByDefault = true
+
+[node name="Middle_Middle_Panel_Vbox" type="VBoxContainer" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer/Middle_Middle_Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("4_gt2yn")
+ObjectID = "Middle_Middle_Panel_Vbox"
+PanelLocation = 1
+PanelSection = 1
+
+[node name="Middle_Right_Panel" type="Panel" parent="Control2/MarginContainer/MiddleControl_Panel/HBoxContainer_Middle_Panel/Panel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+script = ExtResource("4_gt2yn")
+ObjectID = "Middle_Right_Panel"
+PanelLocation = 2
+PanelSection = 1
+IsVisibleByDefault = true
 
 [node name="LeftControl" type="Control" parent="Control2"]
 layout_mode = 1
@@ -149,23 +194,20 @@ custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel" node_paths=PackedStringArray("_topPanel", "_middlePanel", "_middleCenterContainer", "_bottomPanel", "_parentPanel")]
+[node name="VBoxContainer" type="VBoxContainer" parent="Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("3_cd7qw")
-_topPanel = NodePath("Left_Top_Panel")
-_middlePanel = NodePath("Middle")
-_middleCenterContainer = NodePath("Middle/VBoxContainer")
-_bottomPanel = NodePath("Left_Bottom")
-_parentPanel = NodePath("../../..")
 
 [node name="Left_Top_Panel" type="Panel" parent="Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
+script = ExtResource("4_gt2yn")
+ObjectID = "Left_Top_Panel"
+IsVisibleByDefault = true
 
 [node name="Middle" type="Panel" parent="Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel/VBoxContainer"]
 custom_minimum_size = Vector2(0, 80)
@@ -180,6 +222,10 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 alignment = 1
+script = ExtResource("4_gt2yn")
+ObjectID = "Left_Middle_Vbox"
+PanelLocation = 1
+IsVisibleByDefault = true
 
 [node name="Left_Middle_CenterContainer" type="CenterContainer" parent="Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel/VBoxContainer/Middle"]
 visible = false
@@ -194,6 +240,10 @@ grow_vertical = 2
 clip_contents = true
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
+script = ExtResource("4_gt2yn")
+ObjectID = "Left_Bottom"
+PanelLocation = 2
+IsVisibleByDefault = true
 
 [node name="CenterContainer" type="CenterContainer" parent="Control2/LeftControl/MarginContainer/LeftControl_Panel/HBoxContainer_Left_Panel/Panel/VBoxContainer"]
 layout_mode = 2

@@ -86,17 +86,6 @@ public partial class GameSystemTests : Node
 		DebugLogger.SetLogging(true);
 		DebugLogger.SetLogCategories(Logging_Category);
 
-		//foreach (LogCategory _LogCategory in Enum.GetValues(typeof(LogCategory)))
-		//{
-
-		//	if ((Logging_Category & _LogCategory) != 0)
-		//	{
-
-		//		DebugLogger.SetLogCategories(_LogCategory);
-		//	}
-
-		//}
-
 		
 		RunAllTests();
 	}
@@ -106,14 +95,13 @@ public partial class GameSystemTests : Node
 		//Example of running a specific category with only certain test types
 
 
-		//if (_testConfig.)
-		//_characterSystemTests.RunAllTests();
+		_characterSystemTests.RunAllTests();
 
-		//_baseLevelingSystemTests.RunAllTests();
+		_baseLevelingSystemTests.RunAllTests();
 
-		//_prestigeSystemTests.RunAllTests();
+		_prestigeSystemTests.RunAllTests();
 
-		//_ascensionSystemTests.RunAllTests();
+		_ascensionSystemTests.RunAllTests();
 
 		_towerSystemTests.RunAllTests();
 
@@ -122,15 +110,15 @@ public partial class GameSystemTests : Node
 		_roomSystemTests.RunAllTests();
 
 
-		//_eventSystemTests.RunAllTests();
+		_eventSystemTests.RunAllTests();
 
-		//_resourceStorageTests.RunAllTests();
+		_resourceStorageTests.RunAllTests();
 
-		//_resourceCollectorTests.RunAllTests();	
+		_resourceCollectorTests.RunAllTests();	
 
-		//_towerProgressionChainTests.RunAllTests();
+		_towerProgressionChainTests.RunAllTests();
 
-		//_largeScaleProgressionTestsv2.RunAllTests();
+		_largeScaleProgressionTestsv2.RunAllTests();
 		_towerCompletionPersistenceTest.RunAllTests();
 	}
 

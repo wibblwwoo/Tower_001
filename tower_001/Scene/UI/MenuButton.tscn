@@ -1,0 +1,3 @@
+[gd_scene format=3 uid="uid://dbj6foprlsq3d"]
+
+[node name="MenuButton" type="Node2D"]

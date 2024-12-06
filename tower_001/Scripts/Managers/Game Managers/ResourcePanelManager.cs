@@ -30,6 +30,8 @@ public partial class ResourcePanelManager : UIControlItem, IMenu
 	private void InitializeResourceControls()
 	{
 
+		//var _resourceItem = Globals.Instance.gameMangers.ResourceManager.GetUIResource(GlobalEnums.UIElementType.ResourcePanel, "resource_item_top");
+
 		var _resourceItem = Globals.Instance.gameMangers.ResourceManager.GetUIResource(GlobalEnums.UIElementType.ResourcePanel, "resource_item_top");
 
 		for (int i = 1; i <= MAX_RESOURCES; i++)

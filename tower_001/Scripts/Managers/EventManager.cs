@@ -19,6 +19,7 @@ public partial class EventManager : IManager
 
 	public IEnumerable<Type> Dependencies { get; }
 
+
 	/// <summary>
 	/// Queue for events that need to be processed asynchronously
 	/// </summary>

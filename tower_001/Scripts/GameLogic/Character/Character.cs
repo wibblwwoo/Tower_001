@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Tower_001.Scripts.Events;
 using static GlobalEnums;
 
 /// <summary>
