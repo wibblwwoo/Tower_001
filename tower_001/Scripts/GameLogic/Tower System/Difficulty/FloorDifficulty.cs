@@ -9,6 +9,18 @@ using Tower_001.Scripts.GameLogic.Balance;
 /// Represents the difficulty configuration for a floor, including scaling factors, modifiers, and adjustments for specific conditions.
 /// Provides functionality to calculate final difficulty values for rooms, floors, and bosses based on various parameters.
 /// </summary>
+/// <remarks>
+/// Dependencies and Usage:
+/// - Used by: FloorManager, RoomGenerator, TowerManager
+/// - Related Systems: Room generation, Enemy scaling, Reward calculation
+/// - Configuration: Utilizes GameBalanceConfig for scaling factors and base difficulty values
+/// - Data Flow: Processes floor parameters to determine difficulty values for rooms and encounters
+/// - Core Features:
+///   * Floor progression scaling
+///   * Room-type specific difficulty adjustments
+///   * Level-based scaling
+///   * Boss and mini-boss multipliers
+/// </remarks>
 public class FloorDifficulty
 {
 	// Properties

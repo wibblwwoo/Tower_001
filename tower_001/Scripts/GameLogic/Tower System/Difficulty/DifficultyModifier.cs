@@ -7,6 +7,19 @@ using static GlobalEnums;
 /// Represents a modifier applied to difficulty calculations, supporting additive, multiplicative, and complex adjustments.
 /// Includes support for conditions and expiration logic.
 /// </summary>
+/// <remarks>
+/// Dependencies and Usage:
+/// - Used by: FloorDifficulty, RoomGenerator, DifficultyManager
+/// - Related Systems: Combat calculation, Status effects, Buff/Debuff system
+/// - Configuration: References GameBalanceConfig for modifier limits and scaling
+/// - Data Flow: Modifies difficulty values through various calculation methods
+/// - Core Features:
+///   * Additive and multiplicative modifications
+///   * Temporary and permanent effects
+///   * Priority-based application
+///   * Conditional activation
+///   * Time-based expiration
+/// </remarks>
 public class DifficultyModifier
 {
 	/// <summary>
