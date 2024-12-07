@@ -68,7 +68,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
                 multiplier: GameBalanceConfig.IdleCharacterStats.BaseMultiplier,
                 experience: 0,
                 level: GameBalanceConfig.IdleCharacterStats.InitialLevel, statType
-			);
+            );
 
             // Initialize modifier dictionary for this stat
         }
@@ -271,6 +271,57 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
             
             return baseGainRate * GetStatValue(statType) * stat.Level * 
                    GameBalanceConfig.IdleCharacterStats.IdleGainMultiplier * statMultiplier;
+        }
+
+        /// <summary>
+        /// Sets the level of all stats to the specified level
+        /// </summary>
+        /// <param name="newLevel">The target level to set</param>
+        public void SetLevel(int newLevel)
+        {
+            foreach (var stat in _stats.Values)
+            {
+                var oldValue = GetStatValue(stat.Type);
+                stat.SetLevel(newLevel);
+                stat.SetBaseValue(stat.BaseValue * (float)Math.Pow(GameBalanceConfig.IdleCharacterStats.LevelUpStatMultiplier, newLevel - stat.Level));
+                
+                // Raise level up event with proper event args
+                Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+                    EventType.CharacterStatLevelUp,
+                    new CharacterStatLevelEventArgs(
+                        _characterId,
+                        stat.Type,
+                        newLevel
+                    )
+                );
+            }
+        }
+
+        /// <summary>
+        /// Updates the stat system, processing modifiers and other time-based changes
+        /// </summary>
+        public void Update()
+        {
+            UpdateModifiers();
+        }
+
+        /// <summary>
+        /// Gets all modifiers for all stats
+        /// </summary>
+        public IEnumerable<StatModifier> GetAllModifiers()
+        {
+            return _modifiers.Values.SelectMany(modifiers => modifiers.Values);
+        }
+
+        /// <summary>
+        /// Gets all stats for the character
+        /// </summary>
+        public Dictionary<StatType, float> GetAllStats()
+        {
+            return _stats.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.CalculateCurrentValue()
+            );
         }
 
         // TODO: Add remaining functionality

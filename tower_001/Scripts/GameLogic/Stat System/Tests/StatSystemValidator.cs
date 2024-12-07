@@ -231,7 +231,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem.Tests
                 foreach (var (id, source, type, value, duration) in testCases)
                 {
                     // Create and apply modifier to both systems
-                    var modifier = new StatModifier(id, source, type, value, duration);
+                    var modifier = new StatModifier(id, source, stat, type, value, duration);
                     _oldSystem.AddModifier(stat, id, modifier);
                     _newSystem.AddModifier(stat, id, modifier);
 
