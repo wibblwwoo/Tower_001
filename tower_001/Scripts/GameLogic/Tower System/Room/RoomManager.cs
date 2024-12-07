@@ -4,24 +4,28 @@ using static GlobalEnums;
 using System.Collections.Generic;
 using System.Linq;
 using Tower_001.Scripts.GameLogic.Balance;
+using Tower.GameLogic.Core;
+
 /// <summary>
 /// Manages room instances and their lifecycle within a floor.
 /// Handles room generation, state transitions, and difficulty scaling.
 /// Integrates with the event system for notifying about room events.
+/// 
+/// Dependencies and Usage:
+/// - Used by: FloorManager, TowerManager
+/// - Uses: EventManager
+/// - Events: RoomEventArgs
 /// </summary>
 public partial class RoomManager : BaseManager
 {
-
-	public override IEnumerable<Type> Dependencies => new[]
-	{
-		typeof(EventManager),
-		typeof(FloorManager)  // Rooms need Floor info
+    public override IEnumerable<Type> Dependencies => new[]
+    {
+        typeof(EventManager),
+        typeof(FloorManager)  // Rooms need Floor info
     };
-	
     
     // Fields
-	private readonly RoomConfiguration _config; // Configuration settings for room generation and difficulty
-    private readonly Random _random; // Random number generator for selecting room types and room count
+    private readonly RoomConfiguration _config; // Configuration settings for room generation and difficulty
 
     /// <summary>
     /// Constructor for the RoomManager class, initializing the event manager, configuration, and random generator.
@@ -30,8 +34,8 @@ public partial class RoomManager : BaseManager
     public RoomManager()
     {
         _config = new RoomConfiguration(); // Initializes the configuration for room generation
-        _random = new Random(); // Initializes the random number generator
     }
+
     /// <summary>
     /// Registers event handlers for room-related events.
     /// </summary>
@@ -95,14 +99,14 @@ public partial class RoomManager : BaseManager
     }
 
     /// <summary>
-    /// Generates a normal floor with multiple rooms. This method creates a set of rooms based on the floor�s properties.
+    /// Generates a normal floor with multiple rooms. This method creates a set of rooms based on the floor's properties.
     /// </summary>
     /// <param name="floor">The floor data for generating normal rooms.</param>
     /// <returns>A list of generated room data.</returns>
     private List<RoomData> GenerateNormalFloor(FloorData floor)
     {
         // Randomly decide how many rooms to generate for this floor
-        int roomCount = _random.Next(_config.MinRoomsPerFloor, _config.MaxRoomsPerFloor + 1);
+        int roomCount = RandomManager.Instance.Next(_config.MinRoomsPerFloor, _config.MaxRoomsPerFloor + 1);
         var rooms = new List<RoomData>();
         var lastRoomPositions = new Dictionary<RoomType, int>(); // Keeps track of the last position of each room type
 
@@ -133,7 +137,7 @@ public partial class RoomManager : BaseManager
         }
 
         // Generate the last room, which is either a Boss or Reward room
-        var finalRoomType = _random.Next(2) == 0 ? RoomType.Boss : RoomType.Reward;
+        var finalRoomType = RandomManager.Instance.Next(0, 2) == 0 ? RoomType.Boss : RoomType.Reward;
         var finalRoom = CreateRoom(
             finalRoomType,
             roomCount - 1,
@@ -143,7 +147,7 @@ public partial class RoomManager : BaseManager
 
         if (finalRoomType == RoomType.FloorBoss)
         {
-            finalRoom.BossId = Guid.NewGuid().ToString(); // Assign BossId if it�s a boss room
+            finalRoom.BossId = Guid.NewGuid().ToString(); // Assign BossId if it's a boss room
         }
 
         rooms.Add(finalRoom); // Add the final room to the list
@@ -161,6 +165,7 @@ public partial class RoomManager : BaseManager
 
         return rooms; // Return the list of generated rooms
     }
+
     /// <summary>
     /// Creates a new room with specified parameters.
     /// </summary>
@@ -177,7 +182,7 @@ public partial class RoomManager : BaseManager
             Name = $"Room {position + 1}", // Set room name based on position
             Type = type, // Set the room type (Combat, Boss, Reward, etc.)
             Position = new Vector2(position, 0), // Set the position of the room
-            BaseDifficulty = difficulty, // Set the room�s difficulty
+            BaseDifficulty = difficulty, // Set the room's difficulty
             IsRequired = true, // Indicate that this room is required in the floor layout
             State = RoomState.Locked, // Initially the room is locked
             ElementType = ElementType.None, // No specific element type for the room
@@ -220,6 +225,7 @@ public partial class RoomManager : BaseManager
         // Raise the "RoomStateChanged" event with the provided arguments
         Globals.Instance.gameMangers.Events.RaiseEvent(EventType.RoomStateChanged, args);
     }
+
     /// <summary>
     /// Raises the "RoomEventCompleted" event to notify the system that a room event has completed.
     /// This version does not include the completion time, which defaults to zero.
@@ -241,6 +247,7 @@ public partial class RoomManager : BaseManager
         // Raise the "RoomEventCompleted" event with the provided arguments
         Globals.Instance.gameMangers.Events.RaiseEvent(EventType.RoomEventCompleted, args);
     }
+
     /// <summary>
     /// Raises the "RoomEventCompleted" event to notify the system that a room event has completed.
     /// This version includes the completion time of the room event.
@@ -270,8 +277,6 @@ public partial class RoomManager : BaseManager
         Globals.Instance.gameMangers.Events.RaiseEvent(EventType.RoomPathDiscovered, args);
     }
 
-
-
     /// <summary>
     /// Selects a valid room type based on the current position in the floor and the room placement rules.
     /// Ensures room types are placed according to predefined spacing and distribution rules.
@@ -291,7 +296,7 @@ public partial class RoomManager : BaseManager
         float totalWeight = availableTypes.Sum(x => x.Value);
 
         // Generate a random number between 0 and totalWeight to select a room type based on its weight
-        float random = (float)(_random.NextDouble() * totalWeight);
+        float random = (float)(RandomManager.Instance.NextDouble() * totalWeight);
         float currentWeight = 0;
 
         // Iterate over the available room types and select one based on the random value and their weight
@@ -358,7 +363,6 @@ public partial class RoomManager : BaseManager
         return typeMultiplier * positionScaling * floorScaling;
     }
 
-
     private void OnRoomEntered(RoomEventArgs args)
     {
         DebugLogger.Log($"Entered room {args.RoomId} of type {args.Type} on floor {args.FloorId}", DebugLogger.LogCategory.Room);
@@ -383,5 +387,4 @@ public partial class RoomManager : BaseManager
     {
         DebugLogger.Log($"Room {args.RoomId} on floor {args.FloorId} failed", DebugLogger.LogCategory.Room);
     }
-
 }

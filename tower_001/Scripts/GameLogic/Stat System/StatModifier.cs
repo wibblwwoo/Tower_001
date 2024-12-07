@@ -7,6 +7,18 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
     /// Represents a modifier that affects a character's stat, such as a buff or debuff.
     /// Includes information about its source, type, value, and duration.
     /// </summary>
+    /// Dependencies and Usage:
+    /// - Used by: CharacterStats, BuffManager, StatusEffectSystem
+    /// - Related Systems: Combat system, Equipment system, Skill system
+    /// - Configuration: References GameBalanceConfig for modifier limits and scaling
+    /// - Data Flow: Applies modifications to base character stats through buff/debuff pipeline
+    /// - Core Features:
+    ///   * Flat and percentage-based modifications
+    ///   * Temporary and permanent buffs
+    ///   * Source tracking for stacking rules
+    ///   * Time-based expiration
+    ///   * Unique identifier system
+    /// </remarks>    
     public partial class StatModifier
     {
         /// <summary>

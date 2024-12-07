@@ -1,7 +1,7 @@
-
 using Godot;
 using System;
 using System.Collections.Generic;
+using Tower.GameLogic.Core;
 using static GlobalEnums;
 
 /// <summary>
@@ -13,7 +13,6 @@ public partial class FloorGenerator
 	// References to essential components.
 	private readonly FloorManager _floorManager; // Responsible for creating and managing floor data.
 	private readonly TowerData _towerData; // Contains information about the tower being generated.
-	private readonly Random _random; // Utility for randomized logic.
 
 	/// <summary>
 	/// Initializes the floor generator with necessary dependencies.
@@ -24,7 +23,6 @@ public partial class FloorGenerator
 	{
 		_floorManager = floorManager;
 		_towerData = towerData;
-		_random = new Random(); // Initialize the random number generator.
 	}
 
 	/// <summary>

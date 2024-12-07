@@ -6,6 +6,7 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Scripts\Interfaces\IResourceCollector.cs" />
     <Compile Remove="Scripts\UI\Menus\BaseMenu.cs" />
     <Compile Remove="Scripts\UI\Menus\CenteredMenu.cs" />
     <Compile Remove="Scripts\UI\Menus\GameLayoutMenu.cs" />
