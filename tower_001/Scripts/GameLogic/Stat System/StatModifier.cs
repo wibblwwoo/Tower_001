@@ -42,14 +42,24 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         public float Value { get; }
 
         /// <summary>
-        /// The expiration time of the modifier, or null if it is permanent.
+        /// The duration of the modifier.
         /// </summary>
-        public DateTime? ExpirationTime { get; }
+        public TimeSpan Duration { get; }
+
+        /// <summary>
+        /// The start time of the modifier.
+        /// </summary>
+        public DateTime StartTime { get; }
 
         /// <summary>
         /// Indicates whether the modifier is permanent (i.e., has no expiration time).
         /// </summary>
-        public bool IsPermanent => ExpirationTime == null;
+        public bool IsPermanent => Duration == TimeSpan.Zero;
+
+        /// <summary>
+        /// Indicates whether the modifier has expired.
+        /// </summary>
+        public bool IsExpired => !IsPermanent && DateTime.Now - StartTime >= Duration;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StatModifier"/> class.
@@ -67,14 +77,16 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
             Source = source;
             Type = type;
             Value = value;
-            ExpirationTime = duration.HasValue 
-                ? DateTime.UtcNow + duration.Value 
-                : null;
+            Duration = duration ?? TimeSpan.Zero;
+            StartTime = DateTime.Now;
         }
 
         /// <summary>
-        /// Indicates whether the modifier has expired.
+        /// Creates a permanent stat modifier
         /// </summary>
-        public bool IsExpired => !IsPermanent && ExpirationTime < DateTime.UtcNow;
+        public StatModifier(string id, string source, BuffType type, float value)
+            : this(id, source, type, value, TimeSpan.Zero)
+        {
+        }
     }
 }

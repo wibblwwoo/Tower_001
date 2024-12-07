@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Tower_001.Scripts.Events;
 using Tower_001.Scripts.GameLogic.Balance;
 using Tower_001.Scripts.GameLogic.StatSystem;
@@ -15,6 +16,7 @@ public partial class CharacterStats : Node
     // Core stat collection for managing character progression
     private Dictionary<StatType, StatData> _stats;    // Contains all stat data (base values, multipliers, exp, levels)
     private readonly string _characterId;             // Unique identifier for the character these stats belong to
+    private readonly Dictionary<StatType, Dictionary<string, StatModifier>> _modifiers = new();
 
     /// <summary>
     /// Initializes a new character stats instance with default values
@@ -58,7 +60,32 @@ public partial class CharacterStats : Node
     public float GetStatValue(StatType statType)
     {
         if (!_stats.ContainsKey(statType)) return 0;
-        return _stats[statType].CalculateCurrentValue();
+        
+        var stat = _stats[statType];
+        float baseValue = stat.CalculateCurrentValue();
+
+        // Calculate flat and percentage modifiers
+        float flatBonus = 0f;
+        float percentageBonus = 0f;
+
+        if (_modifiers.TryGetValue(statType, out var modifiers))
+        {
+            foreach (var mod in modifiers.Values.Where(m => !m.IsExpired))
+            {
+                switch (mod.Type)
+                {
+                    case BuffType.Flat:
+                        flatBonus += mod.Value;
+                        break;
+                    case BuffType.Percentage:
+                        percentageBonus += mod.Value;
+                        break;
+                }
+            }
+        }
+
+        // Apply modifiers
+        return Math.Max(0, (baseValue + flatBonus) * (1 + percentageBonus));
     }
 
     /// <summary>
@@ -175,4 +202,78 @@ public partial class CharacterStats : Node
         return summary;
     }
 
+    /// <summary>
+    /// Adds a modifier to a stat
+    /// </summary>
+    public void AddModifier(StatType statType, string id, StatModifier modifier)
+    {
+        if (!_modifiers.TryGetValue(statType, out var statModifiers))
+        {
+            statModifiers = new Dictionary<string, StatModifier>();
+            _modifiers[statType] = statModifiers;
+        }
+
+        float oldValue = GetStatValue(statType);
+        statModifiers[id] = modifier;
+        float newValue = GetStatValue(statType);
+
+        if (Math.Abs(oldValue - newValue) > 0.001f)
+        {
+            Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+                EventType.CharacterStatChanged,
+                new CharacterStatEventArgs(_characterId, statType, oldValue, newValue)
+            );
+        }
+    }
+
+    /// <summary>
+    /// Removes a modifier from a stat
+    /// </summary>
+    public void RemoveModifier(StatType statType, string id)
+    {
+        if (_modifiers.TryGetValue(statType, out var statModifiers))
+        {
+            float oldValue = GetStatValue(statType);
+            if (statModifiers.Remove(id))
+            {
+                float newValue = GetStatValue(statType);
+                if (Math.Abs(oldValue - newValue) > 0.001f)
+                {
+                    Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+                        EventType.CharacterStatChanged,
+                        new CharacterStatEventArgs(_characterId, statType, oldValue, newValue)
+                    );
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Updates all modifiers and removes expired ones
+    /// </summary>
+    public void UpdateModifiers()
+    {
+        foreach (var (statType, modifiers) in _modifiers)
+        {
+            float oldValue = GetStatValue(statType);
+            var expiredModifiers = modifiers.Where(m => m.Value.IsExpired).Select(m => m.Key).ToList();
+            
+            if (expiredModifiers.Any())
+            {
+                foreach (var id in expiredModifiers)
+                {
+                    modifiers.Remove(id);
+                }
+
+                float newValue = GetStatValue(statType);
+                if (Math.Abs(oldValue - newValue) > 0.001f)
+                {
+                    Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+                        EventType.CharacterStatChanged,
+                        new CharacterStatEventArgs(_characterId, statType, oldValue, newValue)
+                    );
+                }
+            }
+        }
+    }
 }
