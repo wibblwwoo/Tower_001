@@ -1,88 +1,114 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Tower_001.Scripts.GameLogic.Balance;
 using static GlobalEnums;
 
+/// <summary>
+/// Calculates stat bonuses and milestone rewards for character ascension.
+/// Uses configuration values from GameBalanceConfig for consistent game balance.
+/// </summary>
 public class AscensionBonusCalculator
 {
-	// Base bonus percentages per ascension level
-	private const float BASE_STAT_BONUS = 0.02f;         // 2% per level
-	private const float HEALTH_SCALING = 1.0f;           // 100% of base bonus
-	private const float ATTACK_SCALING = 1.0f;           // 100% of base bonus
-	private const float DEFENSE_SCALING = 1.0f;          // 100% of base bonus
-	private const float SPEED_SCALING = 1.0f;            // 100% of base bonus
-	private const float MANA_SCALING = 1.0f;             // 100% of base bonus
+    /// <summary>
+    /// Calculates the total stat bonuses for a given ascension level
+    /// </summary>
+    /// <param name="progress">Character's progression data</param>
+    /// <returns>Dictionary of stat bonuses (stat name -> bonus value)</returns>
+    public static Dictionary<string, float> CalculateAscensionBonuses(ProgressionData progress)
+    {
+        // Initialize dictionary to store bonuses for each stat type
+        var bonuses = new Dictionary<string, float>();
+        
+        // Calculate base percentage bonus based on ascension level
+        // Example: At level 5 with 2% per level = 10% base bonus
+        float baseBonus = GameBalanceConfig.Progression.BaseStatBonusPerLevel * progress.AscensionLevel;
 
-	// Milestone bonuses at specific ascension levels
-	private static readonly Dictionary<int, float> MILESTONE_BONUSES = new()
-	{
-		{ 5, 0.05f },   // +5% at ascension level 5
-        { 10, 0.10f },  // +10% at ascension level 10
-        { 25, 0.15f },  // +15% at ascension level 25
-        { 50, 0.25f },  // +25% at ascension level 50
-        { 100, 0.50f }  // +50% at ascension level 100
-    };
+        // Iterate through each stat type and calculate its specific bonus
+        // Each stat type can have a different scaling factor to balance progression
+        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        {
+            // Get the scaling multiplier for this stat type (e.g., Health might scale at 100%, Attack at 80%)
+            float scalingFactor = GetScalingFactor(statType);
+            
+            // Apply scaling factor to base bonus
+            // Example: 10% base bonus * 0.8 scaling = 8% actual bonus for this stat
+            float bonus = baseBonus * scalingFactor;
+            
+            // Store the calculated bonus in our dictionary
+            bonuses[statType.ToString()] = bonus;
+        }
 
-	public static Dictionary<string, float> CalculateAscensionBonuses(ProgressionData progress)
-	{
-		var bonuses = new Dictionary<string, float>();
-		float baseBonus = BASE_STAT_BONUS * progress.AscensionLevel;
+        // Log all calculations for debugging and balance analysis
+        LogBonusCalculations(progress.AscensionLevel, bonuses);
 
-		// Apply base bonus to all stats
-		foreach (StatType statType in Enum.GetValues(typeof(StatType)))
-		{
-			float scalingFactor = GetScalingFactor(statType);
-			float bonus = baseBonus * scalingFactor;
-			bonuses[statType.ToString()] = bonus;
-		}
+        return bonuses;
+    }
 
-		// Log the calculated bonuses
-		LogBonusCalculations(progress.AscensionLevel, bonuses);
+    /// <summary>
+    /// Gets the scaling factor for a specific stat type from GameBalanceConfig
+    /// </summary>
+    private static float GetScalingFactor(StatType statType)
+    {
+        // Map each stat type to its corresponding scaling factor from config
+        // This allows fine-tuning of how each stat scales with ascension
+        return statType switch
+        {
+            StatType.Health => GameBalanceConfig.Progression.HealthScaling,   // Health scaling (e.g., 100%)
+            StatType.Attack => GameBalanceConfig.Progression.AttackScaling,   // Attack scaling (e.g., 80%)
+            StatType.Defense => GameBalanceConfig.Progression.DefenseScaling, // Defense scaling (e.g., 90%)
+            StatType.Speed => GameBalanceConfig.Progression.SpeedScaling,     // Speed scaling (e.g., 70%)
+            StatType.Mana => GameBalanceConfig.Progression.ManaScaling,       // Mana scaling (e.g., 85%)
+            _ => GameBalanceConfig.Progression.DefaultStatScaling            // Default for any new stats
+        };
+    }
 
-		return bonuses;
-	}
+    /// <summary>
+    /// Logs detailed bonus calculations for debugging and balance analysis
+    /// </summary>
+    private static void LogBonusCalculations(long ascensionLevel, Dictionary<string, float> bonuses)
+    {
+        // Log individual stat bonuses with percentage format
+        // Example: "Health: +10.00%"
+        DebugLogger.Log($"\nAscension Level {ascensionLevel} Bonus Calculations:", 
+                       DebugLogger.LogCategory.Progress);
+        foreach (var bonus in bonuses)
+        {
+            DebugLogger.Log($"{bonus.Key}: +{bonus.Value:P2}", 
+                          DebugLogger.LogCategory.Progress);
+        }
 
-	private static float GetScalingFactor(StatType statType)
-	{
-		return statType switch
-		{
-			StatType.Health => HEALTH_SCALING,
-			StatType.Attack => ATTACK_SCALING,
-			StatType.Defense => DEFENSE_SCALING,
-			StatType.Speed => SPEED_SCALING,
-			StatType.Mana => MANA_SCALING,
-			_ => 1.0f  // Default scaling for any new stats
-		};
-	}
+        // Get all milestone bonuses that apply at the current ascension level
+        // Ordered by level to show progression of bonuses
+        var appliedMilestones = GameBalanceConfig.Progression.AscensionMilestoneBonuses
+            .Where(m => ascensionLevel >= m.Key)
+            .OrderBy(m => m.Key);
 
-	private static void LogBonusCalculations(long ascensionLevel, Dictionary<string, float> bonuses)
-	{
-		DebugLogger.Log($"\nAscension Level {ascensionLevel} Bonus Calculations:", DebugLogger.LogCategory.Progress);
-		foreach (var bonus in bonuses)
-		{
-			DebugLogger.Log($"{bonus.Key}: +{bonus.Value:P2}", DebugLogger.LogCategory.Progress);
-		}
+        // Log milestone bonuses if any are active
+        // Example: "Level 5: +5.00%"
+        if (appliedMilestones.Any())
+        {
+            DebugLogger.Log("\nApplied Milestone Bonuses:", 
+                          DebugLogger.LogCategory.Progress);
+            foreach (var milestone in appliedMilestones)
+            {
+                DebugLogger.Log($"Level {milestone.Key}: +{milestone.Value:P2}", 
+                              DebugLogger.LogCategory.Progress);
+            }
+        }
+    }
 
-		// Log milestone bonuses if applicable
-		var appliedMilestones = MILESTONE_BONUSES
-			.Where(m => ascensionLevel >= m.Key)
-			.OrderBy(m => m.Key);
-
-		if (appliedMilestones.Any())
-		{
-			DebugLogger.Log("\nApplied Milestone Bonuses:", DebugLogger.LogCategory.Progress);
-			foreach (var milestone in appliedMilestones)
-			{
-				DebugLogger.Log($"Level {milestone.Key}: +{milestone.Value:P2}", DebugLogger.LogCategory.Progress);
-			}
-		}
-	}
-
-	// Helper method to calculate cumulative milestone bonus
-	public static float GetMilestoneBonusTotal(long ascensionLevel)
-	{
-		return MILESTONE_BONUSES
-			.Where(m => ascensionLevel >= m.Key)
-			.Sum(m => m.Value);
-	}
+    /// <summary>
+    /// Calculates the total bonus from all achieved milestones
+    /// </summary>
+    /// <param name="ascensionLevel">Current ascension level</param>
+    /// <returns>Sum of all applicable milestone bonuses</returns>
+    public static float GetMilestoneBonusTotal(long ascensionLevel)
+    {
+        // Sum up all milestone bonuses for levels we've reached or passed
+        // Example: At level 12, sum bonuses for levels 5 (5%) and 10 (10%) = 15% total
+        return GameBalanceConfig.Progression.AscensionMilestoneBonuses
+            .Where(m => ascensionLevel >= m.Key)
+            .Sum(m => m.Value);
+    }
 }
