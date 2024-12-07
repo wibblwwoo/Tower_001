@@ -65,11 +65,13 @@ namespace Tower_001.Scripts.GameLogic.Character
             Value = 0;
             Duration = 0;  // Changed from null to 0 for non-nullable float
             TimeRemaining = 0;  // Changed from null to 0 for non-nullable float
+            AffectedStat = StatType.None; // Initialize with default value
         }
 
         public string Id { get; set; }
         public string Source { get; set; }
         public ModifierType Type { get; set; }
+        public StatType AffectedStat { get; set; }  // Add the StatType that this modifier affects
         public float Value { get; set; }
         public float Duration { get; set; }  // Changed from float? to float
         public float TimeRemaining { get; set; }  // Changed from float? to float

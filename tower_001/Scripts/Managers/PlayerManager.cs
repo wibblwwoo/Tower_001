@@ -6,6 +6,8 @@ using System.Linq;
 using System.Reflection.Emit;
 using System.Globalization;
 using Tower_001.Scripts.Events;
+using Tower_001.Scripts.GameLogic.StatSystem;
+using Tower_001.Scripts.GameLogic.Character;
 
 public partial class PlayerManager : BaseManager
 {
@@ -33,10 +35,6 @@ public partial class PlayerManager : BaseManager
         progressionManager = new ProgressionManager(this);
         progressionManager.Setup();
 
-        EventManager.AddHandler<CharacterStatEventArgs>(EventType.CharacterStatChanged, OnCharacterStatChanged);
-        EventManager.AddHandler<CharacterStatBuffEventArgs>(EventType.CharacterStatBuffApplied, OnCharacterStatBuffApplied);
-
-        // Register stat change handler
         EventManager.AddHandler<CharacterStatEventArgs>(
             EventType.CharacterStatChanged,
             OnCharacterStatChanged
@@ -81,10 +79,41 @@ public partial class PlayerManager : BaseManager
         return character.Id;
     }
 
-    private void ApplyBuffInternal(Character character, StatType statType, StatModifier modifier)
+    public float GetStatValue(string characterId, StatType statType)
     {
-        var stat = character.GetStat(statType);
-        stat.AddModifier(modifier);
+        if (_characters.TryGetValue(characterId, out var character))
+        {
+            return character.GetStatValue(statType);
+        }
+        return 0f;
+    }
+
+    public Dictionary<StatType, float> GetCharacterStats(string characterId)
+    {
+        if (_characters.TryGetValue(characterId, out var character))
+        {
+            var stats = new Dictionary<StatType, float>();
+            foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+            {
+                stats[statType] = character.GetStatValue(statType);
+            }
+            return stats;
+        }
+        return new Dictionary<StatType, float>();
+    }
+
+    private void ApplyBuffInternal(string characterId, StatModifier modifier)
+    {
+        if (_characters.TryGetValue(characterId, out var character))
+        {
+            character.AddModifier(modifier.StatType, modifier.Id, modifier);
+            
+            // Raise buff applied event
+            EventManager.RaiseEvent(
+                EventType.CharacterStatBuffApplied,
+                new CharacterStatBuffEventArgs(characterId, modifier.StatType, modifier)
+            );
+        }
     }
 
     public void ApplyBuff(string characterId, StatType statType, string source, BuffType buffType, float value, TimeSpan? duration = null)
@@ -94,12 +123,13 @@ public partial class PlayerManager : BaseManager
             var modifier = new StatModifier(
                 Guid.NewGuid().ToString(),
                 source,
+                statType,
                 buffType,
                 value,
                 duration
             );
 
-            ApplyBuffInternal(character, statType, modifier);
+            ApplyBuffInternal(characterId, modifier);
         }
     }
 
@@ -110,12 +140,13 @@ public partial class PlayerManager : BaseManager
             var modifier = new StatModifier(
                 buffId,
                 source,
+                statType,
                 buffType,
                 value,
                 duration
             );
 
-            ApplyBuffInternal(character, statType, modifier);
+            ApplyBuffInternal(characterId, modifier);
         }
     }
 
@@ -123,16 +154,48 @@ public partial class PlayerManager : BaseManager
     {
         if (_characters.TryGetValue(characterId, out var character))
         {
-            var stat = character.GetStat(statType);
-            stat.RemoveModifier(buffId);
+            character.RemoveModifier(statType, buffId);
+            
+            // Raise buff removed event
+            EventManager.RaiseEvent(
+                EventType.CharacterStatBuffRemoved,
+                new CharacterStatBuffEventArgs(characterId, statType, null)
+            );
         }
     }
 
-    public void Update()
+    // Overload that removes all modifiers with the given buffId regardless of stat type
+    public void RemoveBuff(string characterId, string buffId)
     {
-        foreach (var character in _characters.Values)
+        if (_characters.TryGetValue(characterId, out var character))
         {
-            character.Update();
+            var modifiers = character.GetStatModifiers(StatType.Attack)
+                .Concat(character.GetStatModifiers(StatType.Defense))
+                .Concat(character.GetStatModifiers(StatType.Health))
+                .Concat(character.GetStatModifiers(StatType.Speed))
+                .Where(m => m.Id == buffId)
+                .ToList();
+
+            foreach (var modifier in modifiers)
+            {
+                character.RemoveModifier(modifier.AffectedStat, modifier.Id);
+                
+                // Convert ModifierSummary to StatModifier for the event
+                var statModifier = new StatModifier(
+                    modifier.Id,
+                    modifier.Source,
+                    modifier.AffectedStat,
+                    (BuffType)modifier.Type,  // Convert ModifierType to BuffType
+                    modifier.Value,
+                    modifier.Duration > 0 ? TimeSpan.FromSeconds(modifier.Duration) : null
+                );
+
+                // Raise buff removed event
+                EventManager.RaiseEvent(
+                    EventType.CharacterStatBuffRemoved,
+                    new CharacterStatBuffEventArgs(characterId, modifier.AffectedStat, statModifier)
+                );
+            }
         }
     }
 
@@ -147,26 +210,49 @@ public partial class PlayerManager : BaseManager
         }
     }
 
-    public Dictionary<StatType, float> GetCharacterStats(string characterId)
-    {
-        if (!_characters.TryGetValue(characterId, out var character))
-        {
-            return new Dictionary<StatType, float>();
-        }
-
-        return Enum.GetValues<StatType>()
-            .ToDictionary(
-                statType => statType,
-                statType => character.GetStat(statType)?.CurrentValue ?? 0
-            );
-    }
-
     private void OnCharacterStatBuffApplied(CharacterStatBuffEventArgs args)
     {
-        DebugLogger.Log(
-            $"Character {args.CharacterId} received {args.Modifier.Value} {args.StatType} buff from {args.Modifier.Source}",
-            DebugLogger.LogCategory.Stats
-        );
+        if (_characters.TryGetValue(args.CharacterId, out var character))
+        {
+            DebugLogger.Log(
+                $"Character {args.CharacterId} received {args.Modifier.Value} {args.StatType} buff from {args.Modifier.Source}",
+                DebugLogger.LogCategory.Stats
+            );
+        }
+    }
+
+    private void OnCharacterStatBuffRemoved(CharacterStatBuffEventArgs args)
+    {
+        if (_characters.TryGetValue(args.CharacterId, out var character))
+        {
+            DebugLogger.Log(
+                $"{character.Name} had {args.StatType} buff from {args.Modifier.Source} removed",
+                DebugLogger.LogCategory.Stats
+            );
+        }
+    }
+
+    private void OnCharacterStatBuffExpired(CharacterStatBuffEventArgs args)
+    {
+        if (_characters.TryGetValue(args.CharacterId, out var character))
+        {
+            DebugLogger.Log(
+                $"{character.Name} {args.StatType} buff from {args.Modifier.Source} expired",
+                DebugLogger.LogCategory.Stats
+            );
+        }
+    }
+
+    private void OnCharacterStatThresholdCrossed(CharacterStatThresholdEventArgs args)
+    {
+        if (_characters.TryGetValue(args.CharacterId, out var character))
+        {
+            string direction = args.CrossingUp ? "above" : "below";
+            DebugLogger.Log(
+                $"{character.Name} {args.StatType} crossed {args.ThresholdPercent}% threshold ({direction}). Current value: {args.CurrentValue:F1}",
+                DebugLogger.LogCategory.Stats
+            );
+        }
     }
 
     public void PrintCharacterStats(string characterId)
@@ -182,17 +268,11 @@ public partial class PlayerManager : BaseManager
         }
     }
 
-    public float GetStatValue(StatType statType)
-    {
-        return _currentCharacter?.GetStat(statType)?.CurrentValue ?? 0;
-    }
-
     public IReadOnlyList<StatModifier> GetStatModifiers(string characterId, StatType statType)
     {
         if (_characters.TryGetValue(characterId, out var character))
         {
-            var stat = character.GetStat(statType);
-            return (IReadOnlyList<StatModifier>)stat.GetActiveModifiers();
+            return (IReadOnlyList<StatModifier>)character.GetStatModifiers(statType);
         }
 
         return new List<StatModifier>();
@@ -244,37 +324,111 @@ public partial class PlayerManager : BaseManager
         return false;
     }
 
-    private void OnCharacterStatBuffRemoved(CharacterStatBuffEventArgs args)
+    public float GetCharacterPower(string characterId)
     {
-        if (_characters.TryGetValue(args.CharacterId, out var character))
+        if (_characters.TryGetValue(characterId, out var character))
         {
-            DebugLogger.Log(
-                $"{character.Name} had {args.StatType} buff from {args.Modifier.Source} removed",
-                DebugLogger.LogCategory.Stats
-            );
+            return character.GetPowerLevel();
+        }
+        throw new ArgumentException($"Character not found: {characterId}");
+    }
+
+    public float GetBaseStatValue(string characterId, StatType statType)
+    {
+        if (_characters.TryGetValue(characterId, out var character))
+        {
+            return character.GetBaseStatValue(statType);
+        }
+        throw new ArgumentException($"Character not found: {characterId}");
+    }
+
+    /// <summary>
+    /// Resets all stats for a character to their initial values from GameBalanceConfig
+    /// </summary>
+    public void ResetCharacterStats(string characterId)
+    {
+        if (_characters.TryGetValue(characterId, out var character))
+        {
+            character.ResetStats();
+        }
+        else
+        {
+            throw new ArgumentException($"Character not found: {characterId}");
         }
     }
 
-    private void OnCharacterStatBuffExpired(CharacterStatBuffEventArgs args)
+    public void Update()
     {
-        if (_characters.TryGetValue(args.CharacterId, out var character))
+        foreach (var character in _characters.Values)
         {
-            DebugLogger.Log(
-                $"{character.Name} {args.StatType} buff from {args.Modifier.Source} expired",
-                DebugLogger.LogCategory.Stats
-            );
+            character.Update();
         }
     }
 
-    private void OnCharacterStatThresholdCrossed(CharacterStatThresholdEventArgs args)
+    /// <summary>
+    /// Process idle progression for a character
+    /// </summary>
+    /// <param name="characterId">ID of the character to process</param>
+    /// <param name="timeInMinutes">Time elapsed in minutes</param>
+    /// <param name="isOffline">Whether this is offline progression</param>
+    public void ProcessCharacterIdleProgression(string characterId, float timeInMinutes, bool isOffline = false)
     {
-        if (_characters.TryGetValue(args.CharacterId, out var character))
+        if (_characters.TryGetValue(characterId, out var character))
         {
-            string direction = args.CrossingUp ? "above" : "below";
-            DebugLogger.Log(
-                $"{character.Name} {args.StatType} crossed {args.ThresholdPercent}% threshold ({direction}). Current value: {args.CurrentValue:F1}",
-                DebugLogger.LogCategory.Stats
-            );
+            character.ProcessIdleProgression(timeInMinutes, isOffline);
         }
+        else
+        {
+            throw new ArgumentException($"Character not found: {characterId}");
+        }
+    }
+
+    /// <summary>
+    /// Process idle progression for all characters
+    /// </summary>
+    /// <param name="timeInMinutes">Time elapsed in minutes</param>
+    /// <param name="isOffline">Whether this is offline progression</param>
+    public void ProcessAllCharactersIdleProgression(float timeInMinutes, bool isOffline = false)
+    {
+        foreach (var character in _characters.Values)
+        {
+            character.ProcessIdleProgression(timeInMinutes, isOffline);
+        }
+    }
+
+    /// <summary>
+    /// Gets a summary of all characters' states
+    /// </summary>
+    public IEnumerable<CharacterStateSummary> GetAllCharacterSummaries()
+    {
+        return _characters.Values.Select(c => c.GetStateSummary());
+    }
+
+    /// <summary>
+    /// Gets a summary for a specific character
+    /// </summary>
+    public CharacterStateSummary GetCharacterSummary(string characterId)
+    {
+        if (_characters.TryGetValue(characterId, out var character))
+        {
+            return character.GetStateSummary();
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Gets characters sorted by their power level
+    /// </summary>
+    public IEnumerable<Character> GetCharactersByPower()
+    {
+        return _characters.Values.OrderByDescending(c => c.GetPowerLevel());
+    }
+
+    /// <summary>
+    /// Gets characters sorted by their average level
+    /// </summary>
+    public IEnumerable<Character> GetCharactersByLevel()
+    {
+        return _characters.Values.OrderByDescending(c => c.GetAverageLevel());
     }
 }
