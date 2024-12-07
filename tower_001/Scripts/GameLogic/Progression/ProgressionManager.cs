@@ -1,7 +1,10 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Tower_001.Scripts.Events;
+using Tower_001.Scripts.GameLogic.StatSystem;
+using Tower_001.Scripts.GameLogic.StatSystem.Bonus;
 using static GlobalEnums;
 
 /// <summary>
@@ -13,9 +16,6 @@ public partial class ProgressionManager : IManager
     // Tracks progression data for each character by their unique ID
     private readonly Dictionary<string, ProgressionData> _characterProgress;
     
-    // Manager for handling character ascension mechanics
-    private AscensionManager ascensionManager;
-    
     // Required dependencies for this manager's functionality
     public IEnumerable<Type> Dependencies { get; }
 
@@ -26,16 +26,19 @@ public partial class ProgressionManager : IManager
     private readonly EventManager _eventManager;      // Handles game-wide events
     private readonly PlayerManager _playerManager;    // Manages player/character state
 
-    // Public access to managers and config
-    public AscensionManager AscensionManager { get => ascensionManager; set => ascensionManager = value; }
+    // Public access to config
     public ProgressionConfig Config { get => _config; set => _config = value; }
 
-    /// <summary>
-    /// Initializes a new instance of the ProgressionManager
-    /// </summary>
-    /// <param name="eventManager">Reference to the game's event manager</param>
-    /// <param name="playerManager">Reference to the player manager</param>
-    public ProgressionManager(PlayerManager playerManager)
+    // Bonus calculation constants
+    private const float BASE_PRESTIGE_STAT_BONUS = 0.1f;  // 10% per prestige level
+    private const float BASE_ASCENSION_STAT_BONUS = 0.02f; // 2% per ascension level
+    private const float ASCENSION_MILESTONE_BONUS = 0.02f; // 2% per milestone (every 2 levels)
+	/// <summary>
+	/// Initializes a new instance of the ProgressionManager
+	/// </summary>
+	/// <param name="eventManager">Reference to the game's event manager</param>
+	/// <param name="playerManager">Reference to the player manager</param>
+	public ProgressionManager(PlayerManager playerManager)
     {
         // Initialize character progression tracking
         _characterProgress = new Dictionary<string, ProgressionData>();
@@ -46,15 +49,14 @@ public partial class ProgressionManager : IManager
             BaseExpForLevel = 1000f,          // Base experience needed for first level
             ExpScalingFactor = 1.15f,         // Experience requirement growth per level
             LevelsForPrestige = 100000,       // Level threshold for prestige
-            PrestigePowerMultiplier = 2.0f    // Power boost from prestiging
+            PrestigePowerMultiplier = 2.0f,   // Power boost from prestiging
+            PrestigeLevelsForAscension = 1,   // Prestige level required for ascension
+            MaxAscensionLevel = 10           // Maximum ascension level
         };
 
         // Store manager references
         _eventManager = Globals.Instance.gameMangers.Events;
         _playerManager = playerManager;
-        
-        // Initialize ascension system
-        AscensionManager = new AscensionManager(_config, _playerManager, _characterProgress);
     }
 
     /// <summary>
@@ -64,7 +66,6 @@ public partial class ProgressionManager : IManager
     {
         RegisterEventHandlers();
         DebugLogger.Log("Progression Manager initialized", DebugLogger.LogCategory.Progress);
-        AscensionManager.Setup();
     }
 
     /// <summary>
@@ -160,6 +161,9 @@ public partial class ProgressionManager : IManager
         // Reset character to prestige state
         HandlePrestigeReset(characterId);
 
+        // Apply prestige bonuses
+        ApplyPrestigeBonuses(characterId, progress.PrestigeLevel);
+
         // Notify systems of prestige
         RaisePrestigeEvent(characterId, progress, oldPrestige, powerMultiplier);
 
@@ -252,10 +256,27 @@ public partial class ProgressionManager : IManager
     private void RaiseAscensionEvent(
         string characterId,
         ProgressionData progress,
-        long oldAscensionLevel,
-        float oldPowerMultiplier,
-        Dictionary<string, float> unlockedBonuses)
+        long oldAscensionLevel)
     {
+        // Calculate total ascension multiplier
+        float totalAscensionMultiplier = progress.AscensionLevel * BASE_ASCENSION_STAT_BONUS;
+        
+        // Add milestone bonuses for every 2 levels up to current level
+        int milestonesReached = (int)(progress.AscensionLevel / 2);
+        totalAscensionMultiplier += milestonesReached * ASCENSION_MILESTONE_BONUS;
+
+        // Track unlocked bonuses for this ascension
+        var unlockedBonuses = new Dictionary<string, float>();
+        
+        // Add base ascension bonus
+        unlockedBonuses.Add($"Ascension_{progress.AscensionLevel}", BASE_ASCENSION_STAT_BONUS);
+        
+        // Add milestone bonus if unlocked at this level
+        if (progress.AscensionLevel % 2 == 0)
+        {
+            unlockedBonuses.Add($"Milestone_{progress.AscensionLevel}", ASCENSION_MILESTONE_BONUS);
+        }
+
         // Notify systems of ascension level gain
         _eventManager.RaiseEvent(
             EventType.AscensionLevelGained,
@@ -266,8 +287,8 @@ public partial class ProgressionManager : IManager
                 progress.TotalPowerMultiplier,
                 oldAscensionLevel,
                 progress.AscensionLevel,
-                progress.TotalPowerMultiplier - oldPowerMultiplier,
-                progress.TotalPowerMultiplier,
+                progress.TotalPowerMultiplier - 1.0f, // Multiplier gained from this ascension
+                totalAscensionMultiplier,
                 unlockedBonuses
             )
         );
@@ -378,19 +399,98 @@ public partial class ProgressionManager : IManager
         }
     }
 
-    private void HandleAscensionReset(string characterId, ProgressionData progress)
+    private void HandleAscensionReset(string characterId)
     {
-        // Reset character to base state while keeping ascension bonuses
+        // Reset character to base state while preserving appropriate bonuses
+        var progress = _characterProgress[characterId];
         progress.Level = 1;
         progress.CurrentExp = 0;
         progress.PrestigeLevel = 0;
-        // Additional resets while maintaining ascension bonuses
+
+        // Note: Permanent bonuses are preserved through the PermanentBonusRegistry
+        // We don't need to manually preserve or reapply them
     }
 
     private Dictionary<string, float> CalculateAscensionBonuses(ProgressionData progress)
     {
-        // Calculate bonuses unlocked at current ascension level
-        return AscensionBonusCalculator.CalculateAscensionBonuses(progress);
+        var bonuses = new Dictionary<string, float>();
+        var statBonuses = CalculateStatBonuses(progress);
+        
+        foreach (var bonus in statBonuses)
+        {
+            bonuses[bonus.Key.ToString()] = bonus.Value;
+        }
+
+        return bonuses;
+    }
+
+    /// <summary>
+    /// Calculates the stat bonuses granted by ascending to a new level
+    /// </summary>
+    private Dictionary<StatType, float> CalculateStatBonuses(ProgressionData progress)
+    {
+        var bonuses = new Dictionary<StatType, float>();
+
+        // Calculate the base bonus percentage (2% per ascension level)
+        float baseBonus = progress.AscensionLevel * 0.02f;
+
+        // Apply the base bonus to all available stat types
+        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        {
+            if (statType != StatType.None)
+            {
+                bonuses[statType] = baseBonus;
+            }
+        }
+
+        return bonuses;
+    }
+
+   
+
+    /// <summary>
+    /// Attempts to ascend a character to the next ascension level
+    /// </summary>
+    public bool TryAscend(string characterId)
+    {
+        // Validate character exists and has progression data
+        if (!_characterProgress.TryGetValue(characterId, out var progress))
+        {
+            DebugLogger.LogWarning($"No progression data found for character {characterId}");
+            return false;
+        }
+
+        // Check if character meets ascension requirements
+        if (progress.PrestigeLevel < _config.PrestigeLevelsForAscension)
+        {
+            DebugLogger.Log($"Character {characterId} does not meet prestige requirement for ascension", DebugLogger.LogCategory.Progress);
+            return false;
+        }
+
+        // Check if at max ascension level
+        if (progress.AscensionLevel >= _config.MaxAscensionLevel)
+        {
+            DebugLogger.Log($"Character {characterId} has reached max ascension level", DebugLogger.LogCategory.Progress);
+            return false;
+        }
+
+        // Store old values for event
+        long oldAscensionLevel = progress.AscensionLevel;
+
+        // Increment ascension level
+        progress.AscensionLevel++;
+
+        // First reset character to base state
+        HandleAscensionReset(characterId);
+
+        // Then apply ascension bonuses to the reset state
+        ApplyAscensionBonuses(characterId, progress.AscensionLevel);
+
+        // Notify systems of ascension
+        RaiseAscensionEvent(characterId, progress, oldAscensionLevel);
+
+        DebugLogger.Log($"Character {characterId} ascended to level {progress.AscensionLevel}", DebugLogger.LogCategory.Progress);
+        return true;
     }
 
     private IEnumerable<ProgressionAchievement> GetTrackedAchievements(ProgressionData progress)
@@ -504,5 +604,195 @@ public partial class ProgressionManager : IManager
         progress.Level = 1;
         progress.CurrentExp = 0;
         // Additional resets while preserving prestige multipliers
+    }
+
+    /// <summary>
+    /// Applies ascension bonuses to a character
+    /// </summary>
+    private void ApplyAscensionBonuses(string characterId, long ascensionLevel)
+    {
+        var character = _playerManager.GetCharacter(characterId);
+        if (character == null) return;
+
+        // Debug log initial values
+        foreach (StatType statType in GetPrimaryStats())
+        {
+            DebugLogger.Log($"Initial {statType}: {character.GetStatValue(statType):F2}", DebugLogger.LogCategory.Progress);
+        }
+
+        // Apply base ascension bonus (2% per level) for ALL levels up to current
+        float totalBaseBonus = 0f;
+        for (long i = 1; i <= ascensionLevel; i++)
+        {
+            float baseBonus = BASE_ASCENSION_STAT_BONUS;  // 2% for each level
+            totalBaseBonus += baseBonus;
+            
+            foreach (StatType statType in GetPrimaryStats())
+            {
+                character.UpdateAscensionBonus(statType, (int)i, baseBonus);
+            }
+            DebugLogger.Log($"Added Level {i} Base Bonus: +{baseBonus:P2}", DebugLogger.LogCategory.Progress);
+        }
+        DebugLogger.Log($"Total Base Bonus: +{totalBaseBonus:P2}", DebugLogger.LogCategory.Progress);
+
+        // Apply milestone bonuses (2% every 2 levels) for ALL milestones reached
+        float totalMilestoneBonus = 0f;
+        for (long i = 2; i <= ascensionLevel; i += 2)  // Start at 2 and increment by 2
+        {
+            float milestoneBonus = ASCENSION_MILESTONE_BONUS;  // 2% for each milestone
+            totalMilestoneBonus += milestoneBonus;
+            
+            foreach (StatType statType in GetPrimaryStats())
+            {
+                character.UpdateAscensionBonus(statType, (int)i, milestoneBonus);
+            }
+            DebugLogger.Log($"Added Level {i} Milestone Bonus: +{milestoneBonus:P2}", DebugLogger.LogCategory.Progress);
+        }
+        DebugLogger.Log($"Total Milestone Bonus: +{totalMilestoneBonus:P2}", DebugLogger.LogCategory.Progress);
+
+        // Log final stats and total bonuses
+        foreach (StatType statType in GetPrimaryStats())
+        {
+            float finalValue = character.GetStatValue(statType);
+            DebugLogger.Log($"Final {statType}: {finalValue:F2}", DebugLogger.LogCategory.Progress);
+        }
+
+        // Check for additional ascension milestones
+        CheckAscensionMilestones(characterId, ascensionLevel);
+
+        // Log total active bonuses
+        DebugLogger.Log("Total Active Bonuses:", DebugLogger.LogCategory.Progress);
+        DebugLogger.Log($"  Base Bonuses: +{totalBaseBonus:P2} ({ascensionLevel} levels * {BASE_ASCENSION_STAT_BONUS:P2})", DebugLogger.LogCategory.Progress);
+        DebugLogger.Log($"  Milestone Bonuses: +{totalMilestoneBonus:P2} ({ascensionLevel / 2} milestones * {ASCENSION_MILESTONE_BONUS:P2})", DebugLogger.LogCategory.Progress);
+        DebugLogger.Log($"  Total Combined Bonus: +{(totalBaseBonus + totalMilestoneBonus):P2}", DebugLogger.LogCategory.Progress);
+    }
+
+    /// <summary>
+    /// Applies prestige bonuses to a character
+    /// </summary>
+    private void ApplyPrestigeBonuses(string characterId, int prestigeLevel)
+    {
+        var character = _playerManager.GetCharacter(characterId);
+        if (character == null) return;
+
+        float bonusValue = prestigeLevel * BASE_PRESTIGE_STAT_BONUS;
+
+        // Apply prestige bonuses to all primary stats
+        foreach (StatType statType in GetPrimaryStats())
+        {
+            var bonus = new PermanentBonus(
+                name: $"Prestige Level {prestigeLevel}",
+                statType: statType,
+                source: BonusSource.Prestige,
+                value: bonusValue,
+                description: $"Bonus from reaching Prestige Level {prestigeLevel}"
+            );
+            var modifier = new StatModifier(
+                id: $"Prestige_{prestigeLevel}",
+                source: "Prestige",
+                statType: statType,
+                type: BuffType.Percentage,
+                value: bonusValue,
+                duration: TimeSpan.MaxValue
+            );
+            character.AddModifier(statType, modifier.Id, modifier);
+        }
+
+        // Check for prestige milestones
+        CheckPrestigeMilestones(characterId, prestigeLevel);
+    }
+
+    /// <summary>
+    /// Gets the list of primary stats that receive progression bonuses
+    /// </summary>
+    private IEnumerable<StatType> GetPrimaryStats()
+    {
+        return new[]
+        {
+            StatType.Strength,
+            StatType.Dexterity,
+            StatType.Intelligence,
+            StatType.Stamina
+        };
+    }
+
+    /// <summary>
+    /// Checks and awards any prestige-based milestone bonuses
+    /// </summary>
+    private void CheckPrestigeMilestones(string characterId, int prestigeLevel)
+    {
+        var character = _playerManager.GetCharacter(characterId);
+        if (character == null) return;
+
+        var progress = _characterProgress[characterId];
+
+        // Example milestone: Every 5 prestige levels grants an additional 5% to all stats
+        if (prestigeLevel % 5 == 0)
+        {
+            float milestoneBonus = 0.05f; // 5% bonus
+            foreach (StatType statType in GetPrimaryStats())
+            {
+                var bonus = new PermanentBonus(
+                    name: $"Prestige Milestone {prestigeLevel}",
+                    statType: statType,
+                    source: BonusSource.Milestone,
+                    value: milestoneBonus,
+                    description: $"Bonus from reaching Prestige Level {prestigeLevel} milestone"
+                );
+                var modifier = new StatModifier(
+                    id: $"Prestige_Milestone_{milestoneBonus}",
+                    source: "Prestige",
+                    statType: statType,
+                    type: BuffType.Percentage,
+                    value: milestoneBonus,
+                    duration: TimeSpan.MaxValue
+                );
+                character.AddModifier(statType, modifier.Id, modifier);
+            }
+
+            // Record milestone achievement
+            progress.ReachedMilestones.Add(ProgressionMilestoneType.Prestige);
+            progress.MilestoneTimestamps[$"Prestige_{prestigeLevel}"] = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>
+    /// Checks and awards any ascension-based milestone bonuses
+    /// </summary>
+    private void CheckAscensionMilestones(string characterId, long ascensionLevel)
+    {
+        var character = _playerManager.GetCharacter(characterId);
+        if (character == null) return;
+
+        var progress = _characterProgress[characterId];
+
+        // Example milestone: Every 2 ascension levels grants an additional 25% to all stats
+        if (ascensionLevel % 2 == 0)
+        {
+            float milestoneBonus = 0.25f; // 25% bonus
+            foreach (StatType statType in GetPrimaryStats())
+            {
+                var bonus = new PermanentBonus(
+                    name: $"Ascension Milestone {ascensionLevel}",
+                    statType: statType,
+                    source: BonusSource.Milestone,
+                    value: milestoneBonus,
+                    description: $"Bonus from reaching Ascension Level {ascensionLevel} milestone"
+                );
+                var modifier = new StatModifier(
+                    id: $"Ascension_Milestone_{ascensionLevel}",
+                    source: "Ascension",
+                    statType: statType,
+                    type: BuffType.Percentage,
+                    value: milestoneBonus,
+                    duration: TimeSpan.MaxValue
+                );
+                character.AddModifier(statType, modifier.Id, modifier);
+            }
+
+            // Record milestone achievement
+            progress.ReachedMilestones.Add(ProgressionMilestoneType.Ascension);
+            progress.MilestoneTimestamps[$"Ascension_{ascensionLevel}"] = DateTime.UtcNow;
+        }
     }
 }

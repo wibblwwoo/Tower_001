@@ -6,6 +6,7 @@ using Tower.GameLogic.StatSystem;
 using Tower_001.Scripts.Events;
 using Tower_001.Scripts.GameLogic.Balance;
 using Tower_001.Scripts.GameLogic.Character;
+using Tower_001.Scripts.GameLogic.StatSystem.Bonus;
 using static GlobalEnums;
 
 namespace Tower_001.Scripts.GameLogic.StatSystem
@@ -36,6 +37,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         private readonly Dictionary<StatType, Dictionary<string, StatModifier>> _modifiers = new();
         private readonly Dictionary<StatType, List<StatThreshold>> _statThresholds = new();
         private float _idleTimeAccumulated;
+        private readonly PermanentBonusRegistry _bonusRegistry;
 
         /// <summary>
         /// Initializes a new character stat system
@@ -45,6 +47,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         {
             _characterId = characterId;
             _stats = new Dictionary<StatType, StatData>();
+            _bonusRegistry = new PermanentBonusRegistry(characterId);
             InitializeStats();
         }
 
@@ -72,7 +75,8 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
                 multiplier: GameBalanceConfig.IdleCharacterStats.BaseMultiplier,
                 experience: 0,
                 level: GameBalanceConfig.IdleCharacterStats.InitialLevel,
-                statType: statType
+                statType: statType,
+                bonusRegistry: _bonusRegistry
             );
 
             // Initialize modifier dictionary for this stat
@@ -151,6 +155,9 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         /// </summary>
         public void AddModifier(StatType statType, string id, StatModifier modifier)
         {
+            // Get the current value before adding the modifier
+            float oldValue = GetStatValue(statType);
+
             if (!_modifiers.TryGetValue(statType, out var statModifiers))
             {
                 statModifiers = new Dictionary<string, StatModifier>();
@@ -158,7 +165,18 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
             }
 
             statModifiers[id] = modifier;
-            RaiseStatChangedEvent(statType);
+
+            // Get the new value after adding the modifier
+            float newValue = GetStatValue(statType);
+
+            // Only raise event if the value actually changed
+            if (Math.Abs(oldValue - newValue) > 0.001f)
+            {
+                Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+                    EventType.CharacterStatChanged,
+                    new CharacterStatEventArgs(_characterId, statType, oldValue, newValue)
+                );
+            }
         }
 
         /// <summary>
@@ -166,11 +184,24 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         /// </summary>
         public void RemoveModifier(StatType statType, string id)
         {
-            if (_modifiers.TryGetValue(statType, out var statModifiers))
+            if (!_modifiers.TryGetValue(statType, out var statModifiers))
+                return;
+
+            // Get the current value before removing the modifier
+            float oldValue = GetStatValue(statType);
+
+            if (statModifiers.Remove(id))
             {
-                if (statModifiers.Remove(id))
+                // Get the new value after removing the modifier
+                float newValue = GetStatValue(statType);
+
+                // Only raise event if the value actually changed
+                if (Math.Abs(oldValue - newValue) > 0.001f)
                 {
-                    RaiseStatChangedEvent(statType);
+                    Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+                        EventType.CharacterStatChanged,
+                        new CharacterStatEventArgs(_characterId, statType, oldValue, newValue)
+                    );
                 }
             }
         }
@@ -202,12 +233,17 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         /// </summary>
         private void RaiseStatChangedEvent(StatType statType)
         {
+            if (Globals.Instance?.gameMangers?.Events == null) return;
+
+            // Get the current value before any modification
             float oldValue = GetStatValue(statType);
+
+            // After modification
             float newValue = GetStatValue(statType);
 
             if (Math.Abs(oldValue - newValue) > 0.001f)
             {
-                Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+                Globals.Instance.gameMangers.Events.RaiseEvent(
                     EventType.CharacterStatChanged,
                     new CharacterStatEventArgs(_characterId, statType, oldValue, newValue)
                 );
@@ -631,18 +667,22 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
             {
                 RemoveModifier(statType, "Ascension");
             }
-            //TODO:: come back and deal with this
-            // Apply new ascension bonus
-            //var modifier = new StatModifier
-            //{
-            //    Id = "Ascension",
-            //    Source = "Ascension",
-            //    Value = bonusValue * ascensionLevel,
-            //    ModifierType = ModifierType.Multiplicative,
-            //    Duration = float.MaxValue // Permanent modifier
-            //};
 
-            //AddModifier(statType, modifier.Id, modifier);
+            // Apply new ascension bonus as a permanent percentage modifier
+            var modifier = new StatModifier(
+                id: "Ascension",
+                source: "Ascension",
+                statType: statType,
+                type: BuffType.Percentage,  // Use percentage to multiply the base value
+                value: bonusValue,
+                duration: TimeSpan.MaxValue // Permanent modifier
+            );
+
+            AddModifier(statType, modifier.Id, modifier);
+
+            // Log the update for debugging
+            DebugLogger.Log($"Updated ascension bonus for {statType}: {bonusValue:P2} at level {ascensionLevel}", 
+                DebugLogger.LogCategory.Stats);
         }
 
         /// <summary>
@@ -655,6 +695,46 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
             if (!_stats.TryGetValue(statType, out var stat))
                 return 0f;
             return stat.BaseValue;
+        }
+
+        /// <summary>
+        /// Adds a permanent bonus to a stat
+        /// </summary>
+        public void AddPermanentBonus(PermanentBonus bonus)
+        {
+            _bonusRegistry.AddBonus(bonus);
+            if (_stats.ContainsKey(bonus.StatType))
+            {
+                _stats[bonus.StatType].MarkDirty();
+            }
+        }
+
+        /// <summary>
+        /// Removes a permanent bonus from a stat
+        /// </summary>
+        public void RemovePermanentBonus(PermanentBonus bonus)
+        {
+            _bonusRegistry.RemoveBonus(bonus);
+            if (_stats.ContainsKey(bonus.StatType))
+            {
+                _stats[bonus.StatType].MarkDirty();
+            }
+        }
+
+        /// <summary>
+        /// Gets all permanent bonuses for a specific stat type
+        /// </summary>
+        public IEnumerable<PermanentBonus> GetPermanentBonuses(StatType statType)
+        {
+            return _bonusRegistry.GetBonusesForStat(statType);
+        }
+
+        /// <summary>
+        /// Gets all permanent bonuses from a specific source
+        /// </summary>
+        public IEnumerable<PermanentBonus> GetPermanentBonusesFromSource(BonusSource source)
+        {
+            return _bonusRegistry.GetBonusesFromSource(source);
         }
     }
 }
