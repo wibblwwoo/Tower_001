@@ -25,39 +25,27 @@ public class Knight : Character
     protected override void InitializeStats()
     {
         // Initialize base health
-        Stats[StatType.Health] = new CharacterStat(
-            Id,
+        _statSystem.InitializeStat(
             StatType.Health,
-            GameBalanceConfig.CharacterStats.Knight.BaseHealth,
-            GameBalanceConfig.CharacterStats.Knight.HealthGrowth,
-            new List<float> { 50, 25 }
+            GameBalanceConfig.CharacterStats.Knight.BaseHealth
         );
 
         // Initialize base attack
-        Stats[StatType.Attack] = new CharacterStat(
-            Id,
+        _statSystem.InitializeStat(
             StatType.Attack,
-            GameBalanceConfig.CharacterStats.Knight.BaseAttack,
-            GameBalanceConfig.CharacterStats.Knight.AttackGrowth,
-            null
+            GameBalanceConfig.CharacterStats.Knight.BaseAttack
         );
 
         // Initialize base defense
-        Stats[StatType.Defense] = new CharacterStat(
-            Id,
+        _statSystem.InitializeStat(
             StatType.Defense,
-            GameBalanceConfig.CharacterStats.Knight.BaseDefense,
-            GameBalanceConfig.CharacterStats.Knight.DefenseGrowth,
-            null
+            GameBalanceConfig.CharacterStats.Knight.BaseDefense
         );
 
         // Initialize base speed
-        Stats[StatType.Speed] = new CharacterStat(
-            Id,
+        _statSystem.InitializeStat(
             StatType.Speed,
-            GameBalanceConfig.CharacterStats.Knight.BaseSpeed,
-            GameBalanceConfig.CharacterStats.Knight.SpeedGrowth,
-            null
+            GameBalanceConfig.CharacterStats.Knight.BaseSpeed
         );
     }
 

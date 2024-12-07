@@ -31,7 +31,6 @@ public partial class CharacterSystemTests : BaseTestSuite
 
 
 	#region Test to run
-	// Flag to enable/disable individual tests
 	private bool _testCharacterCreation = true;
 	private bool _testCharacterLeveling = true;
 	private bool _testCharacterPowerScaling = true;
@@ -51,40 +50,32 @@ public partial class CharacterSystemTests : BaseTestSuite
 	private readonly EventManager _eventManager;
 	private readonly PlayerManager _playerManager;
 
-
-	public CharacterSystemTests(EventManager eventManager, PlayerManager playerManager,
-							  TestConfiguration testConfig): base(testConfig)
+	public CharacterSystemTests(EventManager eventManager, PlayerManager playerManager, TestConfiguration testConfig) : base(testConfig)
 	{
 		_eventManager = eventManager;
 		_playerManager = playerManager;
 	}
+
 	public void RunAllTests()
 	{
-
 		if (TestConfig.IsCategoryEnabled(TestCategory.Character))
 		{
-				TestCharacterCreation();
-				TestCharacterLeveling();
-				TestCharacterPowerScaling();
-				TestCharacterStatScaling();
-				TestBuffApplication();
-				TestBuffStacking();
-				TestBuffExpiration();
-				TestBuffRemoval();
-				TestElementalInteractions();
-				TestStatThresholds();
-				TestCharacterStatThresholds();
-				TestCharacterMultipleStatThresholds();
-				TestBuffInteractionsAndStacking();
-				TestCharacterLeveling();
-				TestCharacterPowerScaling();
-				TestCharacterStatScaling();
+			TestCharacterCreation();
+			TestCharacterLeveling();
+			TestCharacterPowerScaling();
+			TestCharacterStatScaling();
+			TestBuffApplication();
+			TestBuffStacking();
+			TestBuffExpiration();
+			TestBuffRemoval();
+			TestElementalInteractions();
+			TestStatThresholds();
+			TestCharacterStatThresholds();
+			TestCharacterMultipleStatThresholds();
+			TestBuffInteractionsAndStacking();
 
 			OutputTestResults();
 		}
-
-
-		//_experienceAndLevelingTests.RunAllTests();
 	}
 
 	private void TestCharacterCreation()
@@ -113,19 +104,17 @@ public partial class CharacterSystemTests : BaseTestSuite
 			}
 
 			// Verify initial stats
-			var knightStats = _playerManager.GetCharacterStats(knightId);
-			var mageStats = _playerManager.GetCharacterStats(mageId);
+			float knightHealth = _playerManager.GetStatValue(knightId, StatType.Health);
+			float mageHealth = _playerManager.GetStatValue(mageId, StatType.Health);
 
-			if (knightStats[StatType.Health] != 100 || mageStats[StatType.Health] != 80)
+			if (knightHealth != 150 || mageHealth != 120)
 			{
 				testPassed = false;
 				LogError(testName, "Initial stats not set correctly");
 			}
 
-
-			DebugLogger.Log($"Knight Initial Health: {knightStats[StatType.Health]}", DebugLogger.LogCategory.Character);
-			DebugLogger.Log($"Mage Initial Health: {mageStats[StatType.Health]}", DebugLogger.LogCategory.Character);
-
+			DebugLogger.Log($"Knight Initial Health: {knightHealth}", DebugLogger.LogCategory.Character);
+			DebugLogger.Log($"Mage Initial Health: {mageHealth}", DebugLogger.LogCategory.Character);
 		}
 		catch (Exception ex)
 		{
@@ -144,30 +133,23 @@ public partial class CharacterSystemTests : BaseTestSuite
 		try
 		{
 			string characterId = _playerManager.CreateCharacter("knight");
-			var initialStats = _playerManager.GetCharacterStats(characterId);
+			float initialHealth = _playerManager.GetStatValue(characterId, StatType.Health);
 
 			// Test multiple level ups
 			for (int i = 2; i <= 5; i++)
 			{
 				_playerManager.SetCharacterLevel(characterId, i);
-				var newStats = _playerManager.GetCharacterStats(characterId);
-
-				// Verify power increase
-				if (newStats[StatType.Attack] <= initialStats[StatType.Attack])
-				{
-					testPassed = false;
-					LogError(testName, $"Attack did not increase at level {i}");
-				}
+				float newHealth = _playerManager.GetStatValue(characterId, StatType.Health);
 
 				// Verify health increase
-				if (newStats[StatType.Health] <= initialStats[StatType.Health])
+				if (newHealth <= initialHealth)
 				{
 					testPassed = false;
 					LogError(testName, $"Health did not increase at level {i}");
 				}
 
-				DebugLogger.Log($"Level {i} Stats - Health: {newStats[StatType.Health]}, Attack: {newStats[StatType.Attack]}", DebugLogger.LogCategory.Character);
-				initialStats = newStats;
+				DebugLogger.Log($"Level {i} Health: {newHealth}", DebugLogger.LogCategory.Character);
+				initialHealth = newHealth;
 			}
 		}
 		catch (Exception ex)
@@ -187,14 +169,14 @@ public partial class CharacterSystemTests : BaseTestSuite
 		try
 		{
 			string characterId = _playerManager.CreateCharacter("knight");
-			float initialPower = _playerManager.GetCharacter(characterId).Power;
+			float initialPower = _playerManager.GetCharacterPower(characterId);
 
 			DebugLogger.Log("\nPower Scaling Analysis:", DebugLogger.LogCategory.Character);
 			DebugLogger.Log($"Initial Power: {initialPower}", DebugLogger.LogCategory.Character);
 			for (int level = 2; level <= 10; level++)
 			{
 				_playerManager.SetCharacterLevel(characterId, level);
-				float newPower = _playerManager.GetCharacter(characterId).Power;
+				float newPower = _playerManager.GetCharacterPower(characterId);
 
 				if (newPower <= initialPower)
 				{
@@ -216,7 +198,6 @@ public partial class CharacterSystemTests : BaseTestSuite
 		LogTestResult(testName, testPassed);
 	}
 
-
 	private void TestCharacterStatScaling()
 	{
 		string testName = "Character Stat Scaling";
@@ -225,33 +206,27 @@ public partial class CharacterSystemTests : BaseTestSuite
 		try
 		{
 			string characterId = _playerManager.CreateCharacter("knight");
-			var initialStats = _playerManager.GetCharacterStats(characterId);
+			float initialHealth = _playerManager.GetStatValue(characterId, StatType.Health);
 
 			DebugLogger.Log("\nStat Scaling Analysis:", DebugLogger.LogCategory.Character);
-			foreach (var stat in initialStats)
-			{
-				DebugLogger.Log($"Initial {stat.Key}: {stat.Value}", DebugLogger.LogCategory.Character);
-			}
+			DebugLogger.Log($"Initial Health: {initialHealth}", DebugLogger.LogCategory.Character);
 
 			// Test stat scaling over 5 levels
 			for (int level = 2; level <= 5; level++)
 			{
 				_playerManager.SetCharacterLevel(characterId, level);
-				var newStats = _playerManager.GetCharacterStats(characterId);
+				float newHealth = _playerManager.GetStatValue(characterId, StatType.Health);
 
-				//GD.Print($"\nLevel {level} Stats:");
-				foreach (var stat in newStats)
+				// Verify health increase
+				if (newHealth <= initialHealth)
 				{
-					float increase = stat.Value - initialStats[stat.Key];
-					DebugLogger.Log($"{stat.Key}: {stat.Value} (Increase: +{increase:F2})", DebugLogger.LogCategory.Character);
-					if (stat.Value <= initialStats[stat.Key])
-					{
-						testPassed = false;
-						LogError(testName, $"{stat.Key} did not increase at level {level}");
-					}
+					testPassed = false;
+					LogError(testName, $"Health did not increase at level {level}");
 				}
 
-				initialStats = newStats;
+				float increase = newHealth - initialHealth;
+				DebugLogger.Log($"Level {level} Health: {newHealth} (Increase: +{increase:F2})", DebugLogger.LogCategory.Character);
+				initialHealth = newHealth;
 			}
 		}
 		catch (Exception ex)
@@ -271,47 +246,35 @@ public partial class CharacterSystemTests : BaseTestSuite
 		try
 		{
 			string characterId = _playerManager.CreateCharacter("knight");
-			var initialStats = _playerManager.GetCharacterStats(characterId);
+			float initialAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
 
 			// Test flat buff
-			_playerManager.ApplyBuff(
-				characterId,
-				StatType.Attack,
-				"Weapon Buff",
-				BuffType.Flat,
-				10.0f
-			);
+			_playerManager.ApplyBuff(characterId, StatType.Attack, "Weapon Buff", BuffType.Flat, 10.0f);
 
 			// Test percentage buff
-			_playerManager.ApplyBuff(
-				characterId,
-				StatType.Health,
-				"Armor Buff",
-				BuffType.Percentage,
-				0.2f
-			);
+			_playerManager.ApplyBuff(characterId, StatType.Health, "Armor Buff", BuffType.Percentage, 0.2f);
 
-			var buffedStats = _playerManager.GetCharacterStats(characterId);
+			float buffedAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
+			float buffedHealth = _playerManager.GetStatValue(characterId, StatType.Health);
 
 			// Verify flat buff
-			if (buffedStats[StatType.Attack] != initialStats[StatType.Attack] + 10)
+			if (buffedAttack != initialAttack + 10)
 			{
 				testPassed = false;
 				LogError(testName, "Flat buff not applied correctly");
 			}
 
 			// Verify percentage buff
-			float expectedHealth = initialStats[StatType.Health] * 1.2f;
-			if (Math.Abs(buffedStats[StatType.Health] - expectedHealth) > 0.01f)
+			float expectedHealth = _playerManager.GetBaseStatValue(characterId, StatType.Health) * 1.2f;
+			if (Math.Abs(buffedHealth - expectedHealth) > 0.01f)
 			{
 				testPassed = false;
 				LogError(testName, "Percentage buff not applied correctly");
 			}
 
 			DebugLogger.Log("\nBuff Application Results:", DebugLogger.LogCategory.Character);
-			DebugLogger.Log($"Attack: {initialStats[StatType.Attack]} -> {buffedStats[StatType.Attack]}", DebugLogger.LogCategory.Character);
-			DebugLogger.Log($"Health: {initialStats[StatType.Health]} -> {buffedStats[StatType.Health]}", DebugLogger.LogCategory.Character);
-
+			DebugLogger.Log($"Attack: {initialAttack} -> {buffedAttack}", DebugLogger.LogCategory.Character);
+			DebugLogger.Log($"Health: {_playerManager.GetBaseStatValue(characterId, StatType.Health)} -> {buffedHealth}", DebugLogger.LogCategory.Character);
 		}
 		catch (Exception ex)
 		{
@@ -330,27 +293,26 @@ public partial class CharacterSystemTests : BaseTestSuite
 		try
 		{
 			string characterId = _playerManager.CreateCharacter("knight");
-			var initialStats = _playerManager.GetCharacterStats(characterId);
+			float initialAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
 
 			// Apply multiple buffs to same stat
 			_playerManager.ApplyBuff(characterId, StatType.Attack, "Buff 1", BuffType.Flat, 10.0f);
 			_playerManager.ApplyBuff(characterId, StatType.Attack, "Buff 2", BuffType.Flat, 5.0f);
 			_playerManager.ApplyBuff(characterId, StatType.Attack, "Buff 3", BuffType.Percentage, 0.2f);
 
-			var buffedStats = _playerManager.GetCharacterStats(characterId);
-			float expectedAttack = (initialStats[StatType.Attack] + 15) * 1.2f;
+			float buffedAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
+			float expectedAttack = (initialAttack + 15) * 1.2f;
 
-			if (Math.Abs(buffedStats[StatType.Attack] - expectedAttack) > 0.01f)
+			if (Math.Abs(buffedAttack - expectedAttack) > 0.01f)
 			{
 				testPassed = false;
 				LogError(testName, "Buff stacking not calculated correctly");
 			}
 
 			DebugLogger.Log("\nBuff Stacking Results:", DebugLogger.LogCategory.Character);
-			DebugLogger.Log($"Initial Attack: {initialStats[StatType.Attack]}", DebugLogger.LogCategory.Character);
-			DebugLogger.Log($"Final Attack: {buffedStats[StatType.Attack]}", DebugLogger.LogCategory.Character);
+			DebugLogger.Log($"Initial Attack: {initialAttack}", DebugLogger.LogCategory.Character);
+			DebugLogger.Log($"Final Attack: {buffedAttack}", DebugLogger.LogCategory.Character);
 			DebugLogger.Log($"Expected Attack: {expectedAttack}", DebugLogger.LogCategory.Character);
-
 		}
 		catch (Exception ex)
 		{
@@ -369,22 +331,15 @@ public partial class CharacterSystemTests : BaseTestSuite
 		try
 		{
 			string characterId = _playerManager.CreateCharacter("knight");
-			var initialStats = _playerManager.GetCharacterStats(characterId);
+			float initialAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
 
 			// Apply temporary buff
-			_playerManager.ApplyBuff(
-				characterId,
-				StatType.Attack,
-				"Temporary Buff",
-				BuffType.Flat,
-				10.0f,
-				TimeSpan.FromSeconds(1)
-			);
+			_playerManager.ApplyBuff(characterId, StatType.Attack, "Temporary Buff", BuffType.Flat, 10.0f, TimeSpan.FromSeconds(1));
 
-			var buffedStats = _playerManager.GetCharacterStats(characterId);
+			float buffedAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
 
 			// Verify buff is applied
-			if (buffedStats[StatType.Attack] <= initialStats[StatType.Attack])
+			if (buffedAttack <= initialAttack)
 			{
 				testPassed = false;
 				LogError(testName, "Temporary buff not applied");
@@ -394,20 +349,19 @@ public partial class CharacterSystemTests : BaseTestSuite
 			System.Threading.Thread.Sleep(1100); // Wait slightly longer than buff duration
 			_playerManager.Update(); // Force update to process expired buffs
 
-			var finalStats = _playerManager.GetCharacterStats(characterId);
+			float finalAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
 
 			// Verify buff expired
-			if (Math.Abs(finalStats[StatType.Attack] - initialStats[StatType.Attack]) > 0.01f)
+			if (Math.Abs(finalAttack - initialAttack) > 0.01f)
 			{
 				testPassed = false;
 				LogError(testName, "Temporary buff did not expire");
 			}
 
 			DebugLogger.Log("\nBuff Expiration Results:", DebugLogger.LogCategory.Character);
-			DebugLogger.Log($"Initial Attack: {initialStats[StatType.Attack]}", DebugLogger.LogCategory.Character);
-			DebugLogger.Log($"Buffed Attack: {buffedStats[StatType.Attack]}", DebugLogger.LogCategory.Character);
-			DebugLogger.Log($"Final Attack: {finalStats[StatType.Attack]}", DebugLogger.LogCategory.Character);
-
+			DebugLogger.Log($"Initial Attack: {initialAttack}", DebugLogger.LogCategory.Character);
+			DebugLogger.Log($"Buffed Attack: {buffedAttack}", DebugLogger.LogCategory.Character);
+			DebugLogger.Log($"Final Attack: {finalAttack}", DebugLogger.LogCategory.Character);
 		}
 		catch (Exception ex)
 		{
@@ -418,7 +372,6 @@ public partial class CharacterSystemTests : BaseTestSuite
 		LogTestResult(testName, testPassed);
 	}
 
-
 	private void TestBuffRemoval()
 	{
 		string testName = "Buff Removal";
@@ -427,7 +380,7 @@ public partial class CharacterSystemTests : BaseTestSuite
 		try
 		{
 			string characterId = _playerManager.CreateCharacter("knight");
-			var initialStats = _playerManager.GetCharacterStats(characterId);
+			float initialAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
 
 			// Apply multiple buffs
 			string buffId1 = Guid.NewGuid().ToString();
@@ -436,26 +389,25 @@ public partial class CharacterSystemTests : BaseTestSuite
 			_playerManager.ApplyBuff(characterId, StatType.Attack, "Buff 1", BuffType.Flat, 10.0f, buffId: buffId1);
 			_playerManager.ApplyBuff(characterId, StatType.Attack, "Buff 2", BuffType.Percentage, 0.2f, buffId: buffId2);
 
-			var buffedStats = _playerManager.GetCharacterStats(characterId);
+			float buffedAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
 
 			// Remove one buff
 			_playerManager.RemoveBuff(characterId, StatType.Attack, buffId1);
-			var afterRemovalStats = _playerManager.GetCharacterStats(characterId);
+			float afterRemovalAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
 
 			// Calculate expected values
-			float expectedAfterRemoval = initialStats[StatType.Attack] * 1.2f;
+			float expectedAfterRemoval = initialAttack * 1.2f;
 
-			if (Math.Abs(afterRemovalStats[StatType.Attack] - expectedAfterRemoval) > 0.01f)
+			if (Math.Abs(afterRemovalAttack - expectedAfterRemoval) > 0.01f)
 			{
 				testPassed = false;
 				LogError(testName, "Buff removal not calculated correctly");
 			}
 
 			DebugLogger.Log("\nBuff Removal Results:", DebugLogger.LogCategory.Character);
-			DebugLogger.Log($"Initial Attack: {initialStats[StatType.Attack]}", DebugLogger.LogCategory.Character);
-			DebugLogger.Log($"Fully Buffed Attack: {buffedStats[StatType.Attack]}", DebugLogger.LogCategory.Character);
-			DebugLogger.Log($"After Removal Attack: {afterRemovalStats[StatType.Attack]}", DebugLogger.LogCategory.Character);
-
+			DebugLogger.Log($"Initial Attack: {initialAttack}", DebugLogger.LogCategory.Character);
+			DebugLogger.Log($"Fully Buffed Attack: {buffedAttack}", DebugLogger.LogCategory.Character);
+			DebugLogger.Log($"After Removal Attack: {afterRemovalAttack}", DebugLogger.LogCategory.Character);
 		}
 		catch (Exception ex)
 		{
@@ -508,21 +460,13 @@ public partial class CharacterSystemTests : BaseTestSuite
 		{
 			// Create character and get initial stats
 			string characterId = _playerManager.CreateCharacter("knight");
-			var initialStats = _playerManager.GetCharacterStats(characterId);
-			float initialHealth = initialStats[StatType.Health];
+			float initialHealth = _playerManager.GetStatValue(characterId, StatType.Health);
 
 			// Apply damage
-			_playerManager.ApplyBuff(
-				characterId,
-				StatType.Health,
-				"Critical Damage",
-				BuffType.Percentage,
-				-0.85f
-			);
+			_playerManager.ApplyBuff(characterId, StatType.Health, "Critical Damage", BuffType.Percentage, -0.85f);
 
 			// Verify health dropped below thresholds
-			var damagedStats = _playerManager.GetCharacterStats(characterId);
-			float healthAfterDamage = damagedStats[StatType.Health];
+			float healthAfterDamage = _playerManager.GetStatValue(characterId, StatType.Health);
 
 			// Check if we crossed the 50% threshold
 			bool crossed50Percent = healthAfterDamage < (initialHealth * 0.5f);
@@ -536,17 +480,10 @@ public partial class CharacterSystemTests : BaseTestSuite
 			}
 
 			// Apply healing
-			_playerManager.ApplyBuff(
-				characterId,
-				StatType.Health,
-				"Major Healing",
-				BuffType.Percentage,
-				0.7f
-			);
+			_playerManager.ApplyBuff(characterId, StatType.Health, "Major Healing", BuffType.Percentage, 0.7f);
 
 			// Verify health recovered above thresholds
-			var healedStats = _playerManager.GetCharacterStats(characterId);
-			float healthAfterHealing = healedStats[StatType.Health];
+			float healthAfterHealing = _playerManager.GetStatValue(characterId, StatType.Health);
 
 			// Check if we crossed back above 25%
 			bool recoveredAbove25 = healthAfterHealing > (initialHealth * 0.25f);
@@ -575,21 +512,13 @@ public partial class CharacterSystemTests : BaseTestSuite
 		{
 			// Create a character and get initial stats
 			string characterId = _playerManager.CreateCharacter("knight");
-			var initialStats = _playerManager.GetCharacterStats(characterId);
-			float initialHealth = initialStats[StatType.Health];
+			float initialHealth = _playerManager.GetStatValue(characterId, StatType.Health);
 
 			// Apply damage to drop health below thresholds
-			_playerManager.ApplyBuff(
-				characterId,
-				StatType.Health,
-				"Critical Damage",
-				BuffType.Percentage,
-				-0.85f
-			);
+			_playerManager.ApplyBuff(characterId, StatType.Health, "Critical Damage", BuffType.Percentage, -0.85f);
 
 			// Verify health dropped below thresholds
-			var damagedStats = _playerManager.GetCharacterStats(characterId);
-			float healthAfterDamage = damagedStats[StatType.Health];
+			float healthAfterDamage = _playerManager.GetStatValue(characterId, StatType.Health);
 
 			// Check if we crossed the 50% threshold
 			bool crossed50Percent = healthAfterDamage < (initialHealth * 0.5f);
@@ -608,17 +537,10 @@ public partial class CharacterSystemTests : BaseTestSuite
 			}
 
 			// Apply healing to restore health above thresholds
-			_playerManager.ApplyBuff(
-				characterId,
-				StatType.Health,
-				"Major Healing",
-				BuffType.Percentage,
-				0.7f
-			);
+			_playerManager.ApplyBuff(characterId, StatType.Health, "Major Healing", BuffType.Percentage, 0.7f);
 
 			// Verify health recovered above thresholds
-			var healedStats = _playerManager.GetCharacterStats(characterId);
-			float healthAfterHealing = healedStats[StatType.Health];
+			float healthAfterHealing = _playerManager.GetStatValue(characterId, StatType.Health);
 
 			// Check if we crossed back above 25%
 			bool recoveredAbove25 = healthAfterHealing > (initialHealth * 0.25f);
@@ -636,6 +558,7 @@ public partial class CharacterSystemTests : BaseTestSuite
 
 		LogTestResult(testName, testPassed);
 	}
+
 	private void TestCharacterMultipleStatThresholds()
 	{
 		string testName = "Character Multiple Stat Thresholds";
@@ -645,24 +568,16 @@ public partial class CharacterSystemTests : BaseTestSuite
 		{
 			// Create a character and get initial stats
 			string characterId = _playerManager.CreateCharacter("knight");
-			var initialStats = _playerManager.GetCharacterStats(characterId);
-			float initialMana = initialStats[StatType.Mana];
+			float initialMana = _playerManager.GetStatValue(characterId, StatType.Mana);
 
 			// Set multiple thresholds for the Mana stat
 			List<float> manaThresholds = new List<float> { 80f, 50f, 20f };
 
 			// Apply buffs to deplete mana and cross thresholds
-			_playerManager.ApplyBuff(
-				characterId,
-				StatType.Mana,
-				"Mana Drain",
-				BuffType.Flat,
-				-initialMana * 0.8f
-			);
+			_playerManager.ApplyBuff(characterId, StatType.Mana, "Mana Drain", BuffType.Flat, -initialMana * 0.8f);
 
 			// Verify all thresholds were crossed
-			var currentStats = _playerManager.GetCharacterStats(characterId);
-			float currentMana = currentStats[StatType.Mana];
+			float currentMana = _playerManager.GetStatValue(characterId, StatType.Mana);
 
 			foreach (float threshold in manaThresholds)
 			{
@@ -676,16 +591,9 @@ public partial class CharacterSystemTests : BaseTestSuite
 			}
 
 			// Apply buffs to restore mana above thresholds
-			_playerManager.ApplyBuff(
-				characterId,
-				StatType.Mana,
-				"Mana Restoration",
-				BuffType.Flat,
-				initialMana * 0.9f
-			);
+			_playerManager.ApplyBuff(characterId, StatType.Mana, "Mana Restoration", BuffType.Flat, initialMana * 0.9f);
 
-			currentStats = _playerManager.GetCharacterStats(characterId);
-			currentMana = currentStats[StatType.Mana];
+			currentMana = _playerManager.GetStatValue(characterId, StatType.Mana);
 
 			// Verify all thresholds were crossed back
 			foreach (float threshold in manaThresholds)
@@ -717,30 +625,31 @@ public partial class CharacterSystemTests : BaseTestSuite
 		{
 			// Create a character to test buffs
 			string characterId = _playerManager.CreateCharacter("knight");
-			var initialStats = _playerManager.GetCharacterStats(characterId);
+			float initialAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
+			float initialHealth = _playerManager.GetStatValue(characterId, StatType.Health);
 
 			// Test flat buff application and stacking
-			ApplyFlatBuffsAndVerify(characterId, StatType.Attack, initialStats[StatType.Attack]);
-			ApplyFlatBuffsAndVerify(characterId, StatType.Health, initialStats[StatType.Health]);
+			ApplyFlatBuffsAndVerify(characterId, StatType.Attack, initialAttack);
+			ApplyFlatBuffsAndVerify(characterId, StatType.Health, initialHealth);
 
 			// Reset stats to initial values before testing percentage buffs
-			ResetCharacterState(characterId, initialStats);
+			ResetCharacterState(characterId, initialAttack, initialHealth);
 
 			// Test percentage buff application and stacking
-			ApplyPercentageBuffsAndVerify(characterId, StatType.Attack, initialStats[StatType.Attack]);
-			ApplyPercentageBuffsAndVerify(characterId, StatType.Health, initialStats[StatType.Health]);
+			ApplyPercentageBuffsAndVerify(characterId, StatType.Attack, initialAttack);
+			ApplyPercentageBuffsAndVerify(characterId, StatType.Health, initialHealth);
 
 			// Reset stats to initial values before testing mixed buffs
-			ResetCharacterState(characterId, initialStats);
+			ResetCharacterState(characterId, initialAttack, initialHealth);
 
 			// Test mixed buff types (flat and percentage)
-			ApplyMixedBuffsAndVerify(characterId, initialStats[StatType.Attack], initialStats[StatType.Health]);
+			ApplyMixedBuffsAndVerify(characterId, initialAttack, initialHealth);
 
 			// Reset stats to initial values before testing buff expiration
-			ResetCharacterState(characterId, initialStats);
+			ResetCharacterState(characterId, initialAttack, initialHealth);
 
 			// Test buff expiration and removal
-			TestBuffExpiration(characterId, initialStats[StatType.Attack], initialStats[StatType.Health]);
+			TestBuffExpiration(characterId, initialAttack, initialHealth);
 		}
 		catch (Exception ex)
 		{
@@ -760,9 +669,9 @@ public partial class CharacterSystemTests : BaseTestSuite
 		_playerManager.ApplyBuff(characterId, statType, "Flat Buff 1", BuffType.Flat, 10.0f);
 		_playerManager.ApplyBuff(characterId, statType, "Flat Buff 2", BuffType.Flat, 5.0f);
 
-		var buffedStats = _playerManager.GetCharacterStats(characterId);
+		float buffedValue = _playerManager.GetStatValue(characterId, statType);
 		float expectedValue = initialValue + 15;
-		float actualValue = buffedStats[statType];
+		float actualValue = buffedValue;
 
 		if (Math.Abs(actualValue - expectedValue) > 0.2f * expectedValue)
 		{
@@ -775,9 +684,9 @@ public partial class CharacterSystemTests : BaseTestSuite
 		_playerManager.ApplyBuff(characterId, statType, "Percentage Buff 1", BuffType.Percentage, 0.2f);
 		_playerManager.ApplyBuff(characterId, statType, "Percentage Buff 2", BuffType.Percentage, 0.1f);
 
-		var buffedStats = _playerManager.GetCharacterStats(characterId);
+		float buffedValue = _playerManager.GetStatValue(characterId, statType);
 		float expectedValue = initialValue * 1.32f;
-		float actualValue = buffedStats[statType];
+		float actualValue = buffedValue;
 
 		if (Math.Abs(actualValue - expectedValue) > 0.2f * expectedValue)
 		{
@@ -790,11 +699,12 @@ public partial class CharacterSystemTests : BaseTestSuite
 		_playerManager.ApplyBuff(characterId, StatType.Attack, "Flat Buff", BuffType.Flat, 10.0f);
 		_playerManager.ApplyBuff(characterId, StatType.Health, "Percentage Buff", BuffType.Percentage, 0.2f);
 
-		var buffedStats = _playerManager.GetCharacterStats(characterId);
+		float buffedAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
+		float buffedHealth = _playerManager.GetStatValue(characterId, StatType.Health);
 		float expectedAttack = initialAttack + 10;
 		float expectedHealth = initialHealth * 1.2f;
-		float actualAttack = buffedStats[StatType.Attack];
-		float actualHealth = buffedStats[StatType.Health];
+		float actualAttack = buffedAttack;
+		float actualHealth = buffedHealth;
 
 		if (Math.Abs(actualAttack - expectedAttack) > 0.02f * expectedAttack)
 		{
@@ -815,16 +725,17 @@ public partial class CharacterSystemTests : BaseTestSuite
 		_playerManager.ApplyBuff(characterId, StatType.Attack, "Temporary Buff 1", BuffType.Flat, 10.0f, buffId1, TimeSpan.FromSeconds(1));
 		_playerManager.ApplyBuff(characterId, StatType.Health, "Temporary Buff 2", BuffType.Percentage, 0.2f, buffId2, TimeSpan.FromSeconds(1));
 
-		var buffedStats = _playerManager.GetCharacterStats(characterId);
+		float buffedAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
+		float buffedHealth = _playerManager.GetStatValue(characterId, StatType.Health);
 		float expectedAttack = initialAttack + 10;
 		float expectedHealth = initialHealth * 1.2f;
 
-		if (Math.Abs(buffedStats[StatType.Attack] - expectedAttack) > 0.01f)
+		if (Math.Abs(buffedAttack - expectedAttack) > 0.01f)
 		{
 			LogError("Buff Expiration", "Temporary attack buff not applied correctly");
 		}
 
-		if (Math.Abs(buffedStats[StatType.Health] - expectedHealth) > 0.01f)
+		if (Math.Abs(buffedHealth - expectedHealth) > 0.01f)
 		{
 			LogError("Buff Expiration", "Temporary health buff not applied correctly");
 		}
@@ -833,24 +744,26 @@ public partial class CharacterSystemTests : BaseTestSuite
 		System.Threading.Thread.Sleep(1100);
 		_playerManager.Update();
 
-		var finalStats = _playerManager.GetCharacterStats(characterId);
+		float finalAttack = _playerManager.GetStatValue(characterId, StatType.Attack);
+		float finalHealth = _playerManager.GetStatValue(characterId, StatType.Health);
 
-		if (Math.Abs(finalStats[StatType.Attack] - initialAttack) > 0.01f)
+		if (Math.Abs(finalAttack - initialAttack) > 0.01f)
 		{
 			LogError("Buff Expiration", "Temporary attack buff did not expire correctly");
 		}
 
-		if (Math.Abs(finalStats[StatType.Health] - initialHealth) > 0.01f)
+		if (Math.Abs(finalHealth - initialHealth) > 0.01f)
 		{
 			LogError("Buff Expiration", "Temporary health buff did not expire correctly");
 		}
 	}
-	private void ResetCharacterState(string characterId, Dictionary<StatType, float> initialStats)
+
+	private void ResetCharacterState(string characterId, float initialAttack, float initialHealth)
 	{
 		_playerManager.SetCharacterLevel(characterId, 1);
 
 		// Remove all active buffs
-		foreach (var stat in initialStats.Keys)
+		foreach (var stat in new[] { StatType.Attack, StatType.Health })
 		{
 			var activeModifiers = _playerManager.GetStatModifiers(characterId, stat);
 			foreach (var modifier in activeModifiers)
@@ -859,12 +772,12 @@ public partial class CharacterSystemTests : BaseTestSuite
 			}
 		}
 
-
+		_playerManager.ResetCharacterStats(characterId);
+		// Reset stats to initial values
 	}
+
 	private void LogError(string testName, string message)
 	{
-
-		
 		TestResults.Add($"Error in {testName}: {message}");
 	}
 
@@ -883,8 +796,5 @@ public partial class CharacterSystemTests : BaseTestSuite
 		}
 		GD.Print("===============================\n");
 	}
-
-
-
-	#endregion
+	#endregion 
 }

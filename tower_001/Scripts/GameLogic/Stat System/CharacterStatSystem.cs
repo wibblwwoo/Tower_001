@@ -123,25 +123,23 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         {
             return statType switch
             {
-                StatType.Health => GetStatValue(StatType.Stamina) * GameBalanceConfig.DerivedStats.HealthPerStamina +
-                                 GetStatValue(StatType.Strength) * GameBalanceConfig.DerivedStats.HealthPerStrength,
+                StatType.Health => GetStatValue(StatType.Stamina) * GameBalanceConfig.IdleCharacterStats.DerivedStats.HealthPerStamina,
                 
-                StatType.Attack => GetStatValue(StatType.Strength) * GameBalanceConfig.DerivedStats.AttackPerStrength +
-                                 GetStatValue(StatType.Dexterity) * GameBalanceConfig.DerivedStats.AttackPerDexterity,
+                StatType.Attack => GetStatValue(StatType.Strength) * GameBalanceConfig.IdleCharacterStats.DerivedStats.AttackPerStrength,
                 
-                StatType.Defense => GetStatValue(StatType.Stamina) * GameBalanceConfig.DerivedStats.DefensePerStamina +
-                                  GetStatValue(StatType.Strength) * GameBalanceConfig.DerivedStats.DefensePerStrength,
+                StatType.Defense => GetStatValue(StatType.Stamina) * GameBalanceConfig.IdleCharacterStats.DerivedStats.DefensePerStamina,
                 
-                StatType.Speed => GetStatValue(StatType.Dexterity) * GameBalanceConfig.DerivedStats.SpeedPerDexterity +
-                                GetStatValue(StatType.Intelligence) * GameBalanceConfig.DerivedStats.SpeedPerIntelligence,
+                StatType.Speed => GetStatValue(StatType.Dexterity) * GameBalanceConfig.IdleCharacterStats.DerivedStats.SpeedPerDexterity,
+                //+
+                //                GetStatValue(StatType.Intelligence) * GameBalanceConfig.IdleCharacterStats.DerivedStats.SpeedPerIntelligence,
                 
-                StatType.CriticalChance => GetStatValue(StatType.Dexterity) * GameBalanceConfig.DerivedStats.CritChancePerDexterity,
+                //StatType.CriticalChance => GetStatValue(StatType.Dexterity) * GameBalanceConfig.IdleCharacterStats.DerivedStats.CritChancePerDexterity,
                 
-                StatType.CriticalDamage => GetStatValue(StatType.Strength) * GameBalanceConfig.DerivedStats.CritDamagePerStrength,
+                //StatType.CriticalDamage => GetStatValue(StatType.Strength) * GameBalanceConfig.IdleCharacterStats.DerivedStats.CritDamagePerStrength,
                 
-                StatType.Mana => GetStatValue(StatType.Intelligence) * GameBalanceConfig.DerivedStats.ManaPerIntelligence,
+                //StatType.Mana => GetStatValue(StatType.Intelligence) * GameBalanceConfig.IdleCharacterStats.DerivedStats.ManaPerIntelligence,
                 
-                StatType.ManaRegen => GetStatValue(StatType.Intelligence) * GameBalanceConfig.DerivedStats.ManaRegenPerIntelligence,
+                //StatType.ManaRegen => GetStatValue(StatType.Intelligence) * GameBalanceConfig.IdleCharacterStats.DerivedStats.ManaRegenPerIntelligence,
                 
                 // Return base value for non-derived stats
                 _ => GetStatValue(statType)
@@ -614,6 +612,49 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
             summary.TotalPower = power;
             
             return summary;
+        }
+
+        /// <summary>
+        /// Updates the ascension bonus for a stat
+        /// </summary>
+        /// <param name="statType">The stat type to update</param>
+        /// <param name="ascensionLevel">Current ascension level</param>
+        /// <param name="bonusValue">Bonus value to apply</param>
+        public void UpdateAscensionBonus(StatType statType, int ascensionLevel, float bonusValue)
+        {
+            if (!_stats.TryGetValue(statType, out var stat))
+                return;
+
+            // Remove any existing ascension bonus
+            var existingBonus = _modifiers.GetValueOrDefault(statType)?.FirstOrDefault(m => m.Value.Source == "Ascension").Value;
+            if (existingBonus != null)
+            {
+                RemoveModifier(statType, "Ascension");
+            }
+            //TODO:: come back and deal with this
+            // Apply new ascension bonus
+            //var modifier = new StatModifier
+            //{
+            //    Id = "Ascension",
+            //    Source = "Ascension",
+            //    Value = bonusValue * ascensionLevel,
+            //    ModifierType = ModifierType.Multiplicative,
+            //    Duration = float.MaxValue // Permanent modifier
+            //};
+
+            //AddModifier(statType, modifier.Id, modifier);
+        }
+
+        /// <summary>
+        /// Gets the base value of a stat without any modifiers
+        /// </summary>
+        /// <param name="statType">The stat type to retrieve</param>
+        /// <returns>The base value of the stat</returns>
+        public float GetBaseStatValue(StatType statType)
+        {
+            if (!_stats.TryGetValue(statType, out var stat))
+                return 0f;
+            return stat.BaseValue;
         }
     }
 }

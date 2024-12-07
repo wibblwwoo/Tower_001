@@ -25,40 +25,34 @@ public class Mage : Character
 	protected override void InitializeStats()
 	{
 		// Initialize base health
-        Stats[StatType.Health] = new CharacterStat(
-            Id,
+        _statSystem.InitializeStat(
             StatType.Health,
-            GameBalanceConfig.CharacterStats.Mage.BaseHealth,
-            GameBalanceConfig.CharacterStats.Mage.HealthGrowth,
-            new List<float> { 40, 20 }
+            GameBalanceConfig.CharacterStats.Mage.BaseHealth
         );
 
         // Initialize base mana
-        Stats[StatType.Mana] = new CharacterStat(
-            Id,
+        _statSystem.InitializeStat(
             StatType.Mana,
-            GameBalanceConfig.CharacterStats.Mage.BaseMana,
-            GameBalanceConfig.CharacterStats.Mage.ManaGrowth,
-            new List<float> { 50, 25 }
+            GameBalanceConfig.CharacterStats.Mage.BaseMana
         );
 
         // Initialize base defense
-        Stats[StatType.Defense] = new CharacterStat(
-            Id,
+        _statSystem.InitializeStat(
             StatType.Defense,
-            GameBalanceConfig.CharacterStats.Mage.BaseDefense,
-            GameBalanceConfig.CharacterStats.Mage.DefenseGrowth,
-            null
+            GameBalanceConfig.CharacterStats.Mage.BaseDefense
         );
 
         // Initialize base speed
-        Stats[StatType.Speed] = new CharacterStat(
-            Id,
+        _statSystem.InitializeStat(
             StatType.Speed,
-            GameBalanceConfig.CharacterStats.Mage.BaseSpeed,
-            GameBalanceConfig.CharacterStats.Mage.SpeedGrowth,
-            null
+            GameBalanceConfig.CharacterStats.Mage.BaseSpeed
         );
+
+        // Initialize base magic power
+        //_statSystem.InitializeStat(
+            //StatType.MagicPower,
+            //GameBalanceConfig.CharacterStats.Mage.BaseMagicPower
+        //);
 		// Additional stats can be added here
 		//Power = CalculatePower();
 	}

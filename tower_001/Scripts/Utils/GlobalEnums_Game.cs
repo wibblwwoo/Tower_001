@@ -3,14 +3,6 @@ using System;
 
 public static partial class GlobalEnums
 {
-	public enum StatType
-	{
-		Health,
-		Mana,
-		Attack,
-		Defense,
-		Speed
-	}
 
 	public enum BuffType
 	{

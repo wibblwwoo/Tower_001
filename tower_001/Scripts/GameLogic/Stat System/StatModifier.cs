@@ -32,6 +32,11 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         public string Source { get; }
 
         /// <summary>
+        /// The stat type this modifier affects
+        /// </summary>
+        public StatType StatType { get; }
+
+        /// <summary>
         /// The type of modifier (e.g., flat increase, percentage increase).
         /// </summary>
         public BuffType Type { get; }
@@ -66,26 +71,28 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         /// </summary>
         /// <param name="id">The unique identifier for the modifier.</param>
         /// <param name="source">The source of the modifier.</param>
+        /// <param name="statType">The stat type this modifier affects</param>
         /// <param name="type">The type of modifier (e.g., flat, percentage).</param>
         /// <param name="value">The value of the modifier.</param>
         /// <param name="duration">
         /// Optional duration for the modifier. If null, the modifier is considered permanent.
         /// </param>
-        public StatModifier(string id, string source, BuffType type, float value, TimeSpan? duration = null)
+        public StatModifier(string id, string source, StatType statType, BuffType type, float value, TimeSpan? duration = null)
         {
             Id = id;
             Source = source;
+            StatType = statType;
             Type = type;
             Value = value;
-            Duration = duration ?? TimeSpan.Zero;
+            Duration = duration ?? TimeSpan.MaxValue;
             StartTime = DateTime.Now;
         }
 
         /// <summary>
         /// Creates a permanent stat modifier
         /// </summary>
-        public StatModifier(string id, string source, BuffType type, float value)
-            : this(id, source, type, value, TimeSpan.Zero)
+        public StatModifier(string id, string source, StatType statType, BuffType type, float value)
+            : this(id, source, statType, type, value, TimeSpan.Zero)
         {
         }
     }

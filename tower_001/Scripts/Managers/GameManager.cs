@@ -26,7 +26,8 @@ public partial class GameManager : Control, IManager
 	[Export]
 	public GameSystemTests _eventSystemTests;
 
-	
+	[Export]
+	public StatSystemTest _statsTest;
 	public override void _Ready()
 	{
 		Setup();
@@ -48,6 +49,10 @@ public partial class GameManager : Control, IManager
 		{
 			_eventSystemTests.Setup();
 		}
+
+
+		_statsTest = new StatSystemTest();
+		_statsTest.Run();
 
 	}
 

@@ -3,6 +3,7 @@ using System;
 using static DebugLogger;
 using static GlobalEnums;
 using static System.Net.Mime.MediaTypeNames;
+using Tower_001.Scripts.GameLogic.StatSystem.Tests;
 
 public partial class GameSystemTests : Node
 {
@@ -19,7 +20,6 @@ public partial class GameSystemTests : Node
 	private FloorSystemTests _floorSystemTests;
 	private RoomSystemTests _roomSystemTests;
 
-
 	private ResourceStorageTests _resourceStorageTests;
 	private ResourceCollectorTests _resourceCollectorTests;
 	private LargeScaleProgressionTestsv2 _largeScaleProgressionTestsv2;
@@ -30,11 +30,8 @@ public partial class GameSystemTests : Node
 	[Export]
 	public TestCategory Category { get; set; }
 
-
 	[Export]
 	public LogCategory Logging_Category { get; set; }
-
-	
 
 	public GameSystemTests()
 	{
@@ -49,8 +46,6 @@ public partial class GameSystemTests : Node
 
 	public void Setup()
 	{
-		
-
 		_eventManager = Globals.Instance.gameMangers.Events;
 		_playerManager = Globals.Instance.gameMangers.Player;
 
@@ -72,20 +67,17 @@ public partial class GameSystemTests : Node
 		
 		_towerProgressionChainTests = new TowerProgressionChainTests(_eventManager, _playerManager, _testConfig);
 		_towerCompletionPersistenceTest = new TowerCompletionPersistenceTest(_eventManager, _playerManager, _testConfig);
-		// Configure which tests to run
 
+		// Configure which tests to run
 		foreach (TestCategory _Category in Enum.GetValues(typeof(TestCategory)))
 		{
-
 			if ((Category & _Category) != 0) {
-
 				_testConfig.SetCategory(_Category, true);
 			}
-
 		}
+
 		DebugLogger.SetLogging(true);
 		DebugLogger.SetLogCategories(Logging_Category);
-
 		
 		RunAllTests();
 	}
@@ -93,63 +85,33 @@ public partial class GameSystemTests : Node
 	public void RunAllTests()
 	{
 		//Example of running a specific category with only certain test types
-
+        GD.Print("\n=== Running Stat System Validation ===");
+        try
+        {
+            var validator = new StatSystemValidator("test_character_001");
+            bool passed = validator.RunFullValidation();
+            if (!passed)
+            {
+                GD.PrintErr("Stat System Validation failed! See above for details.");
+            }
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"Stat System Validation failed with error: {e.Message}");
+        }
 
 		_characterSystemTests.RunAllTests();
-
 		_baseLevelingSystemTests.RunAllTests();
-
 		_prestigeSystemTests.RunAllTests();
-
 		_ascensionSystemTests.RunAllTests();
-
 		_towerSystemTests.RunAllTests();
-
 		_floorSystemTests.RunAllTests();
-
 		_roomSystemTests.RunAllTests();
-
-
 		_eventSystemTests.RunAllTests();
-
 		_resourceStorageTests.RunAllTests();
-
 		_resourceCollectorTests.RunAllTests();	
-
 		_towerProgressionChainTests.RunAllTests();
-
 		_largeScaleProgressionTestsv2.RunAllTests();
 		_towerCompletionPersistenceTest.RunAllTests();
 	}
-
-	//public void RunSpecificTestSuite(TestSuite suite)
-	//{
-	//	switch (suite)
-	//	{
-	//		case TestSuite.Events:
-	//			_eventTests.RunAllTests();
-	//			break;
-	//		case TestSuite.Character:
-	//			_characterTests.RunAllTests();
-	//			break;
-	//		case TestSuite.Progression:
-	//			_progressionTests.RunAllTests();
-	//			break;
-	//		case TestSuite.Prestige:
-	//			_prestigeTests.RunAllTests();
-	//			break;
-	//		case TestSuite.Ascension:
-	//			_ascensionTests.RunAllTests();
-	//			break;
-	//		case TestSuite.Tower:
-	//			_towerTests.RunAllTests();
-	//			break;
-	//		case TestSuite.Floor:
-	//			_floorTests.RunAllTests();
-	//			break;
-	//		case TestSuite.Room:
-	//			_roomTests.RunAllTests();
-	//			break;
-	//	}
-	//}
 }

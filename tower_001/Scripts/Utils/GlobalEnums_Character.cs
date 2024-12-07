@@ -65,4 +65,30 @@ public static partial class GlobalEnums
 		Bonus,
 		Event
 	}
+
+	public enum StatType
+    {
+        // Primary Stats
+        Strength,       // Base physical power
+        Dexterity,     // Agility and precision
+        Intelligence,  // Mental and magical power
+        Stamina,      // Physical endurance
+        
+        // Derived Combat Stats
+        Attack,        // Offensive power
+        Defense,       // Damage reduction
+        Health,        // Total hit points
+        Speed,         // Action speed and evasion
+        
+        // Critical Stats
+        CriticalChance,    // Chance to land critical hits
+        CriticalDamage,    // Bonus damage on critical hits
+        
+        // Resource Stats
+        Mana,             // Magic resource pool
+        ManaRegen,        // Mana regeneration rate
+        Energy,           // Physical resource pool
+        Shield,           // Damage absorption
+		None
+	}
 }

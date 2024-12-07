@@ -111,8 +111,8 @@ public class AscensionSystemTests : BaseTestSuite
 
 			// Record initial stats
 			var character = _playerManager.GetCharacter(characterId);
-			float initialAttack = character.GetStat(StatType.Attack).CurrentValue;
-			float initialHealth = character.GetStat(StatType.Health).CurrentValue;
+			float initialAttack = character.GetStatValue(StatType.Attack);
+			float initialHealth = character.GetStatValue(StatType.Health);
 
 			// Perform ascension
 			ResetTestFlags();
@@ -122,8 +122,8 @@ public class AscensionSystemTests : BaseTestSuite
 			float expectedAttackBonus = 0.02f;
 			float expectedHealthBonus = 0.02f;
 
-			var newAttack = character.GetStat(StatType.Attack).CurrentValue;
-			var newHealth = character.GetStat(StatType.Health).CurrentValue;
+			var newAttack = character.GetStatValue(StatType.Attack);
+			var newHealth = character.GetStatValue(StatType.Health);
 
 			float expectedAttackValue = initialAttack * (1 + expectedAttackBonus);
 			float expectedHealthValue = initialHealth * (1 + expectedHealthBonus);
@@ -176,8 +176,8 @@ public class AscensionSystemTests : BaseTestSuite
 			// Record initial stats
 			Dictionary<StatType, float> initialStats = new()
 		{
-			{ StatType.Attack, character.GetStat(StatType.Attack).CurrentValue },
-			{ StatType.Health, character.GetStat(StatType.Health).CurrentValue }
+			{ StatType.Attack, character.GetStatValue(StatType.Attack) },
+			{ StatType.Health, character.GetStatValue(StatType.Health) }
 		};
 
 			// Log initial values
@@ -199,7 +199,7 @@ public class AscensionSystemTests : BaseTestSuite
 				DebugLogger.Log($"\nAfter Ascension {i + 1}:", DebugLogger.LogCategory.Progress);
 				foreach (var statType in initialStats.Keys)
 				{
-					float currentValue = character.GetStat(statType).CurrentValue;
+					float currentValue = character.GetStatValue(statType);
 					float expectedBonusPercent = (i + 1) * 0.02f;
 					float expectedValue = initialStats[statType] * (1f + expectedBonusPercent);
 
@@ -243,8 +243,8 @@ public class AscensionSystemTests : BaseTestSuite
 			// Record initial stats
 			Dictionary<StatType, float> initialStats = new()
 		{
-			{ StatType.Attack, character.GetStat(StatType.Attack).CurrentValue },
-			{ StatType.Health, character.GetStat(StatType.Health).CurrentValue }
+			{ StatType.Attack, character.GetStatValue(StatType.Attack) },
+			{ StatType.Health, character.GetStatValue(StatType.Health) }
 		};
 
 			// Log initial values
@@ -262,8 +262,8 @@ public class AscensionSystemTests : BaseTestSuite
 			// Record post-ascension stats
 			Dictionary<StatType, float> postAscensionStats = new()
 		{
-			{ StatType.Attack, character.GetStat(StatType.Attack).CurrentValue },
-			{ StatType.Health, character.GetStat(StatType.Health).CurrentValue }
+			{ StatType.Attack, character.GetStatValue(StatType.Attack)},
+			{ StatType.Health, character.GetStatValue(StatType.Health) }
 		};
 
 			// Log post-ascension values
@@ -281,7 +281,7 @@ public class AscensionSystemTests : BaseTestSuite
 			foreach (var statType in initialStats.Keys)
 			{
 				float expectedValue = initialStats[statType] * (1f + (0.02f)); // 2% bonus
-				float persistedValue = reloadedCharacter.GetStat(statType).CurrentValue;
+				float persistedValue = reloadedCharacter.GetStatValue(statType);
 
 				DebugLogger.Log($"\nVerifying {statType} persistence:", DebugLogger.LogCategory.Progress);
 				DebugLogger.Log($"Initial: {initialStats[statType]:F2}", DebugLogger.LogCategory.Progress);
@@ -391,8 +391,8 @@ public class AscensionSystemTests : BaseTestSuite
 			// Record initial stats
 			Dictionary<StatType, float> initialStats = new()
 		{
-			{ StatType.Attack, character.GetStat(StatType.Attack).CurrentValue },
-			{ StatType.Health, character.GetStat(StatType.Health).CurrentValue }
+			{ StatType.Attack, character.GetStatValue(StatType.Attack) },
+			{ StatType.Health, character.GetStatValue(StatType.Health)	 }
 		};
 
 			// Track progression through multiple ascensions
@@ -423,7 +423,7 @@ public class AscensionSystemTests : BaseTestSuite
 				var currentStats = new Dictionary<StatType, float>();
 				foreach (var statType in initialStats.Keys)
 				{
-					currentStats[statType] = character.GetStat(statType).CurrentValue;
+					currentStats[statType] = character.GetStatValue(statType);
 				}
 				statProgressions.Add(currentStats);
 
@@ -439,7 +439,7 @@ public class AscensionSystemTests : BaseTestSuite
 				{
 					float expectedBonus = (i + 1) * 0.02f; // 2% per level
 					float expectedValue = initialStats[statType] * (1f + expectedBonus);
-					float currentValue = character.GetStat(statType).CurrentValue;
+					float currentValue = character.GetStatValue(statType);
 
 					DebugLogger.Log($"\nAscension {i + 1} - {statType}:", DebugLogger.LogCategory.Progress);
 					DebugLogger.Log($"Expected bonus: +{expectedBonus:P2}", DebugLogger.LogCategory.Progress);
@@ -780,7 +780,7 @@ public class AscensionSystemTests : BaseTestSuite
 				{
 					float baseValue = scalingData[0].stats[stat];
 					float expectedValue = baseValue * (1f + expectedBonus);
-					float actualValue = character.GetStat(stat).CurrentValue;
+					float actualValue = character.GetStatValue(stat)	;
 
 					if (Math.Abs(actualValue - expectedValue) > 0.001f)
 					{
@@ -895,7 +895,7 @@ public class AscensionSystemTests : BaseTestSuite
 				{
 					float baseValue = bonusProgression[0].stats[statType];
 					float expectedValue = baseValue * (1f + expectedBonus);
-					float actualValue = character.GetStat(statType).CurrentValue;
+					float actualValue = character.GetStatValue(statType);
 
 					if (Math.Abs(actualValue - expectedValue) > 0.001f)
 					{
@@ -953,7 +953,7 @@ public class AscensionSystemTests : BaseTestSuite
 			.Cast<StatType>()
 			.ToDictionary(
 				statType => statType,
-				statType => character.GetStat(statType)?.CurrentValue ?? 0
+				statType => character.GetStatValue(statType) 
 			);
 	}
 	#region Support Methods
