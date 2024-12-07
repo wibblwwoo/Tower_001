@@ -156,6 +156,8 @@ public class FloorDifficulty
 	/// <returns>The calculated base difficulty for the floor.</returns>
 	public float CalculateDifficulty(int floorPosition, bool isMilestoneFloor)
 	{
+
+
 		// Apply exponential base scaling
 		float baseScaling = Mathf.Pow(GameBalanceConfig.FloorDifficulty.BaseScalingFactor, floorPosition);
 		
@@ -164,13 +166,12 @@ public class FloorDifficulty
 		
 		// Calculate total difficulty
 		float totalDifficulty = BaseValue * baseScaling * (1 + positionBonus);
-		
+
 		// Apply milestone multiplier if applicable
 		if (isMilestoneFloor)
 		{
-			totalDifficulty *= GameBalanceConfig.FloorDifficulty.MilestoneMultiplier;
+			totalDifficulty *= MilestoneDifficultyMultiplier;  // Use instance property
 		}
-		
 		return totalDifficulty;
 	}
 

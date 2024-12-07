@@ -24,7 +24,7 @@ public partial class WorldManager : BaseManager
 		// Call base.Setup() first to ensure EventManager is ready
 		base.Setup();
 		RegisterEventHandlers();
-		_subManagerResolver = new ManagerDependencyResolver();
+		//_subManagerResolver = new ManagerDependencyResolver();
 		InitializeSubManagers();
 	}
 
@@ -38,18 +38,21 @@ public partial class WorldManager : BaseManager
 		Towers = new TowerManager(EventManager);
 		Floors = new FloorManager();
 		Rooms = new RoomManager();
+		Floors.Setup();
+		Rooms.Setup();
+		Towers.Setup();
 
-		// Register with resolver
-		_subManagerResolver.AddManager(EventManager);
-		_subManagerResolver.AddManager(Towers);
-		_subManagerResolver.AddManager(Floors);
-		_subManagerResolver.AddManager(Rooms);
+		//// Register with resolver
+		//_subManagerResolver.AddManager(EventManager);
+		//_subManagerResolver.AddManager(Towers);
+		//_subManagerResolver.AddManager(Floors);
+		//_subManagerResolver.AddManager(Rooms);
 
-		// Initialize in dependency order
-		var initOrder = _subManagerResolver.GetInitializationOrder();
-		foreach (var manager in initOrder)
-		{
-			manager.Setup();
-		}
+		//// Initialize in dependency order
+		//var initOrder = _subManagerResolver.GetInitializationOrder();
+		//foreach (var manager in initOrder)
+		//{
+		//	manager.Setup();
+		//}
 	}
 }

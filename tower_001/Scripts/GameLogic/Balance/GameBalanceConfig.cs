@@ -71,7 +71,7 @@ namespace Tower_001.Scripts.GameLogic.Balance
         {
             public const float BaseScalingFactor = 1.15f;          // 15% increase per floor
             public const float PositionBonus = 0.05f;              // 5% bonus per position
-            public const float MilestoneMultiplier = 1.5f;         // 50% bonus at milestone floors
+            public const float MilestoneMultiplier = 2.0f;         // 50% bonus at milestone floors
         }
 
         /// <summary>

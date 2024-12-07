@@ -161,8 +161,9 @@ public partial class FloorManager : BaseManager
         if (success)
         {
             DebugLogger.Log($"Generated {floorCount} floors for tower {tower.Id}", DebugLogger.LogCategory.Room);
+            tower.Floors = GetFloorsForTower(tower.Id);
 
-        }
+		}
         else
         {
             GD.PrintErr($"Failed to generate floors for tower {tower.Id}");
