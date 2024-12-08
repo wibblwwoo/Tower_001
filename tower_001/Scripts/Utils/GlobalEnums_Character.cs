@@ -91,4 +91,23 @@ public static partial class GlobalEnums
         Shield,           // Damage absorption
 		None
 	}
+
+	/// <summary>
+	/// Defines the source of a permanent stat bonus
+	/// </summary>
+	public enum BonusSource
+	{
+		None = 0,
+		Ascension,           // From ascending to higher tiers
+		AscensionMilestone, // Special bonuses at ascension milestones
+		Prestige,           // From prestige levels
+		PrestigeMilestone,  // Special bonuses at prestige milestones
+		Achievement,        // From completing achievements
+		Quest,             // From completing quests
+		Equipment,         // From permanent equipment bonuses
+		Skill,            // From permanent skill upgrades
+		Title,            // From earned titles
+		Other             // For miscellaneous permanent bonuses
+		
+	}
 }

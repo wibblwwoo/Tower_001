@@ -15,6 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Scripts\GameLogic\Resource System\" />
+    <Folder Include="Scripts\GameLogic\Stat System\Tests\" />
     <Folder Include="Scripts\UI\Panels\" />
     <Folder Include="Scripts\Unit Testing\Tower\" />
   </ItemGroup>

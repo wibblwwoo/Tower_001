@@ -67,17 +67,17 @@ public class AscensionSystemTests : BaseTestSuite
 			var progress = _playerManager.progressionManager.GetProgressData(characterId);
 
 			// Test ascension requirements not met
-			progress.PrestigeLevel = _config.PrestigeForAscension - 1;
-			if (_playerManager.progressionManager.AscensionManager.TryAscend(characterId))
+			progress.PrestigeLevel = _config.PrestigeLevelsForAscension - 1;
+			if (_playerManager.progressionManager.TryAscend(characterId))
 			{
 				testPassed = false;
 				LogError(testName, "Ascension succeeded without meeting requirements");
 			}
 
 			// Test ascension requirements met
-			progress.PrestigeLevel = _config.PrestigeForAscension;
+			progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
 			ResetTestFlags();
-			if (!_playerManager.progressionManager.AscensionManager.TryAscend(characterId))
+			if (!_playerManager.progressionManager.TryAscend(characterId))
 			{
 				testPassed = false;
 				LogError(testName, "Ascension failed despite meeting requirements");
@@ -107,7 +107,7 @@ public class AscensionSystemTests : BaseTestSuite
 		{
 			var characterId = CreateTestCharacter();
 			var progress = _playerManager.progressionManager.GetProgressData(characterId);
-			progress.PrestigeLevel = _config.PrestigeForAscension;
+			progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
 
 			// Record initial stats
 			var character = _playerManager.GetCharacter(characterId);
@@ -116,7 +116,7 @@ public class AscensionSystemTests : BaseTestSuite
 
 			// Perform ascension
 			ResetTestFlags();
-			_playerManager.progressionManager.AscensionManager.TryAscend(characterId);
+			_playerManager.progressionManager.TryAscend(characterId);
 
 			// Verify first level bonuses (2%)
 			float expectedAttackBonus = 0.02f;
@@ -192,8 +192,8 @@ public class AscensionSystemTests : BaseTestSuite
 			for (int i = 0; i < ascensionCount; i++)
 			{
 				ResetTestFlags();
-				progress.PrestigeLevel = _config.PrestigeForAscension;
-				_playerManager.progressionManager.AscensionManager.TryAscend(characterId);
+				progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
+				_playerManager.progressionManager.TryAscend(characterId);
 
 				// Log values after each ascension
 				DebugLogger.Log($"\nAfter Ascension {i + 1}:", DebugLogger.LogCategory.Progress);
@@ -256,8 +256,8 @@ public class AscensionSystemTests : BaseTestSuite
 
 			// Perform multiple ascensions
 			long ascensionLevel = 3;
-			progress.PrestigeLevel = _config.PrestigeForAscension;
-			_playerManager.progressionManager.AscensionManager.TryAscend(characterId);
+			progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
+			_playerManager.progressionManager.TryAscend(characterId);
 
 			// Record post-ascension stats
 			Dictionary<StatType, float> postAscensionStats = new()
@@ -326,7 +326,7 @@ public class AscensionSystemTests : BaseTestSuite
 
 			// Setup initial state
 			progress.Level = 50;
-			progress.PrestigeLevel = _config.PrestigeForAscension + 5;
+			progress.PrestigeLevel = _config.PrestigeLevelsForAscension + 5;
 			progress.CurrentExp = 1000;
 
 			// Store pre-ascension values
@@ -335,7 +335,7 @@ public class AscensionSystemTests : BaseTestSuite
 			float oldExp = progress.CurrentExp;
 
 			// Perform ascension
-			_playerManager.progressionManager.AscensionManager.TryAscend(characterId);
+			_playerManager.progressionManager.TryAscend(characterId);
 
 			// Verify resets
 			if (progress.Level != 1)
@@ -409,8 +409,8 @@ public class AscensionSystemTests : BaseTestSuite
 			// Perform multiple ascensions
 			for (int i = 0; i < ascensionCount; i++)
 			{
-				progress.PrestigeLevel = _config.PrestigeForAscension;
-				bool ascended = _playerManager.progressionManager.AscensionManager.TryAscend(characterId);
+				progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
+				bool ascended = _playerManager.progressionManager.TryAscend(characterId);
 
 				if (!ascended)
 				{
@@ -490,11 +490,11 @@ public class AscensionSystemTests : BaseTestSuite
 			var progress = _playerManager.progressionManager.GetProgressData(characterId);
 
 			// Prepare for ascension
-			progress.PrestigeLevel = _config.PrestigeForAscension;
+			progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
 			ResetTestFlags();
 
 			// Perform ascension
-			bool ascended = _playerManager.progressionManager.AscensionManager.TryAscend(characterId);
+			bool ascended = _playerManager.progressionManager.TryAscend(characterId);
 
 			// Verify event was received
 			if (!_ascensionEventReceived)
@@ -567,9 +567,9 @@ public class AscensionSystemTests : BaseTestSuite
 			var progress = _playerManager.progressionManager.GetProgressData(characterId);
 
 			// Test case 1: Insufficient prestige level
-			progress.PrestigeLevel = _config.PrestigeForAscension - 1;
+			progress.PrestigeLevel = _config.PrestigeLevelsForAscension - 1;
 			ResetTestFlags();
-			if (_playerManager.progressionManager.AscensionManager.TryAscend(characterId))
+			if (_playerManager.progressionManager.TryAscend(characterId))
 			{
 				testPassed = false;
 				LogError(testName, "Ascension succeeded with insufficient prestige level");
@@ -577,16 +577,16 @@ public class AscensionSystemTests : BaseTestSuite
 
 			// Test case 2: Max ascension level
 			progress.AscensionLevel = _config.MaxAscensionLevel;
-			progress.PrestigeLevel = _config.PrestigeForAscension;
+			progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
 			ResetTestFlags();
-			if (_playerManager.progressionManager.AscensionManager.TryAscend(characterId))
+			if (_playerManager.progressionManager.TryAscend(characterId))
 			{
 				testPassed = false;
 				LogError(testName, "Ascension succeeded beyond max level");
 			}
 
 			// Test case 3: Invalid character ID
-			if (_playerManager.progressionManager.AscensionManager.TryAscend("invalid_id"))
+			if (_playerManager.progressionManager.TryAscend("invalid_id"))
 			{
 				testPassed = false;
 				LogError(testName, "Ascension succeeded with invalid character ID");
@@ -594,9 +594,9 @@ public class AscensionSystemTests : BaseTestSuite
 
 			// Test case 4: Multiple rapid ascensions
 			progress.AscensionLevel = 0;
-			bool firstAscension = _playerManager.progressionManager.AscensionManager.TryAscend(characterId);
-			progress.PrestigeLevel = _config.PrestigeForAscension;
-			bool secondAscension = _playerManager.progressionManager.AscensionManager.TryAscend(characterId);
+			bool firstAscension = _playerManager.progressionManager.TryAscend(characterId);
+			progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
+			bool secondAscension = _playerManager.progressionManager.TryAscend(characterId);
 
 			if (!firstAscension || secondAscension)
 			{
@@ -605,7 +605,7 @@ public class AscensionSystemTests : BaseTestSuite
 			}
 
 			DebugLogger.Log("\nTested Failure Cases:", DebugLogger.LogCategory.Progress);
-			DebugLogger.Log($"Insufficient Prestige Level: {_config.PrestigeForAscension - 1}", DebugLogger.LogCategory.Progress);
+			DebugLogger.Log($"Insufficient Prestige Level: {_config.PrestigeLevelsForAscension - 1}", DebugLogger.LogCategory.Progress);
 			DebugLogger.Log($"Max Ascension Level: {_config.MaxAscensionLevel}", DebugLogger.LogCategory.Progress);
 			DebugLogger.Log($"Invalid Character ID Test", DebugLogger.LogCategory.Progress);
 			DebugLogger.Log($"Multiple Rapid Ascensions Test", DebugLogger.LogCategory.Progress);
@@ -659,8 +659,8 @@ public class AscensionSystemTests : BaseTestSuite
 			));
 
 			// Prepare for and perform ascension
-			progress.PrestigeLevel = _config.PrestigeForAscension;
-			bool ascended = _playerManager.progressionManager.AscensionManager.TryAscend(characterId);
+			progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
+			bool ascended = _playerManager.progressionManager.TryAscend(characterId);
 			progressionSteps.Add((
 				"After Ascension",
 				character.Power,
@@ -762,8 +762,8 @@ public class AscensionSystemTests : BaseTestSuite
 			for (int i = 0; i < testLevels; i++)
 			{
 				// Prepare and perform ascension
-				progress.PrestigeLevel = _config.PrestigeForAscension;
-				_playerManager.progressionManager.AscensionManager.TryAscend(characterId);
+				progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
+				_playerManager.progressionManager.TryAscend(characterId);
 
 				// Record data after ascension
 				scalingData.Add((
@@ -866,8 +866,8 @@ public class AscensionSystemTests : BaseTestSuite
 			for (int i = 0; i < testLevels; i++)
 			{
 				// Perform ascension
-				progress.PrestigeLevel = _config.PrestigeForAscension;
-				_playerManager.progressionManager.AscensionManager.TryAscend(characterId);
+				progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
+				_playerManager.progressionManager.TryAscend(characterId);
 
 				// Record progression data
 				bonusProgression.Add((

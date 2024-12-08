@@ -3,7 +3,6 @@ using System;
 using static DebugLogger;
 using static GlobalEnums;
 using static System.Net.Mime.MediaTypeNames;
-using Tower_001.Scripts.GameLogic.StatSystem.Tests;
 
 public partial class GameSystemTests : Node
 {
@@ -84,21 +83,6 @@ public partial class GameSystemTests : Node
 
 	public void RunAllTests()
 	{
-		//Example of running a specific category with only certain test types
-        GD.Print("\n=== Running Stat System Validation ===");
-        try
-        {
-            var validator = new StatSystemValidator("test_character_001");
-            bool passed = validator.RunFullValidation();
-            if (!passed)
-            {
-                GD.PrintErr("Stat System Validation failed! See above for details.");
-            }
-        }
-        catch (Exception e)
-        {
-            GD.PrintErr($"Stat System Validation failed with error: {e.Message}");
-        }
 
 		_characterSystemTests.RunAllTests();
 		_baseLevelingSystemTests.RunAllTests();

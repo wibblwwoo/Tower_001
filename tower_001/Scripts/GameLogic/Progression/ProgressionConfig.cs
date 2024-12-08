@@ -37,7 +37,7 @@ public partial class ProgressionConfig
 	/// <summary>
 	/// Number of prestige levels required to unlock ascension ability
 	/// </summary>
-	public int PrestigeForAscension { get; set; } = GameBalanceConfig.Progression.PrestigeRequiredForAscension;
+	public int PrestigeLevelsForAscension { get; set; } = GameBalanceConfig.Progression.PrestigeLevelsForAscension;
 
 	/// <summary>
 	/// Base multiplier for power gains from prestige levels

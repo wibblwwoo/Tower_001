@@ -57,7 +57,7 @@ namespace Tower_001.Scripts.GameLogic.Balance
 			public const float AscensionStatMultiplier = 0.25f;    // 25% permanent stat bonus per ascension
 			public const float AscensionCostBase = 1000f;          // Base cost for first ascension
 			public const float AscensionCostScaling = 2.0f;        // Cost doubles per ascension level
-			public const int PrestigeRequiredForAscension = 10000; // Prestige levels needed for ascension
+			public const int PrestigeLevelsForAscension = 10000; // Prestige levels needed for ascension
 			public const float AscensionPowerBase = 10.0f;        // Base power multiplier for ascension
 			public const long BaseAscensionCost = 1000000000;     // Base cost for ascension
 			public const int AscensionCostScalingFactor = 100;    // Cost scaling factor for ascension

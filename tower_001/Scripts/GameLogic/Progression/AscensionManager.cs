@@ -201,7 +201,7 @@ public class AscensionManager : IManager
 
         // Check if character has reached the required prestige level
         // This is configured in ProgressionConfig
-        return progress.PrestigeLevel >= _config.PrestigeForAscension;
+        return progress.PrestigeLevel >= _config.PrestigeLevelsForAscension;
     }
 
     /// <summary>

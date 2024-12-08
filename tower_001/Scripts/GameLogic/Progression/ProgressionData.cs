@@ -251,7 +251,7 @@ public partial class ProgressionData
     /// <summary>
     /// Checks if character meets requirements for ascension
     /// </summary>
-    public bool CanAscend => PrestigeLevel >= _config.PrestigeForAscension &&
+    public bool CanAscend => PrestigeLevel >= _config.PrestigeLevelsForAscension &&
                             CheckAscensionCost(AscensionLevel + 1);
 
     /// <summary>

@@ -50,7 +50,7 @@ public partial class ProgressionManager : IManager
             ExpScalingFactor = 1.15f,         // Experience requirement growth per level
             LevelsForPrestige = 100000,       // Level threshold for prestige
             PrestigePowerMultiplier = 2.0f,   // Power boost from prestiging
-            PrestigeLevelsForAscension = 1,   // Prestige level required for ascension
+			PrestigeLevelsForAscension = 1,   // Prestige level required for ascension
             MaxAscensionLevel = 10           // Maximum ascension level
         };
 
@@ -735,7 +735,7 @@ public partial class ProgressionManager : IManager
                 var bonus = new PermanentBonus(
                     name: $"Prestige Milestone {prestigeLevel}",
                     statType: statType,
-                    source: BonusSource.Milestone,
+                    source: BonusSource.PrestigeMilestone,
                     value: milestoneBonus,
                     description: $"Bonus from reaching Prestige Level {prestigeLevel} milestone"
                 );
@@ -775,7 +775,7 @@ public partial class ProgressionManager : IManager
                 var bonus = new PermanentBonus(
                     name: $"Ascension Milestone {ascensionLevel}",
                     statType: statType,
-                    source: BonusSource.Milestone,
+                    source: BonusSource.AscensionMilestone,
                     value: milestoneBonus,
                     description: $"Bonus from reaching Ascension Level {ascensionLevel} milestone"
                 );

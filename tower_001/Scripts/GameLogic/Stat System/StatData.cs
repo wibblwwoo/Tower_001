@@ -35,7 +35,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
             _cachedValue = baseValue * multiplier;
             _lastValue = _cachedValue;
         }
-		public StatData(string characterId, float baseValue, float multiplier = 1.0f, float experience = 0, int level = 1, StatType statType = default)
+		public StatData(string characterId, float baseValue, float multiplier = 1.0f, float experience = 0, int level = 1, StatType statType = default, Bonus.PermanentBonusRegistry bonusRegistry = null)
 		{
 			_characterId = characterId;
 			_baseValue = baseValue;
@@ -95,5 +95,10 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
                 new CharacterStatEventArgs(_characterId, Type, oldValue, newValue)
             );
         }
-    }
+        public void MarkDirty()
+        {
+            _isDirty = true;
+        }
+
+	}
 }
