@@ -38,7 +38,10 @@ public static class DebugLogger
 		Resources = 1 << 12, // Resouce Storage system
 		Resources_Collectors = 1 << 13, // resouce collection system
 		Error = 1 << 14,
-		All = ~0
+		UI_States = 1 << 15,
+		All = ~0,
+		UI_ManagerInitializing = 32769,
+		Stats_Debug = 32770
 	}
 
 	// Current active log categories
@@ -130,7 +133,7 @@ public static class DebugLogger
 			
 			// Console logging
 			GD.Print(logMessage);
-			
+			System.Diagnostics.Debug.WriteLine($"Godot: {message}");
 			// File logging
 			if (_fileLoggingEnabled)
 			{

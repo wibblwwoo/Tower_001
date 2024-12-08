@@ -33,6 +33,7 @@ public partial class ProgressionManager : IManager
     private const float BASE_PRESTIGE_STAT_BONUS = 0.1f;  // 10% per prestige level
     private const float BASE_ASCENSION_STAT_BONUS = 0.02f; // 2% per ascension level
     private const float ASCENSION_MILESTONE_BONUS = 0.02f; // 2% per milestone (every 2 levels)
+    private const int ASCENSION_MILESTONE_INTERVAL = 5;  // Every 5 levels
 	/// <summary>
 	/// Initializes a new instance of the ProgressionManager
 	/// </summary>
@@ -614,57 +615,28 @@ public partial class ProgressionManager : IManager
         var character = _playerManager.GetCharacter(characterId);
         if (character == null) return;
 
-        // Debug log initial values
+        var ascensionLevelValue = ascensionLevel;
+        if (ascensionLevelValue <= 0) return;
+
+        // Calculate base ascension bonus (2% per level)
+        float baseBonus = ascensionLevelValue * BASE_ASCENSION_STAT_BONUS;
+
+        // Calculate milestone bonuses (additional 3% every 5 levels)
+        int milestones = (int)(ascensionLevelValue / ASCENSION_MILESTONE_INTERVAL);
+        float milestoneBonus = milestones * ASCENSION_MILESTONE_BONUS;
+
+        // Total bonus is base + milestone bonuses
+        float totalBonus = baseBonus + milestoneBonus;
+
+        // Apply bonus to all primary stats
         foreach (StatType statType in GetPrimaryStats())
         {
-            DebugLogger.Log($"Initial {statType}: {character.GetStatValue(statType):F2}", DebugLogger.LogCategory.Progress);
+            // Create unique name for this bonus to prevent stacking
+            string bonusName = $"Ascension_{statType}_{ascensionLevelValue}";
+
+            // Create and apply the permanent bonus
+            character.UpdateAscensionBonus(statType, (int)ascensionLevelValue, totalBonus);
         }
-
-        // Apply base ascension bonus (2% per level) for ALL levels up to current
-        float totalBaseBonus = 0f;
-        for (long i = 1; i <= ascensionLevel; i++)
-        {
-            float baseBonus = BASE_ASCENSION_STAT_BONUS;  // 2% for each level
-            totalBaseBonus += baseBonus;
-            
-            foreach (StatType statType in GetPrimaryStats())
-            {
-                character.UpdateAscensionBonus(statType, (int)i, baseBonus);
-            }
-            DebugLogger.Log($"Added Level {i} Base Bonus: +{baseBonus:P2}", DebugLogger.LogCategory.Progress);
-        }
-        DebugLogger.Log($"Total Base Bonus: +{totalBaseBonus:P2}", DebugLogger.LogCategory.Progress);
-
-        // Apply milestone bonuses (2% every 2 levels) for ALL milestones reached
-        float totalMilestoneBonus = 0f;
-        for (long i = 2; i <= ascensionLevel; i += 2)  // Start at 2 and increment by 2
-        {
-            float milestoneBonus = ASCENSION_MILESTONE_BONUS;  // 2% for each milestone
-            totalMilestoneBonus += milestoneBonus;
-            
-            foreach (StatType statType in GetPrimaryStats())
-            {
-                character.UpdateAscensionBonus(statType, (int)i, milestoneBonus);
-            }
-            DebugLogger.Log($"Added Level {i} Milestone Bonus: +{milestoneBonus:P2}", DebugLogger.LogCategory.Progress);
-        }
-        DebugLogger.Log($"Total Milestone Bonus: +{totalMilestoneBonus:P2}", DebugLogger.LogCategory.Progress);
-
-        // Log final stats and total bonuses
-        foreach (StatType statType in GetPrimaryStats())
-        {
-            float finalValue = character.GetStatValue(statType);
-            DebugLogger.Log($"Final {statType}: {finalValue:F2}", DebugLogger.LogCategory.Progress);
-        }
-
-        // Check for additional ascension milestones
-        CheckAscensionMilestones(characterId, ascensionLevel);
-
-        // Log total active bonuses
-        DebugLogger.Log("Total Active Bonuses:", DebugLogger.LogCategory.Progress);
-        DebugLogger.Log($"  Base Bonuses: +{totalBaseBonus:P2} ({ascensionLevel} levels * {BASE_ASCENSION_STAT_BONUS:P2})", DebugLogger.LogCategory.Progress);
-        DebugLogger.Log($"  Milestone Bonuses: +{totalMilestoneBonus:P2} ({ascensionLevel / 2} milestones * {ASCENSION_MILESTONE_BONUS:P2})", DebugLogger.LogCategory.Progress);
-        DebugLogger.Log($"  Total Combined Bonus: +{(totalBaseBonus + totalMilestoneBonus):P2}", DebugLogger.LogCategory.Progress);
     }
 
     /// <summary>

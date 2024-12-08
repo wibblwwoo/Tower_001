@@ -96,7 +96,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
 
             // Calculate flat and percentage modifiers
             float flatBonus = 0f;
-            float percentageBonus = 0f;
+            float totalMultiplier = stat.Multiplier;  // Start with base multiplier
 
             if (_modifiers.TryGetValue(statType, out var modifiers))
             {
@@ -106,18 +106,31 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
                     {
                         case BuffType.Flat:
                             flatBonus += mod.Value;
+                            DebugLogger.Log($"Adding flat bonus: {mod.Value} from {mod.Source}", DebugLogger.LogCategory.Stats_Debug);
                             break;
                         case BuffType.Percentage:
-                            percentageBonus += mod.Value;
+                            // Multiply each percentage bonus separately
+                            totalMultiplier *= (1 + mod.Value);
+                            DebugLogger.Log($"Multiplying by {mod.Source} bonus: (1 + {mod.Value:P2}) = {1 + mod.Value:F3}, total now {totalMultiplier:F3}", DebugLogger.LogCategory.Stats_Debug);
                             break;
                     }
                 }
             }
 
+            // Get permanent bonuses
+            var permanentBonuses = _bonusRegistry.GetBonusesForStat(statType);
+            foreach (var bonus in permanentBonuses)
+            {
+                // Multiply each permanent bonus separately
+                totalMultiplier *= (1 + bonus.Value);
+                DebugLogger.Log($"Multiplying by permanent bonus from {bonus.Name}: (1 + {bonus.Value:P2}) = {1 + bonus.Value:F3}, total now {totalMultiplier:F3}", DebugLogger.LogCategory.Stats_Debug);
+            }
+
             // Apply base value and modifiers
             float baseValue = stat.BaseValue + flatBonus;
-            float totalMultiplier = stat.Multiplier * (1 + percentageBonus);
-            return Math.Max(0, baseValue * totalMultiplier);
+            float finalValue = baseValue * totalMultiplier;
+            DebugLogger.Log($"Final calculation for {statType}: baseValue={baseValue:F2} * totalMultiplier={totalMultiplier:F3} = {finalValue:F2}", DebugLogger.LogCategory.Stats_Debug);
+            return Math.Max(0, finalValue);
         }
 
         /// <summary>
@@ -128,23 +141,23 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
             return statType switch
             {
                 StatType.Health => GetStatValue(StatType.Stamina) * GameBalanceConfig.IdleCharacterStats.DerivedStats.HealthPerStamina,
-                
+
                 StatType.Attack => GetStatValue(StatType.Strength) * GameBalanceConfig.IdleCharacterStats.DerivedStats.AttackPerStrength,
-                
+
                 StatType.Defense => GetStatValue(StatType.Stamina) * GameBalanceConfig.IdleCharacterStats.DerivedStats.DefensePerStamina,
-                
+
                 StatType.Speed => GetStatValue(StatType.Dexterity) * GameBalanceConfig.IdleCharacterStats.DerivedStats.SpeedPerDexterity,
                 //+
                 //                GetStatValue(StatType.Intelligence) * GameBalanceConfig.IdleCharacterStats.DerivedStats.SpeedPerIntelligence,
-                
+
                 //StatType.CriticalChance => GetStatValue(StatType.Dexterity) * GameBalanceConfig.IdleCharacterStats.DerivedStats.CritChancePerDexterity,
-                
+
                 //StatType.CriticalDamage => GetStatValue(StatType.Strength) * GameBalanceConfig.IdleCharacterStats.DerivedStats.CritDamagePerStrength,
-                
+
                 //StatType.Mana => GetStatValue(StatType.Intelligence) * GameBalanceConfig.IdleCharacterStats.DerivedStats.ManaPerIntelligence,
-                
+
                 //StatType.ManaRegen => GetStatValue(StatType.Intelligence) * GameBalanceConfig.IdleCharacterStats.DerivedStats.ManaRegenPerIntelligence,
-                
+
                 // Return base value for non-derived stats
                 _ => GetStatValue(statType)
             };
@@ -257,11 +270,11 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         {
             if (!_stats.TryGetValue(statType, out var stat))
                 return;
-            
+
             stat.SetExperience(stat.Experience + expAmount);
             CheckLevelUp(statType);
         }
-        
+
         /// <summary>
         /// Checks if a stat has enough experience to level up and processes multiple level ups if needed
         /// </summary>
@@ -269,7 +282,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         {
             var stat = _stats[statType];
             float expNeeded = CalculateExpNeeded(statType);
-            
+
             while (stat.Experience >= expNeeded)
             {
                 stat.SetExperience(stat.Experience - expNeeded);
@@ -285,10 +298,10 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         {
             var stat = _stats[statType];
             var oldValue = GetStatValue(statType);
-            
+
             stat.SetLevel(stat.Level + 1);
             stat.SetBaseValue(stat.BaseValue * GameBalanceConfig.IdleCharacterStats.LevelUpStatMultiplier);
-            
+
             // Raise level up event with proper event args
             Globals.Instance?.gameMangers?.Events?.RaiseEvent(
                 EventType.CharacterStatLevelUp,
@@ -299,14 +312,14 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
                 )
             );
         }
-        
+
         /// <summary>
         /// Calculates the experience needed for the next level of a stat
         /// </summary>
         private float CalculateExpNeeded(StatType statType)
         {
             var stat = _stats[statType];
-            return (float)(Math.Pow(stat.Level, GameBalanceConfig.IdleCharacterStats.ExperienceCurveExponent) 
+            return (float)(Math.Pow(stat.Level, GameBalanceConfig.IdleCharacterStats.ExperienceCurveExponent)
                 * GameBalanceConfig.IdleCharacterStats.BaseExperienceRequired);
         }
 
@@ -378,7 +391,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         public void ProcessIdleProgression(float timeInMinutes, bool isOffline = false)
         {
             _idleTimeAccumulated += timeInMinutes;
-            
+
             foreach (var stat in _stats.Keys.Where(IsPrimaryStat))
             {
                 float gain = CalculateIdleGains(stat, timeInMinutes, isOffline);
@@ -400,7 +413,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
                 var oldValue = GetStatValue(stat.Type);
                 stat.SetLevel(newLevel);
                 stat.SetBaseValue(stat.BaseValue * (float)Math.Pow(GameBalanceConfig.IdleCharacterStats.LevelUpStatMultiplier, newLevel - stat.Level));
-                
+
                 // Raise level up event with proper event args
                 Globals.Instance?.gameMangers?.Events?.RaiseEvent(
                     EventType.CharacterStatLevelUp,
@@ -447,10 +460,10 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         {
             // Clear all modifiers
             _modifiers.Clear();
-            
+
             // Reinitialize stats with base values
             InitializeStats();
-            
+
             // Raise events for all stats that were reset
             foreach (var statType in _stats.Keys)
             {
@@ -529,7 +542,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
             float previousValue = GetStatValue(statType);
             _stats[statType].SetBaseValue(value);
             float newValue = GetStatValue(statType);
-            
+
             CheckThresholds(statType, previousValue, newValue);
             RaiseStatChangedEvent(statType);
         }
@@ -578,11 +591,11 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         public CharacterStateSummary GetStateSummary()
         {
             var summary = new CharacterStateSummary(_characterId);
-            
+
             // Calculate average primary level and total power
             float totalLevel = 0;
             int primaryStatCount = 0;
-            
+
             foreach (var stat in _stats)
             {
                 if (IsPrimaryStat(stat.Key))
@@ -595,7 +608,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
                         Experience = stat.Value.Experience,
                         ExperienceToNextLevel = CalculateExpNeeded(stat.Key)
                     };
-                    
+
                     // Add active modifiers
                     foreach (var modifier in GetModifiers(stat.Key))
                     {
@@ -609,19 +622,19 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
                             TimeRemaining = (float)modifier.Duration.TotalSeconds  // For now, use full duration
                         });
                     }
-                    
+
                     summary.PrimaryStats[stat.Key] = statSummary;
                     totalLevel += stat.Value.Level;
                     primaryStatCount++;
                 }
             }
-            
+
             // Calculate derived stats
             foreach (StatType derivedStat in GetDerivedStatTypes())
             {
                 summary.DerivedStats[derivedStat] = GetDerivedStatValue(derivedStat);
             }
-            
+
             // Calculate idle gains per hour
             foreach (var stat in _stats.Keys)
             {
@@ -630,10 +643,10 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
                     summary.IdleGainsPerHour[stat] = CalculateIdleGains(stat, 60f);
                 }
             }
-            
+
             summary.AveragePrimaryLevel = primaryStatCount > 0 ? totalLevel / primaryStatCount : 0;
             summary.IdleTimeAccumulated = _idleTimeAccumulated;
-            
+
             // Calculate total power based on derived stats
             float power = 0;
             if (summary.DerivedStats.TryGetValue(StatType.Health, out float health))
@@ -644,9 +657,9 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
                 power += defense * GameBalanceConfig.PowerCalculation.DefenseWeight;
             if (summary.DerivedStats.TryGetValue(StatType.Speed, out float speed))
                 power += speed * GameBalanceConfig.PowerCalculation.SpeedWeight;
-                
+
             summary.TotalPower = power;
-            
+
             return summary;
         }
 
@@ -661,27 +674,23 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
             if (!_stats.TryGetValue(statType, out var stat))
                 return;
 
-            // Remove any existing ascension bonus
-            var existingBonus = _modifiers.GetValueOrDefault(statType)?.FirstOrDefault(m => m.Value.Source == "Ascension").Value;
-            if (existingBonus != null)
-            {
-                RemoveModifier(statType, "Ascension");
-            }
-
-            // Apply new ascension bonus as a permanent percentage modifier
-            var modifier = new StatModifier(
-                id: "Ascension",
-                source: "Ascension",
+            // Create a unique bonus for this ascension level
+            var bonus = new PermanentBonus(
+                name: $"Ascension Level {ascensionLevel}",
                 statType: statType,
-                type: BuffType.Percentage,  // Use percentage to multiply the base value
+                source: BonusSource.Ascension,
                 value: bonusValue,
-                duration: TimeSpan.MaxValue // Permanent modifier
+                description: $"Bonus from reaching Ascension Level {ascensionLevel}"
             );
 
-            AddModifier(statType, modifier.Id, modifier);
+            // Add the bonus to the registry
+            _bonusRegistry.AddBonus(bonus);
+
+            // Mark the stat as dirty to trigger recalculation
+            stat.MarkDirty();
 
             // Log the update for debugging
-            DebugLogger.Log($"Updated ascension bonus for {statType}: {bonusValue:P2} at level {ascensionLevel}", 
+            DebugLogger.Log($"Added ascension bonus for {statType}: {bonusValue:P2} at level {ascensionLevel}",
                 DebugLogger.LogCategory.Stats);
         }
 

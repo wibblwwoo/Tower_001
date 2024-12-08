@@ -35,7 +35,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem.Bonus
             Name = name;
             StatType = statType;
             Source = source;
-            Value = value / 100f; // Convert percentage to decimal (2% -> 0.02)
+            Value = value;
             Description = description;
             DateAcquired = DateTime.UtcNow;
         }

@@ -20,6 +20,8 @@ _eventSystemTests = NodePath("UnitTests")
 
 [node name="UnitTests" type="Node" parent="."]
 script = ExtResource("8_5idim")
+Category = 32
+Logging_Category = 1024
 
 [node name="Control2" type="Control" parent="."]
 layout_mode = 1

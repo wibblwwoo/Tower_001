@@ -112,7 +112,7 @@ public abstract class BaseManager : IManager
 
 	protected virtual void OnStateChanged(ManagerState oldState, ManagerState newState)
 	{
-		GD.Print($"Manager {GetType().Name} state changed from {oldState} to {newState}");
+		DebugLogger.Log($"Manager {GetType().Name} state changed from {oldState} to {newState}", DebugLogger.LogCategory.UI_States);
 		// Derived classes can override to handle state changes
 	}
 

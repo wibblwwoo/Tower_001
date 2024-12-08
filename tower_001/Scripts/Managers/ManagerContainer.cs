@@ -64,7 +64,7 @@ public partial class ManagerContainer : IManagerContainer
             // Initialize each manager in the correct order
             foreach (var manager in initOrder)
             {
-                GD.Print($"Initializing {manager.GetType().Name}");
+                DebugLogger.Log($"Initializing {manager.GetType().Name}", DebugLogger.LogCategory.UI_ManagerInitializing);
                 manager.Setup();
             }
         }
