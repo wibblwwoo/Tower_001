@@ -30,7 +30,7 @@ public partial class ProgressionData
     /// <summary>
     /// Current experience points towards next level
     /// </summary>
-    public float CurrentExp { get; set; } = 0;
+    public long CurrentExp { get; set; } = 0;
 
     /// <summary>
     /// Current prestige level. Each prestige level provides permanent bonuses

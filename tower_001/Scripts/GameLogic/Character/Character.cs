@@ -390,13 +390,24 @@ public abstract partial class Character
     {
         _statSystem.UpdateAscensionBonus(statType, ascensionLevel, bonusValue);
     }
+	/// <summary>
+	/// Updates the prestiage bonus for a stat
+	/// </summary>
+	/// <param name="statType">The stat type to update</param>
+	/// <param name="prestiagelevel">Current ascension level</param>
+	/// <param name="bonusValue">Bonus value to apply</param>
 
-    /// <summary>
-    /// Gets the base value of a stat without any modifiers
-    /// </summary>
-    /// <param name="statType">The stat type to retrieve</param>
-    /// <returns>The base value of the stat</returns>
-    public float GetBaseStatValue(StatType statType)
+	public void UpdatePrestigeBonus(StatType statType, int prestiagelevel, float bonusValue)
+	{
+		_statSystem.UpdatePrestigeBonus(statType, prestiagelevel, bonusValue);
+	}
+
+	/// <summary>
+	/// Gets the base value of a stat without any modifiers
+	/// </summary>
+	/// <param name="statType">The stat type to retrieve</param>
+	/// <returns>The base value of the stat</returns>
+	public float GetBaseStatValue(StatType statType)
     {
         return _statSystem.GetBaseStatValue(statType);
     }

@@ -22,7 +22,7 @@ public class AscensionBonusCalculator
         
         // Calculate base percentage bonus based on ascension level
         // Example: At level 5 with 2% per level = 10% base bonus
-        float baseBonus = GameBalanceConfig.Progression.BaseStatBonusPerLevel * progress.AscensionLevel;
+        float baseBonus = GameBalanceConfig.Progression.BaseAscensionStatBonusPerLevel * progress.AscensionLevel;
 
         // Iterate through each stat type and calculate its specific bonus
         // Each stat type can have a different scaling factor to balance progression
@@ -54,13 +54,13 @@ public class AscensionBonusCalculator
         // This allows fine-tuning of how each stat scales with ascension
         return statType switch
         {
-            StatType.Health => GameBalanceConfig.Progression.HealthScaling,   // Health scaling (e.g., 100%)
-            StatType.Attack => GameBalanceConfig.Progression.AttackScaling,   // Attack scaling (e.g., 80%)
-            StatType.Defense => GameBalanceConfig.Progression.DefenseScaling, // Defense scaling (e.g., 90%)
-            StatType.Speed => GameBalanceConfig.Progression.SpeedScaling,     // Speed scaling (e.g., 70%)
-            StatType.Mana => GameBalanceConfig.Progression.ManaScaling,       // Mana scaling (e.g., 85%)
-            _ => GameBalanceConfig.Progression.DefaultStatScaling            // Default for any new stats
-        };
+            StatType.Health => GameBalanceConfig.Progression.AscensionHealthScaling,   // Health scaling (e.g., 100%)
+            StatType.Attack => GameBalanceConfig.Progression.AscensionAttackScaling,   // Attack scaling (e.g., 80%)
+            StatType.Defense => GameBalanceConfig.Progression.AscensionDefenseScaling, // Defense scaling (e.g., 90%)
+            StatType.Speed => GameBalanceConfig.Progression.AscensionSpeedScaling,     // Speed scaling (e.g., 70%)
+            StatType.Mana => GameBalanceConfig.Progression.AscensionManaScaling,       // Mana scaling (e.g., 85%)
+            _ => GameBalanceConfig.Progression.AscensionDefaultStatScaling            // Default for any new stats
+		};
     }
 
     /// <summary>

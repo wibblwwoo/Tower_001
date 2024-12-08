@@ -32,7 +32,7 @@ public class PrestigeEventArgs : ProgressionEventArgs
     /// - Achievement validation
     /// - UI feedback and animations
     /// </remarks>
-    public int PreviousPrestigeLevel { get; }
+    public long PreviousPrestigeLevel { get; }
 
     /// <summary>
     /// Gets the character's new prestige level after the event.
@@ -46,7 +46,7 @@ public class PrestigeEventArgs : ProgressionEventArgs
     /// - Available features and content
     /// - Achievement progress
     /// </remarks>
-    public int NewPrestigeLevel { get; }
+    public long NewPrestigeLevel { get; }
 
     /// <summary>
     /// Gets the additional power multiplier earned from this specific prestige.
@@ -95,10 +95,10 @@ public class PrestigeEventArgs : ProgressionEventArgs
     public PrestigeEventArgs(
         string characterId,
         int currentLevel,
-        float currentExperience,
+        long currentExperience,
         float powerMultiplier,
-        int previousPrestigeLevel,
-        int newPrestigeLevel,
+		long previousPrestigeLevel,
+		long newPrestigeLevel,
         float prestigeMultiplierGained,
         float totalPrestigeMultiplier)
         : base(characterId, currentLevel, currentExperience, powerMultiplier)

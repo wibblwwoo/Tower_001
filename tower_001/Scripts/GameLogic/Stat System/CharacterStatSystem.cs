@@ -694,12 +694,45 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
                 DebugLogger.LogCategory.Stats);
         }
 
-        /// <summary>
-        /// Gets the base value of a stat without any modifiers
-        /// </summary>
-        /// <param name="statType">The stat type to retrieve</param>
-        /// <returns>The base value of the stat</returns>
-        public float GetBaseStatValue(StatType statType)
+
+		/// <summary>
+		/// Updates the ascension bonus for a stat
+		/// </summary>
+		/// <param name="statType">The stat type to update</param>
+		/// <param name="prestigeLevel">Current ascension level</param>
+		/// <param name="bonusValue">Bonus value to apply</param>
+		public void UpdatePrestigeBonus(StatType statType, int prestigeLevel, float bonusValue)
+		{
+			if (!_stats.TryGetValue(statType, out var stat))
+				return;
+
+			// Create a unique bonus for this ascension level
+			var bonus = new PermanentBonus(
+				name: $"Prestiage Level {prestigeLevel}",
+				statType: statType,
+				source: BonusSource.Ascension,
+				value: bonusValue,
+				description: $"Bonus from reaching Prestige Level {prestigeLevel}"
+			);
+
+			// Add the bonus to the registry
+			_bonusRegistry.AddBonus(bonus);
+
+			// Mark the stat as dirty to trigger recalculation
+			stat.MarkDirty();
+
+			// Log the update for debugging
+			DebugLogger.Log($"Added Prestige bonus for {statType}: {bonusValue:P2} at level {prestigeLevel}",
+				DebugLogger.LogCategory.Stats);
+		}
+
+
+		/// <summary>
+		/// Gets the base value of a stat without any modifiers
+		/// </summary>
+		/// <param name="statType">The stat type to retrieve</param>
+		/// <returns>The base value of the stat</returns>
+		public float GetBaseStatValue(StatType statType)
         {
             if (!_stats.TryGetValue(statType, out var stat))
                 return 0f;

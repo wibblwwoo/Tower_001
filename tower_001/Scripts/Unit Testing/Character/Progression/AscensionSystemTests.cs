@@ -14,7 +14,7 @@ public class AscensionSystemTests : BaseTestSuite
 	// Test state tracking
 	private bool _ascensionEventReceived;
 	private long _lastAscensionLevel;
-	private Dictionary<string, float> _lastUnlockedBonuses;
+	private Dictionary<StatType, float> _lastUnlockedBonuses;
 	private float _lastPowerMultiplier;
 
 	public AscensionSystemTests(EventManager eventManager, PlayerManager playerManager,
@@ -205,10 +205,10 @@ public class AscensionSystemTests : BaseTestSuite
 					float currentValue = character.GetStatValue(statType);
 					for (int j = 0; j <= i; j++)
 					{
-						expectedBonusPercent = (GameBalanceConfig.Progression.BaseStatBonusPerLevel * (j + 1));
+						expectedBonusPercent = (GameBalanceConfig.Progression.BaseAscensionStatBonusPerLevel * (j + 1));
 						expectedValue += initialStats[statType] * expectedBonusPercent;
 					}
-					//float expectedBonusPercent = (i + 1) * (GameBalanceConfig.Progression.BaseStatBonusPerLevel * (i+1));
+					//float expectedBonusPercent = (i + 1) * (GameBalanceConfig.Progression.BaseAscensionStatBonusPerLevel * (i+1));
 					//float expectedValue = initialStats[statType] * (1f + expectedBonusPercent);
 					expectedValue += initialStats[statType];
 					DebugLogger.Log(
@@ -296,7 +296,7 @@ public class AscensionSystemTests : BaseTestSuite
 
 				for (int j = 0; j <= 2; j++)
 				{
-					expectedBonusPercent = (GameBalanceConfig.Progression.BaseStatBonusPerLevel * (j + 1));
+					expectedBonusPercent = (GameBalanceConfig.Progression.BaseAscensionStatBonusPerLevel * (j + 1));
 					expectedValue += initialStats[statType] * expectedBonusPercent;
 				}
 				expectedValue += initialStats[statType];
@@ -461,7 +461,7 @@ public class AscensionSystemTests : BaseTestSuite
 					float bonusPercent = 0;
 					for (int j = 0; j <= i; j++)
 					{
-						bonusPercent = GameBalanceConfig.Progression.BaseStatBonusPerLevel * (j + 1);
+						bonusPercent = GameBalanceConfig.Progression.BaseAscensionStatBonusPerLevel * (j + 1);
 						expectedValue += initialStats[statType] * bonusPercent;
 					}
 					expectedValue += initialStats[statType];
@@ -898,10 +898,11 @@ public class AscensionSystemTests : BaseTestSuite
 				// Record progression data
 				bonusProgression.Add((
 					progress.AscensionLevel,
-					new Dictionary<string, float>(_lastUnlockedBonuses),
+					_lastUnlockedBonuses.ToDictionary(kvp => kvp.Key.ToString(), kvp => kvp.Value),
 					RecordStats(character),
 					character.Power
 				));
+
 
 				// Verify bonus values at current level
 				float expectedBonus = (i + 1) * 0.02f;

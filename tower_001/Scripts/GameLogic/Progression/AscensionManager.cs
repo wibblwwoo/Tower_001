@@ -249,7 +249,7 @@ public class AscensionManager : IManager
     {
         // Convert StatType dictionary to string dictionary for event args
         var bonusesForEvent = unlockedBonuses.ToDictionary(
-            kvp => kvp.Key.ToString(),
+            kvp => kvp.Key,
             kvp => kvp.Value
         );
 
@@ -266,8 +266,8 @@ public class AscensionManager : IManager
                 progress.AscensionLevel,  // New ascension level
                 progress.TotalPowerMultiplier - oldPowerMultiplier,  // Power gain
                 progress.TotalPowerMultiplier,  // Final power value
-                bonusesForEvent          // Newly unlocked stat bonuses as strings
-            )
+				bonusesForEvent          // Newly unlocked stat bonuses as strings
+			)
         );
     }
 }

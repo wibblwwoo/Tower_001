@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using static GlobalEnums;
 
 /// <summary>
 /// Event arguments for tracking character ascension milestones and rewards.
@@ -94,7 +95,7 @@ public class AscensionEventArgs : ProgressionEventArgs
     /// - Clear bonus tracking
     /// - Simple UI integration
     /// </remarks>
-    public Dictionary<string, float> UnlockedBonuses { get; }
+    public Dictionary<StatType, float> UnlockedBonuses { get; }
 
     /// <summary>
     /// Initializes a new instance of the AscensionEventArgs class.
@@ -108,17 +109,7 @@ public class AscensionEventArgs : ProgressionEventArgs
     /// <param name="ascensionMultiplierGained">The power multiplier gained from this ascension.</param>
     /// <param name="totalAscensionMultiplier">The total accumulated ascension power multiplier.</param>
     /// <param name="unlockedBonuses">Dictionary of special bonuses unlocked by this ascension.</param>
-    public AscensionEventArgs(
-        string characterId,
-        int currentLevel,
-        float currentExperience,
-        float powerMultiplier,
-        long previousAscensionLevel,
-        long newAscensionLevel,
-        float ascensionMultiplierGained,
-        float totalAscensionMultiplier,
-        Dictionary<string, float> unlockedBonuses)
-        : base(characterId, currentLevel, currentExperience, powerMultiplier)
+    public AscensionEventArgs(string characterId, int currentLevel, float currentExperience, float powerMultiplier, long previousAscensionLevel, long newAscensionLevel, float ascensionMultiplierGained, float totalAscensionMultiplier, Dictionary<StatType, float> unlockedBonuses) : base(characterId, currentLevel, currentExperience, powerMultiplier)
     {
         PreviousAscensionLevel = previousAscensionLevel;
         NewAscensionLevel = newAscensionLevel;
@@ -126,4 +117,5 @@ public class AscensionEventArgs : ProgressionEventArgs
         TotalAscensionMultiplier = totalAscensionMultiplier;
         UnlockedBonuses = unlockedBonuses;
     }
+
 }

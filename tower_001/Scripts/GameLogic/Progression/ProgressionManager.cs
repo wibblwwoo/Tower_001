@@ -125,7 +125,7 @@ public partial class ProgressionManager : IManager
         int oldLevel = progress.Level;
         
         // Update experience totals
-        progress.CurrentExp += finalExperience;
+        progress.CurrentExp += (long)finalExperience;
         progress.LifetimeExperience[source] += finalExperience;
 
         // Notify systems of experience gain
@@ -266,17 +266,8 @@ public partial class ProgressionManager : IManager
         int milestonesReached = (int)(progress.AscensionLevel / 2);
         totalAscensionMultiplier += milestonesReached * ASCENSION_MILESTONE_BONUS;
 
-        // Track unlocked bonuses for this ascension
-        var unlockedBonuses = new Dictionary<string, float>();
-        
-        // Add base ascension bonus
-        unlockedBonuses.Add($"Ascension_{progress.AscensionLevel}", BASE_ASCENSION_STAT_BONUS);
-        
-        // Add milestone bonus if unlocked at this level
-        if (progress.AscensionLevel % 2 == 0)
-        {
-            unlockedBonuses.Add($"Milestone_{progress.AscensionLevel}", ASCENSION_MILESTONE_BONUS);
-        }
+        // Get the stat bonuses for this ascension level
+        var unlockedBonuses = CalculateStatBonuses(progress);
 
         // Notify systems of ascension level gain
         _eventManager.RaiseEvent(
@@ -381,7 +372,7 @@ public partial class ProgressionManager : IManager
         while (progress.CurrentExp >= progress.GetExpForNextLevel())
         {
             // Remove level-up cost and increment level
-            progress.CurrentExp -= progress.GetExpForNextLevel();
+            progress.CurrentExp -= (long)progress.GetExpForNextLevel();
             progress.Level++;
 
             // Update character state in player manager
@@ -412,33 +403,25 @@ public partial class ProgressionManager : IManager
         // We don't need to manually preserve or reapply them
     }
 
-    private Dictionary<string, float> CalculateAscensionBonuses(ProgressionData progress)
+    private Dictionary<GlobalEnums.StatType, float> CalculateAscensionBonuses(ProgressionData progress)
     {
-        var bonuses = new Dictionary<string, float>();
-        var statBonuses = CalculateStatBonuses(progress);
-        
-        foreach (var bonus in statBonuses)
-        {
-            bonuses[bonus.Key.ToString()] = bonus.Value;
-        }
-
-        return bonuses;
+        return CalculateStatBonuses(progress);
     }
 
     /// <summary>
     /// Calculates the stat bonuses granted by ascending to a new level
     /// </summary>
-    private Dictionary<StatType, float> CalculateStatBonuses(ProgressionData progress)
+    private Dictionary<GlobalEnums.StatType, float> CalculateStatBonuses(ProgressionData progress)
     {
-        var bonuses = new Dictionary<StatType, float>();
+        var bonuses = new Dictionary<GlobalEnums.StatType, float>();
 
         // Calculate the base bonus percentage (2% per ascension level)
         float baseBonus = progress.AscensionLevel * 0.02f;
 
         // Apply the base bonus to all available stat types
-        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        foreach (GlobalEnums.StatType statType in Enum.GetValues(typeof(GlobalEnums.StatType)))
         {
-            if (statType != StatType.None)
+            if (statType != GlobalEnums.StatType.None)
             {
                 bonuses[statType] = baseBonus;
             }

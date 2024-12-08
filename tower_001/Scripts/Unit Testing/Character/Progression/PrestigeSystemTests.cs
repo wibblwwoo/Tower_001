@@ -9,7 +9,7 @@ public class PrestigeSystemTests : BaseTestSuite
 	private readonly ProgressionManager _progressionManager;
 	private readonly PlayerManager _playerManager;
 	private bool _prestigeEventReceived;
-	private int _lastPrestigeLevel;
+	private long _lastPrestigeLevel;
 	private ProgressionConfig _config;
 
 

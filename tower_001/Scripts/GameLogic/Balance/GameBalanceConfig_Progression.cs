@@ -45,7 +45,7 @@ namespace Tower_001.Scripts.GameLogic.Balance
 			public const int LevelsRequiredForPrestige = 10000;    // Levels needed before prestige
 			public const float PrestigePointBase = 100f;           // Base points needed for first prestige
 			public const float PrestigeScalingFactor = 1.5f;       // 50% increase in points needed per prestige
-			public const float PrestigeBonusBase = 0.1f;           // 10% bonus per prestige level
+			public const float BasicPrestigeStatBonusPerLevel = 0.1f;           // 10% bonus per prestige level
 			public const float PrestigePowerBase = 2.0f;          // Base power multiplier for prestige
 			public const long BasePrestigeCost = 1000000;         // Base cost for prestige
 			public const int PrestigeCostScaling = 10;            // Cost scaling factor for prestige
@@ -65,13 +65,13 @@ namespace Tower_001.Scripts.GameLogic.Balance
 			public const float AscensionMilestoneBaseBonus = 2.0f;// Base bonus for ascension milestones
 
 			// Ascension Bonus Calculations
-			public const float BaseStatBonusPerLevel = 0.02f;     // 2% bonus per ascension level
-			public const float HealthScaling = 1.0f;              // Health stat scaling factor
-			public const float AttackScaling = 1.0f;              // Attack stat scaling factor
-			public const float DefenseScaling = 1.0f;             // Defense stat scaling factor
-			public const float SpeedScaling = 1.0f;               // Speed stat scaling factor
-			public const float ManaScaling = 1.0f;                // Mana stat scaling factor
-			public const float DefaultStatScaling = 1.0f;         // Default scaling for new stats
+			public const float BaseAscensionStatBonusPerLevel = 0.02f;     // 2% bonus per ascension level
+			public const float AscensionHealthScaling = 1.0f;              // Health stat scaling factor
+			public const float AscensionAttackScaling = 1.0f;              // Attack stat scaling factor
+			public const float AscensionDefenseScaling = 1.0f;             // Defense stat scaling factor
+			public const float AscensionSpeedScaling = 1.0f;               // Speed stat scaling factor
+			public const float AscensionManaScaling = 1.0f;                // Mana stat scaling factor
+			public const float AscensionDefaultStatScaling = 1.0f;         // Default scaling for new stats
 
 			// Ascension Milestone Bonuses
 			public static readonly Dictionary<int, float> AscensionMilestoneBonuses = new()
