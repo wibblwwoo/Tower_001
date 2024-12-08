@@ -7,6 +7,7 @@ using Tower_001.Scripts.Events;
 using Tower_001.Scripts.GameLogic.Balance;
 using Tower_001.Scripts.GameLogic.Character;
 using Tower_001.Scripts.GameLogic.StatSystem.Bonus;
+using Tower_001.Scripts.GameLogic.StatSystem.Core;
 using static GlobalEnums;
 
 namespace Tower_001.Scripts.GameLogic.StatSystem
@@ -410,7 +411,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
         {
             foreach (var stat in _stats.Values)
             {
-                var oldValue = GetStatValue(stat.Type);
+                var oldValue = GetStatValue(stat.StatType);
                 stat.SetLevel(newLevel);
                 stat.SetBaseValue(stat.BaseValue * (float)Math.Pow(GameBalanceConfig.IdleCharacterStats.LevelUpStatMultiplier, newLevel - stat.Level));
 
@@ -419,7 +420,7 @@ namespace Tower_001.Scripts.GameLogic.StatSystem
                     EventType.CharacterStatLevelUp,
                     new CharacterStatLevelEventArgs(
                         _characterId,
-                        stat.Type,
+                        stat.StatType,
                         newLevel
                     )
                 );

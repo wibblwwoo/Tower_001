@@ -16,8 +16,18 @@ namespace Tower_001.Scripts.GameLogic.StatSystem.Core
         private bool _isDirty = true;
         private float _cachedValue;
         private float _lastValue;
+		private float _experience;
+		private int _level;
+		private float _ascensionBonus;
+		private float _multiplier;
 
-        public string CharacterId => _characterId;
+        public float Multiplier => _multiplier;
+        
+        public float Experience => _experience;
+		public int Level => _level;
+
+
+		public string CharacterId => _characterId;
         public StatType StatType => _statType;
         public float BaseValue => _baseValue;
         public float CurrentValue
@@ -40,6 +50,29 @@ namespace Tower_001.Scripts.GameLogic.StatSystem.Core
             }
         }
 
+        public StatData(string characterId, float baseValue, float multiplier = 1.0f, float experience = 0, int level = 1)
+        {
+            _characterId = characterId;
+            _baseValue = baseValue;
+            _multiplier = multiplier;
+            _experience = experience;
+            _level = level;
+            _ascensionBonus = 0f;
+            _cachedValue = baseValue * multiplier;
+            _lastValue = _cachedValue;
+        }
+        public StatData(string characterId, float baseValue, float multiplier = 1.0f, float experience = 0, int level = 1, StatType statType = default, Bonus.PermanentBonusRegistry bonusRegistry = null)
+        {
+            _characterId = characterId;
+            _baseValue = baseValue;
+            _multiplier = multiplier;
+            _experience = experience;
+            _level = level;
+            _ascensionBonus = 0f;
+            _cachedValue = baseValue * multiplier;
+            _lastValue = _cachedValue;
+            this._statType = statType;
+        }
         public StatData(string characterId, StatType statType, float baseValue = 0)
         {
             _characterId = characterId;
@@ -70,7 +103,17 @@ namespace Tower_001.Scripts.GameLogic.StatSystem.Core
             _isDirty = true;
         }
 
-        private void RaiseStatChangedEvent(float oldValue, float newValue)
+		public void SetMultiplier(float value)
+		{
+		    if (Math.Abs(_multiplier - value) < 0.001f) return;
+		    _multiplier = value;
+		    _isDirty = true;
+		}
+
+		public void SetExperience(float value) => _experience = value;
+		public void SetLevel(int value) => _level = value;
+
+		private void RaiseStatChangedEvent(float oldValue, float newValue)
         {
             Globals.Instance?.gameMangers?.Events?.RaiseEvent(
                 EventType.CharacterStatChanged,
