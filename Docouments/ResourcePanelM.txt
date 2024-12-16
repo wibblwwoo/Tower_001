@@ -1,0 +1,614 @@
+public partial class ResourcePanelManager : UIControlItem, IMenu 
+{
+	[Export]
+	private int MAX_RESOURCES = 5;
+	private Dictionary<int, ResourceControl> _resourceControls;
+
+	[Export]
+	private HBoxContainer _resourceContainer;
+
+	[Export]
+	private PackedScene _ResourceItem;
+
+	public string menuParentID { get; set; }
+	public bool ShowOnStartup { get; set; }
+
+
+	public void Setup()
+	{
+		InitializeResourceControls();
+	}
+	
+
+	private void InitializeResourceControls()
+	{
+
+		var _resourceItem = Globals.Instance.gameMangers.ResourceManager.GetUIResource(GlobalEnums.UIElementType.ResourcePanel, "resource_item_top");
+
+		for (int i = 1; i <= MAX_RESOURCES; i++)
+		{
+
+			var newResource = _resourceItem.Instantiate();
+			_resourceContainer.AddChild(newResource);
+			_resourceControls.Add(i, (ResourceControl)newResource);
+			((ResourceControl)newResource).Setup(this);
+		}
+
+
+	}
+
+	public void UpdateResource(int slot, int value, string iconPath = null)
+	{
+		if (_resourceControls.TryGetValue(slot, out var control))
+		{
+			control.UpdateValue(value);
+			if (iconPath != null)
+			{
+				control.UpdateIcon(iconPath);
+			}
+		}
+	}
+
+	public void SetResourceVisibility(int slot, bool visible)
+	{
+		if (_resourceControls.TryGetValue(slot, out var control))
+		{
+			control.Visible = visible;
+		}
+	}
+
+	public void SetAllResourcesVisibility(bool visible)
+	{
+		foreach (var control in _resourceControls.Values)
+		{
+			control.Visible = visible;
+		}
+	}
+
+	public override void RegisterControl()
+	{
+
+			base.RegisterControl();
+			menuParentID = "Resource_Panel_Top";
+			_resourceControls = new Dictionary<int, ResourceControl>();
+			
+	}
+
+	
+}
+
+using Godot;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using static GlobalEnums;
+
+public partial class UIResourceManager : BaseManager
+{
+	private Dictionary<UIElementType, Dictionary<string, PackedScene>> _uiResources;
+
+	private List<IUIObject> _uiResourcesPanels;
+	private const string UI_SCENE_BASE_PATH = "res://Scene/UI/";
+
+	public UIResourceManager()
+	{
+
+		_uiResources = new Dictionary<UIElementType, Dictionary<string, PackedScene>>();
+		_uiResourcesPanels = new List<IUIObject>();
+	}
+
+	public override void Setup()
+	{
+		base.Setup();
+		LoadAllUIResources();
+		RegisterEventHandlers();
+
+		//find all resource managers and add it to my list.
+		var myList = new List<ResourcePanelManager>();
+		List<IUIObject> myList2 = Globals.Instance.gameMangers.UI.GetListofAllIUIObjectByType(myList);
+		_uiResourcesPanels.AddRange(myList2);
+
+		foreach(IUIObject _ui in _uiResourcesPanels)
+		{
+			if (_ui is ResourcePanelManager _t)
+			{
+				_t.Setup();
+			}
+
+		}
+	}
+
+	protected override void RegisterEventHandlers()
+	{
+		// Register any events this manager needs to listen to
+		if (EventManager != null)
+		{
+			Globals.Instance.gameMangers.Events.AddHandler<UIControlEventArgs>(EventType.UIControlRegister, OnUIControlRegister);
+		}
+	}
+
+
+	//we only care about resource panles. here
+	private void OnUIControlRegister(UIControlEventArgs args)
+	{
+		try
+		{
+			if (args.UIControlItem != null)
+			{
+				
+				var _item =  args.UIControlItem;
+                if (_item is ResourcePanelManager _t)
+				{
+
+					_uiResourcesPanels.Add(_t);
+
+				}
+
+            }
+		}
+		catch (Exception ex)
+		{
+			GD.Print(ex.Message);
+
+		}
+	}
+
+	private void LoadAllUIResources()
+	{
+		foreach (UIElementType elementType in Enum.GetValues(typeof(UIElementType)))
+		{
+			string typePath = Path.Combine(UI_SCENE_BASE_PATH, elementType.ToString());
+			_uiResources[elementType] = new Dictionary<string, PackedScene>();
+
+			// Get all .tscn files in the directory
+			var dir = DirAccess.Open(typePath);
+			if (dir != null)
+			{
+				dir.ListDirBegin();
+				string fileName = dir.GetNext();
+
+				while (!string.IsNullOrEmpty(fileName))
+				{
+					if (fileName.EndsWith(".tscn"))
+					{
+						string fullPath = Path.Combine(typePath, fileName);
+						PackedScene scene = GD.Load<PackedScene>(fullPath);
+
+						if (ValidateUIScene(scene))
+						{
+							string resourceKey = fileName.Replace(".tscn", "");
+							_uiResources[elementType].Add(resourceKey, scene);
+							GD.Print($"Loaded UI Resource: {elementType}/{resourceKey}");
+						}
+					}
+					fileName = dir.GetNext();
+				}
+				dir.ListDirEnd();
+			}
+		}
+	}
+
+	private bool ValidateUIScene(PackedScene scene)
+	{
+		if (scene == null) return false;
+
+		// Instance the scene to check its root node
+		Node instance = scene.Instantiate();
+		if (instance == null) return false;
+
+		bool isValid = instance is IUISceneElement;
+		instance.QueueFree(); // Clean up the temporary instance
+
+		return isValid;
+	}
+
+	public PackedScene GetUIResource(UIElementType type, string resourceKey)
+	{
+		if (_uiResources.TryGetValue(type, out var typeResources))
+		{
+			if (typeResources.TryGetValue(resourceKey, out var scene))
+			{
+				return scene;
+			}
+			GD.PrintErr($"UI Resource not found: {type}/{resourceKey}");
+		}
+		GD.PrintErr($"UI Element Type not found: {type}");
+		return null;
+	}
+
+	public List<string> GetAvailableResources(UIElementType type)
+	{
+		if (_uiResources.TryGetValue(type, out var typeResources))
+		{
+			return typeResources.Keys.ToList();
+		}
+		return new List<string>();
+	}
+}
+
+
+using Godot;
+using System;
+
+/// <summary>
+/// Container for all game managers
+/// </summary>
+public partial class ManagerContainer : IManagerContainer
+{
+	// Core Managers
+	public EventManager Events { get; private set; }
+	public PlayerManager Player { get; private set; }
+	public WorldManager World { get; private set; }
+	public UIManager UI { get; private set; }
+	public HeartbeatManager Heartbeat { get; set; }
+
+	public UIResourceManager ResourceManager { get; set; }
+
+	public ManagerContainer()
+	{
+		InitializeManagers();
+	}
+
+	private void InitializeManagers()
+	{
+		// Initialize in dependency order
+		Events = new EventManager();
+		Events.Setup(); // Setup EventManager first
+
+	}
+
+	public void Setup()
+	{
+		ResourceManager = new UIResourceManager();
+		UI = new UIManager();
+		Player = new PlayerManager();
+		World = new WorldManager();
+
+		Heartbeat = new HeartbeatManager();
+		// EventManager already setup in InitializeManagers
+		ResourceManager.Setup();
+		UI.Setup();
+		Player.Setup();
+		World.Setup();
+	}
+}
+//public partial class ManagerContainer : IManagerContainer
+//{
+//	public EventManager Events { get; set; }
+//	public UIManager UI { get; set; }
+
+//	public PlayerManager Player { get; set; }
+
+//	public TowerManager Tower { get; set; }
+
+//	public HeartbeatManager Heartbeat { get; set; }
+
+
+
+//	public ManagerContainer()
+//	{
+//	}
+//	public void Setup()
+//	{
+//		Heartbeat = new HeartbeatManager();
+//		Events = new EventManager();
+//		Events.Setup();
+//		UI = new UIManager();
+//		Player = new PlayerManager();
+//		Tower = new TowerManager();
+
+//		Tower.Setup();
+//	}
+
+//}
+
+
+using Godot;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+// The individual resource control that combines icon and value
+public partial class ResourceControl : Control, IUIObject, IUISceneElement
+{
+	[Export] private TextureRect _icon;
+	[Export] private Label _valueLabel;
+	[Export] public string ObjectID { get; set; }
+
+	[Export] public GlobalEnums.PanelPosition PanelLocation { get; set; }
+	[Export] public GlobalEnums.PanelSection PanelSection { get; set; }
+	[Export] public GlobalEnums.UIControlType ControlType { get; set; }
+	[Export] public bool IsVisibleByDefault { get; set; }
+	public GlobalEnums.UIElementType ElementType { get; }
+	public string ResourceKey { get; }
+
+	public ResourceControl()
+	{
+		ResourceKey = "resource_item_top";
+		ElementType = GlobalEnums.UIElementType.ResourcePanel;
+	}
+
+
+	public override void _Ready()
+	{
+		try
+		{
+			
+
+		}
+		catch( Exception ex)
+		{
+			GD.Print(ex.Message);
+
+		}
+	}
+
+	public void Setup(IMenu ParentMenu)
+	{
+
+		
+		UpdateIcon("res://icon.svg");
+		_valueLabel.Text = "1212122";
+		
+		RegisterControl(ParentMenu);
+	}
+
+	public void UpdateValue(int value)
+	{
+		_valueLabel.Text = value.ToString();
+	}
+
+	public void UpdateIcon(string path)
+	{
+		_icon.Texture = GD.Load<Texture2D>(path);
+	}
+
+	public void RegisterControl()
+	{
+		var uiControlEvent = new UIControlEventArgs(
+			GlobalEnums.UIPanelEvent.Register,this,ObjectID,PanelLocation,PanelSection,ControlType);
+		Globals.Instance.gameMangers.Events.RaiseEvent(GlobalEnums.EventType.UIControlRegister, uiControlEvent);
+	}
+
+	public void RegisterControl(IMenu menu)
+	{
+		var uiControlEvent = new UIControlEventArgs(
+			GlobalEnums.UIPanelEvent.Register,
+			this,
+			ObjectID,
+			PanelLocation,
+			PanelSection,
+			ControlType
+		);
+		uiControlEvent.ControlParent = menu;
+		Globals.Instance.gameMangers.Events.RaiseEvent(GlobalEnums.EventType.UIControlRegister, uiControlEvent);
+	}
+}
+
+
+using Godot;
+using System;
+using System.Collections.Generic;
+using static GlobalEnums;
+using static Godot.Label;
+using Tower_001.Scripts.UI;
+using System.Linq;
+
+/// <summary>
+/// Core UI manager for the idle game.
+/// Handles the display and interaction with game elements in a streamlined manner.
+/// </summary>
+public partial class UIManager : BaseManager
+{
+    /// <summary>
+    /// The main UI scene root control node
+    /// </summary>
+    private Control _uiRoot;
+
+    /// <summary>
+    /// Dictionary of all registered UI controls, indexed by their control ID
+    /// Used for container controls and standalone UI elements
+    /// </summary>
+    private Dictionary<string, IUIObject> _UIControls;
+
+    /// <summary>
+    /// Dictionary of menu-specific UI controls, organized by menu parent ID
+    /// Each menu can have multiple child controls stored in a list
+    /// </summary>
+    private Dictionary<string, List<IUIObject>> _UIMenus;
+
+    /// <summary>
+    /// Reference to the menu management system
+    /// </summary>
+	private MenuManager _menuManager;
+
+    /// <summary>
+    /// Initializes a new instance of UIManager.
+    /// Sets up control collections and registers initial UI items.
+    /// </summary>
+	public UIManager()
+	{
+		List<IPanel> _uiitems = new List<IPanel>();
+		_UIControls = new Dictionary<string, IUIObject>();
+        _UIMenus = new Dictionary<string, List<IUIObject>>();
+
+		RegisterHandlers();
+
+		Utils.FindNodesWithClass(Globals.Instance.RootNode, _uiitems);
+
+		foreach (var item in _uiitems)
+        {
+
+            if (item is UIControlItem _ucontrol)
+            {
+                if (_ucontrol.ControlType == UIControlType.Container)
+                {
+                    _ucontrol.RegisterControl();
+                    _ucontrol.Visible = _ucontrol.IsVisibleByDefault;
+
+                    if (!_ucontrol.Visible)
+                    {
+                        GD.PrintErr(_ucontrol.Name + " " + _ucontrol.ObjectID + " is hidden ");
+
+                    }
+				}
+            }
+        }
+	}
+
+
+    /// <summary>
+    /// Handles the registration of UI controls in the system.
+    /// Organizes controls based on their type (Container or Control)
+    /// and associates them with their parent menus if applicable.
+    /// </summary>
+    /// <param name="args">Event arguments containing control information</param>
+	private void OnUIControlRegister(UIControlEventArgs args)
+	{
+        try
+        {
+            if (args.UIControlItem != null)
+            {
+                if (args.UIControlItem.ControlType == UIControlType.Container)
+                {
+                    _UIControls.Add(args.ControlID, args.UIControlItem);
+
+                }
+                else if (args.UIControlItem.ControlType == UIControlType.Control)
+                {
+
+                    if (!_UIMenus.ContainsKey(args.ControlParent.menuParentID))
+                    {
+                        _UIMenus[args.ControlParent.menuParentID] = new List<IUIObject>();
+                    }
+                    _UIMenus[args.ControlParent.menuParentID].Add(args.UIControlItem);
+                }
+            }
+		}
+        catch (Exception ex)
+        {
+            GD.Print(ex.Message);
+
+        }
+	}
+
+
+  
+	
+	/// <summary>
+    /// Sets up the UI system, initializing the root control and menu manager.
+    /// </summary>
+	public override void Setup()
+    {
+        base.Setup();
+        
+        // Get the root node from game manager
+        _uiRoot = (Control)Globals.Instance.RootNode;
+        if (_uiRoot == null)
+        {
+            GD.PrintErr("UIManager: Root node not found!");
+            return;
+        }
+
+        _menuManager = new MenuManager();
+        _menuManager.Initialize();
+
+      
+    }
+
+    /// <summary>
+    /// Registers event handlers for UI-related events.
+    /// Sets up handlers for control registration and container assignment.
+    /// </summary>
+	protected void RegisterHandlers()
+	{
+        // Move event registration to Setup() where we know the event system exists
+        if (Globals.Instance?.gameMangers?.Events == null)
+        {
+            GD.PrintErr("UIManager: Events system not available for registration!");
+            return;
+        }
+
+		if (Globals.Instance?.gameMangers?.Events != null)
+		{
+			Globals.Instance.gameMangers.Events.AddHandler<UIControlEventArgs>(EventType.UIControlRegister, OnUIControlRegister);
+			Globals.Instance.gameMangers.Events.AddHandler<UIControlEventArgs>(EventType.UIControlAssignToContainer, OnUiControlAssignToContainer);
+			
+		}
+	
+	}
+
+    /// <summary>
+    /// Handles the assignment of UI controls to their container panels.
+    /// Matches controls with containers based on panel position and section.
+    /// </summary>
+    /// <param name="args">Event arguments containing control and container information</param>
+	private void OnUiControlAssignToContainer(UIControlEventArgs args)
+	{
+		PanelPosition panelpostion = args.PanelLocation;
+		PanelSection panelSection= args.PanelSection;
+
+        try
+        {
+
+            foreach (KeyValuePair<string, IUIObject> _t in _UIControls.Where(p => p.Value.PanelLocation == panelpostion && p.Value.PanelSection == panelSection))
+            {
+                Node _n = (Node)_t.Value;
+                Control _b = (Control)args.UIControlItem;
+
+                _n.AddChild(_b);
+            }
+
+        }catch(Exception ex) 
+        {
+
+            GD.Print(ex.Message);
+        }
+
+	}
+
+    /// <summary>
+    /// Retrieves a list of all UI objects of a specified type.
+    /// </summary>
+    /// <typeparam name="T">The type of UI object to retrieve.</typeparam>
+    /// <param name="resultList">An optional list to store the results in.</param>
+    /// <returns>A list of UI objects of the specified type.</returns>
+    public List<IUIObject> GetListofAllIUIObjectByType<T>(List<T> resultList) where T : class
+    {
+        // Create a new list to store matching objects
+        List<IUIObject> matchingObjects = new List<IUIObject>();
+
+        // Iterate through all UI controls and check for type match
+        foreach (var control in _UIControls.Values)
+        {
+            // Check if the control can be cast to type T
+            if (control is T)
+            {
+                matchingObjects.Add(control);
+                resultList?.Add(control as T);
+            }
+        }
+
+        return matchingObjects;
+    }
+
+	protected override void RegisterEventHandlers()
+	{
+
+	}
+}
+
+
+	public enum UIElementType
+	{
+		ResourcePanel,
+		InventorySlot,
+		MenuButton,
+		DialogWindow,
+		// Add other types as needed
+	}

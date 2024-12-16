@@ -1,0 +1,6 @@
+i like this. and will implement into the document for text time however this time lets build these tests Performance testing for large-scale generation
+
+Reward scaling with progression
+
+Power curve vs difficulty curve,  but before you do. analysis each of the connecting classes for the test to make sure you are handling the modifier and other bonuses correctly, we have been stuck on several test where it test where the bonus was an multiplier instead of being an additional bonus, e.g analysis other tests to see how they have done it. for example for Reward scaling with progression check these tests to see how they have checked the bonus and such 
+TestPrestigeBonuses/TestPrestigeMultipliers/TestAscensionBonusCalculation/TestAscensionStatModification/TestAscensionPersistence/TestStorageRatios/TestCollectionEfficiency/TestMultiResourceCollection

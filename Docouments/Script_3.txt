@@ -1,0 +1,406 @@
+lets add a few more controls. we will need a grid for inventory. these make a basic one of those and apply it to the standard UI standards we have spoken about. so it will be dynamic, it will register itself and it will be apart of the game window layer.
+
+
+I'll create a dynamic inventory grid control that integrates with our UI system. It will include item slots, dragging support, and automatic registration.
+
+
+Dynamic Inventory Grid System
+Click to open code
+This inventory system includes:
+
+Dynamic Grid
+Configurable rows and columns
+Automatic slot creation
+Proper layout and spacing
+Drag and Drop Support
+Drag items between slots
+Visual feedback during drag
+Swap items when dropping
+Integration with UI System
+Auto-registers with UIStateManager
+Proper layer management
+State-aware visibility
+Slot Management
+Individual slot controls
+Item assignment and removal
+Visual updates
+Item System
+Basic item properties
+Support for stackable items
+Icon display
+Usage example:
+
+csharp
+
+Copy
+// Create and configure the inventory grid
+var inventory = new InventoryGrid
+{
+    Rows = 5,
+    Columns = 6
+};
+
+// Add items
+var item = new InventoryItem
+{
+    ItemName = "Sword",
+    Description = "Sharp!",
+    IsStackable = false
+};
+
+inventory.AddItem(item, 0); // Add to first slot
+
+// Listen for item movements
+inventory.ItemMoved += (fromSlot, toSlot) =>
+{
+    // Handle item movement
+    SaveInventoryState();
+};
+Would you like me to:
+
+Add more features like item stacking?
+Add tooltips for items?
+Add item categories or filtering?
+Implement inventory saving/loading?
+Add more visual feedback for interactions?
+
+# InventorySystem/Controls/InventorySlot.cs
+public partial class InventorySlot : Panel
+{
+    public int SlotIndex { get; private set; }
+    public bool IsEmpty => Item == null;
+    public InventoryItem Item { get; private set; }
+    
+    [Signal]
+    public delegate void ItemAddedEventHandler(InventoryItem item);
+    [Signal]
+    public delegate void ItemRemovedEventHandler(InventoryItem item);
+    
+    public InventorySlot(int index)
+    {
+        SlotIndex = index;
+        CustomMinimumSize = new Vector2(64, 64);
+        
+        // Add visual style
+        AddThemeStylebox("panel", new StyleBoxFlat
+        {
+            BgColor = new Color(0.2f, 0.2f, 0.2f),
+            BorderWidthLeft = 1,
+            BorderWidthTop = 1,
+            BorderWidthRight = 1,
+            BorderWidthBottom = 1,
+            BorderColor = new Color(0.3f, 0.3f, 0.3f)
+        });
+        
+        // Setup drag and drop
+        SetupDragDrop();
+    }
+    
+    private void SetupDragDrop()
+    {
+        GuiInput += (InputEvent @event) =>
+        {
+            if (@event is InputEventMouseButton mouseEvent)
+            {
+                if (mouseEvent.ButtonIndex == MouseButton.Left)
+                {
+                    if (mouseEvent.Pressed)
+                    {
+                        StartDrag();
+                    }
+                    else
+                    {
+                        EndDrag();
+                    }
+                }
+            }
+        };
+    }
+    
+    private void StartDrag()
+    {
+        if (!IsEmpty)
+        {
+            // Start drag operation
+            var dragData = new SceneTreeDragData();
+            dragData.Data = new Dictionary<string, object>
+            {
+                { "type", "inventory_item" },
+                { "item", Item },
+                { "source_slot", this }
+            };
+            
+            SetDragPreview(CreateDragPreview());
+        }
+    }
+    
+    private Control CreateDragPreview()
+    {
+        var preview = new TextureRect
+        {
+            Texture = Item.Icon,
+            CustomMinimumSize = new Vector2(48, 48)
+        };
+        
+        return preview;
+    }
+    
+    private void EndDrag()
+    {
+        // Handle in the grid
+    }
+    
+    public void SetItem(InventoryItem item)
+    {
+        Item = item;
+        if (item != null)
+        {
+            EmitSignal(SignalName.ItemAdded, item);
+            UpdateVisual();
+        }
+    }
+    
+    public InventoryItem RemoveItem()
+    {
+        var item = Item;
+        Item = null;
+        EmitSignal(SignalName.ItemRemoved, item);
+        UpdateVisual();
+        return item;
+    }
+    
+    private void UpdateVisual()
+    {
+        // Clear existing visuals
+        foreach (var child in GetChildren())
+        {
+            RemoveChild(child);
+            child.QueueFree();
+        }
+        
+        if (Item != null)
+        {
+            var textureRect = new TextureRect
+            {
+                Texture = Item.Icon,
+                CustomMinimumSize = new Vector2(48, 48),
+                SizeFlagsHorizontal = SizeFlags.Expand | SizeFlags.Fill,
+                SizeFlagsVertical = SizeFlags.Expand | SizeFlags.Fill,
+                StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered
+            };
+            
+            AddChild(textureRect);
+        }
+    }
+}
+
+# InventorySystem/Controls/InventoryGrid.cs
+[UIState(UIStates.GAME_MENU, "Inventory", UILayerType.Window)]
+public partial class InventoryGrid : Panel, IUIState
+{
+    public string StateName => UIStates.GAME_MENU;
+    public UILayerType PreferredLayer => UILayerType.Window;
+    public bool IsVisible { get; set; }
+    
+    private GridContainer _grid;
+    private List<InventorySlot> _slots = new List<InventorySlot>();
+    
+    [Export]
+    public int Rows { get; set; } = 5;
+    
+    [Export]
+    public int Columns { get; set; } = 6;
+    
+    [Signal]
+    public delegate void ItemMovedEventHandler(int fromSlot, int toSlot);
+    
+    public override void _Ready()
+    {
+        // Set up the grid container
+        _grid = new GridContainer
+        {
+            Columns = Columns
+        };
+        
+        AddChild(_grid);
+        
+        // Create slots
+        InitializeGrid();
+        
+        // Add some padding and style
+        var stylebox = new StyleBoxFlat
+        {
+            BgColor = new Color(0.15f, 0.15f, 0.15f),
+            ContentMarginLeft = 10,
+            ContentMarginTop = 10,
+            ContentMarginRight = 10,
+            ContentMarginBottom = 10
+        };
+        
+        AddThemeStylebox("panel", stylebox);
+        
+        // Setup drag and drop for the grid
+        SetupGridDragDrop();
+    }
+    
+    private void InitializeGrid()
+    {
+        for (int i = 0; i < Rows * Columns; i++)
+        {
+            var slot = new InventorySlot(i);
+            _slots.Add(slot);
+            _grid.AddChild(slot);
+        }
+    }
+    
+    private void SetupGridDragDrop()
+    {
+        foreach (var slot in _slots)
+        {
+            slot.GuiInput += (@event) =>
+            {
+                if (@event is InputEventMouseButton mouseEvent && 
+                    mouseEvent.ButtonIndex == MouseButton.Left && 
+                    !mouseEvent.Pressed)
+                {
+                    HandleDrop(slot);
+                }
+            };
+        }
+    }
+    
+    private void HandleDrop(InventorySlot targetSlot)
+    {
+        var dragData = GetViewport().GuiGetDragData();
+        if (dragData != null && 
+            dragData.Data is Dictionary<string, object> data && 
+            data.ContainsKey("type") && 
+            data["type"].ToString() == "inventory_item")
+        {
+            var sourceSlot = data["source_slot"] as InventorySlot;
+            if (sourceSlot != null && sourceSlot != targetSlot)
+            {
+                SwapItems(sourceSlot, targetSlot);
+            }
+        }
+    }
+    
+    private void SwapItems(InventorySlot sourceSlot, InventorySlot targetSlot)
+    {
+        var sourceItem = sourceSlot.RemoveItem();
+        var targetItem = targetSlot.RemoveItem();
+        
+        if (targetItem != null)
+        {
+            sourceSlot.SetItem(targetItem);
+        }
+        
+        if (sourceItem != null)
+        {
+            targetSlot.SetItem(sourceItem);
+        }
+        
+        EmitSignal(SignalName.ItemMoved, sourceSlot.SlotIndex, targetSlot.SlotIndex);
+    }
+    
+    public void AddItem(InventoryItem item, int slotIndex)
+    {
+        if (slotIndex >= 0 && slotIndex < _slots.Count && _slots[slotIndex].IsEmpty)
+        {
+            _slots[slotIndex].SetItem(item);
+        }
+    }
+    
+    public InventoryItem RemoveItem(int slotIndex)
+    {
+        if (slotIndex >= 0 && slotIndex < _slots.Count && !_slots[slotIndex].IsEmpty)
+        {
+            return _slots[slotIndex].RemoveItem();
+        }
+        return null;
+    }
+    
+    public void Show()
+    {
+        Visible = true;
+        IsVisible = true;
+    }
+    
+    public void Hide()
+    {
+        Visible = false;
+        IsVisible = false;
+    }
+}
+
+# InventorySystem/Data/InventoryItem.cs
+public class InventoryItem : Resource
+{
+    [Export]
+    public string ItemName { get; set; }
+    
+    [Export]
+    public Texture2D Icon { get; set; }
+    
+    [Export]
+    public string Description { get; set; }
+    
+    [Export]
+    public bool IsStackable { get; set; }
+    
+    [Export]
+    public int MaxStackSize { get; set; } = 1;
+}
+
+# Example Usage
+public partial class GameUI : Control
+{
+    private IntegratedUIManager _uiManager;
+    private InventoryGrid _inventoryGrid;
+    
+    public override void _Ready()
+    {
+        _uiManager = new IntegratedUIManager();
+        AddChild(_uiManager);
+        
+        // Create inventory grid
+        _inventoryGrid = new InventoryGrid
+        {
+            Rows = 5,
+            Columns = 6
+        };
+        
+        AddChild(_inventoryGrid);
+        
+        // Example: Add some test items
+        var swordItem = new InventoryItem
+        {
+            ItemName = "Steel Sword",
+            Description = "A basic sword",
+            IsStackable = false
+        };
+        
+        var potionItem = new InventoryItem
+        {
+            ItemName = "Health Potion",
+            Description = "Restores health",
+            IsStackable = true,
+            MaxStackSize = 10
+        };
+        
+        _inventoryGrid.AddItem(swordItem, 0);
+        _inventoryGrid.AddItem(potionItem, 1);
+        
+        // Connect signals
+        _inventoryGrid.ItemMoved += (fromSlot, toSlot) =>
+        {
+            GD.Print($"Item moved from slot {fromSlot} to slot {toSlot}");
+        };
+    }
+}
+
+
+_sql = "'" + _r[0].ToString() + "," + _r[1].ToString() + "," + _r[2].ToString() + "," + _r[3].ToString() + "," + _r[4].ToString() + "," + _r[5].ToString() + "," + _r[6].ToString() + "," + _r[7].ToString() + "," + _r[8].ToString() + "," + _r[9].ToString() + "," + _r[10].ToString() + "," + _r[11].ToString() + "," + _r[12].ToString() + "," + _r[13].ToString() + "," + _r[14].ToString();
+
+
+System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")

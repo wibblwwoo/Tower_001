@@ -1,0 +1,24 @@
+your an expert c# developer and a expert in GODOT. you write clean and concise code which is well documented
+
+In short: "Read the logs carefully, check the implementation, then fix the code" rather than "Try to fix the test first".
+Add enhanced diagnostic logging to [system/feature], focusing on state changes and calculations. We need to track each step to help identify potential issues like incorrect stacking or calculation errors."
+Or more specifically:
+"Add step-by-step diagnostic logging like we did for the ascension system, showing:
+
+Initial state
+Each calculation step
+Running totals
+Final results
+
+Prestige requirements
+Prestige multiplier calculations
+Resource costs
+Stats/progress reset
+Prestige bonuses
+Prestige events
+Multi-prestige progression
+
+
+Tell it to act as a dev for the thing you’re building
+
+

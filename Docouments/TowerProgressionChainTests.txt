@@ -1,0 +1,49 @@
+Single Floor Progression (TestSingleFloorProgression)
+Tests basic progression through a single floor
+Validates tower unlocking and entry
+Checks room completion sequence
+Verifies proper state transitions (Locked -> InProgress -> Completed)
+Multi-Floor Progression (TestMultiFloorProgression)
+Tests progression across multiple floors
+Validates level scaling between floors
+Ensures floors are completed in sequence
+Tracks completion states across multiple floors
+Tower State Management
+Validates tower states (Locked, InProgress, Completed)
+Checks floor states (InProgress, Completed)
+Verifies room states (Cleared)
+Ensures proper state transitions during progression
+Reward System Testing
+Validates reward distribution after room completion
+Checks chain rewards for completing sequences
+Verifies floor completion rewards
+Level Scaling Tests (TestTowerDifficultyScaling)
+Tests difficulty scaling across floors
+Validates level requirements for floors
+Ensures proper scaling of rewards with level
+Event System Testing (TestTowerEventHandling)
+Validates event triggering for room completion
+Tests floor completion events
+Checks tower-wide event handling
+Verifies event chains and sequences
+State Recovery Testing (TestTowerStateRecovery)
+Tests saving and loading tower states
+Validates progress persistence
+Ensures proper recovery of completion states
+Resource Management (TestTowerResourceManagement)
+Tests resource generation and collection
+Validates resource costs and spending
+Checks resource-based progression gates
+Modifier System Testing (TestTowerModifiers)
+Tests tower-wide modifiers and buffs
+Validates floor-specific modifiers
+Checks time-based modifier effects
+Player Integration Testing (TestPlayerIntegration)
+Tests interaction between player systems and tower mechanics
+Validates equipment effects in towers
+Checks player progression and achievements
+Performance Testing (TestTowerPerformance)
+Tests system performance under load
+Validates concurrent operations
+Checks memory management
+Measures state update performance

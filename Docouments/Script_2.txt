@@ -1,0 +1,345 @@
+I'll show how to integrate the UILayerManager with our existing UIStateManager to create a more comprehensive UI system. This integration will allow states to manage both visibility and layer positioning.
+Integrated UI State and Layer Management SystemClick to open code
+This integration provides several benefits:
+
+Automatic Layer Management
+
+Controls specify their preferred layer through attributes
+Layer assignment happens automatically during state changes
+Maintains proper z-ordering of UI elements
+
+
+Organized State Transitions
+
+States can have elements across multiple layers
+Layer transitions happen in the correct order
+Modal windows and overlays are properly handled
+
+
+Simplified Control Creation
+
+Single attribute handles both state and layer assignment
+Controls can specify their preferred layer
+Easy to create modal dialogs and overlays
+
+
+
+Example usage:
+csharpCopy// Create a HUD element that persists across states
+[UIState(UIStates.GAME_MENU, "HUD", UILayerType.HUD)]
+[UIState(UIStates.CHARACTER_VIEW, "HUD", UILayerType.HUD)]
+public class HealthBar : Control, IUIState
+{
+    public string StateName => UIStates.GAME_MENU;
+    public UILayerType PreferredLayer => UILayerType.HUD;
+    // ... implementation
+}
+
+// Create a modal dialog
+[UIState(UIStates.GAME_MENU, "Dialogs", UILayerType.Modal)]
+public class ConfirmationDialog : Panel, IUIState
+{
+    public string StateName => UIStates.GAME_MENU;
+    public UILayerType PreferredLayer => UILayerType.Modal;
+    // ... implementation
+}
+
+// Change states with the integrated manager
+await _uiManager.ChangeState(UIStates.GAME_MENU);
+Common use cases:
+
+Main Menu
+
+Background on Background layer
+Menu buttons on Game layer
+Modal dialogs on Modal layer
+
+
+In-Game UI
+
+HUD elements on HUD layer
+Game windows on Window layer
+Tooltips on Overlay layer
+Popups on Popup layer
+
+
+Modal Dialogs
+
+Dialog on Modal layer
+Background dimming handled automatically
+Lower layers disabled automatically
+
+
+
+Would you like me to:
+
+Add more example controls?
+Show how to handle specific UI scenarios?
+Add additional integration features?
+Explain any part in more detail?
+
+
+# Attributes/UIStateAttribute.cs
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+public class UIStateAttribute : Attribute
+{
+    public string StateName { get; }
+    public string GroupName { get; }
+    public UILayerType Layer { get; } // Added layer information
+    
+    public UIStateAttribute(string stateName, string groupName, UILayerType layer = UILayerType.Game)
+    {
+        StateName = stateName;
+        GroupName = groupName;
+        Layer = layer;
+    }
+}
+
+# Interfaces/IUIState.cs
+public interface IUIState
+{
+    bool IsVisible { get; set; }
+    string StateName { get; }
+    UILayerType PreferredLayer { get; } // Added preferred layer
+    void Show();
+    void Hide();
+}
+
+# Managers/IntegratedUIManager.cs
+public class IntegratedUIManager : Node
+{
+    private UIStateManager _stateManager;
+    private UILayerManager _layerManager;
+    
+    private Dictionary<string, Dictionary<UILayerType, List<IUIState>>> _stateLayerMapping = 
+        new Dictionary<string, Dictionary<UILayerType, List<IUIState>>>();
+    
+    public override void _Ready()
+    {
+        _stateManager = new UIStateManager();
+        _layerManager = new UILayerManager();
+        
+        AddChild(_stateManager);
+        AddChild(_layerManager);
+        
+        CallDeferred(nameof(ScanAndRegisterControls));
+    }
+    
+    private void ScanAndRegisterControls()
+    {
+        var root = GetTree().Root;
+        RegisterControlsInNode(root);
+        OrganizeControlsByLayer();
+    }
+    
+    private void RegisterControlsInNode(Node node)
+    {
+        if (node is IUIState uiStateControl)
+        {
+            var attributes = node.GetType()
+                               .GetCustomAttributes(typeof(UIStateAttribute), true)
+                               .Cast<UIStateAttribute>();
+            
+            foreach (var attr in attributes)
+            {
+                // Register with state manager
+                if (!_stateLayerMapping.ContainsKey(attr.StateName))
+                {
+                    _stateLayerMapping[attr.StateName] = new Dictionary<UILayerType, List<IUIState>>();
+                }
+                
+                if (!_stateLayerMapping[attr.StateName].ContainsKey(attr.Layer))
+                {
+                    _stateLayerMapping[attr.StateName][attr.Layer] = new List<IUIState>();
+                }
+                
+                _stateLayerMapping[attr.StateName][attr.Layer].Add(uiStateControl);
+                
+                // Add to appropriate layer
+                if (node is Control control)
+                {
+                    _layerManager.AddToLayer(control, attr.Layer);
+                }
+            }
+        }
+        
+        foreach (var child in node.GetChildren())
+        {
+            RegisterControlsInNode(child);
+        }
+    }
+    
+    public async Task ChangeState(string newState)
+    {
+        // Hide all current state controls
+        if (_stateLayerMapping.ContainsKey(_stateManager.CurrentState))
+        {
+            foreach (var layerControls in _stateLayerMapping[_stateManager.CurrentState].Values)
+            {
+                foreach (var control in layerControls)
+                {
+                    control.Hide();
+                }
+            }
+        }
+        
+        // Show new state controls in their appropriate layers
+        if (_stateLayerMapping.ContainsKey(newState))
+        {
+            // Sort layers by enum value to ensure proper display order
+            var orderedLayers = _stateLayerMapping[newState].Keys.OrderBy(l => (int)l);
+            
+            foreach (var layer in orderedLayers)
+            {
+                foreach (var control in _stateLayerMapping[newState][layer])
+                {
+                    if (control is Control uiControl)
+                    {
+                        _layerManager.AddToLayer(uiControl, layer);
+                        control.Show();
+                    }
+                }
+            }
+        }
+        
+        await _stateManager.ChangeStateAsync(newState);
+    }
+}
+
+# Example Controls with Layer Integration
+[UIState(UIStates.MAIN_MENU, "MainMenuButtons", UILayerType.Game)]
+public partial class MainMenuButton : Button, IUIState
+{
+    public string StateName => UIStates.MAIN_MENU;
+    public UILayerType PreferredLayer => UILayerType.Game;
+    public bool IsVisible { get; set; }
+    
+    [Export]
+    public string ButtonText { get; set; } = "Menu Button";
+    
+    public override void _Ready()
+    {
+        Text = ButtonText;
+    }
+    
+    public void Show()
+    {
+        Visible = true;
+        IsVisible = true;
+    }
+    
+    public void Hide()
+    {
+        Visible = false;
+        IsVisible = false;
+    }
+}
+
+[UIState(UIStates.MAIN_MENU, "StoryPanel", UILayerType.Window)]
+public partial class StoryPanel : Panel, IUIState
+{
+    public string StateName => UIStates.MAIN_MENU;
+    public UILayerType PreferredLayer => UILayerType.Window;
+    public bool IsVisible { get; set; }
+    
+    private TextEdit _storyText;
+    
+    public override void _Ready()
+    {
+        _storyText = new TextEdit
+        {
+            Text = "Your story begins here...",
+            WrapMode = TextEdit.LineWrappingMode.Boundary
+        };
+        AddChild(_storyText);
+    }
+    
+    public void Show()
+    {
+        Visible = true;
+        IsVisible = true;
+    }
+    
+    public void Hide()
+    {
+        Visible = false;
+        IsVisible = false;
+    }
+}
+
+# Example Modal Dialog
+[UIState(UIStates.GAME_MENU, "InventoryWindow", UILayerType.Modal)]
+public partial class InventoryWindow : Panel, IUIState
+{
+    public string StateName => UIStates.GAME_MENU;
+    public UILayerType PreferredLayer => UILayerType.Modal;
+    public bool IsVisible { get; set; }
+    
+    public override void _Ready()
+    {
+        // Setup inventory window contents
+    }
+    
+    public async void Show()
+    {
+        Visible = true;
+        IsVisible = true;
+        
+        // Fade in effect
+        Modulate = new Color(1, 1, 1, 0);
+        var tween = CreateTween();
+        tween.TweenProperty(this, "modulate:a", 1.0f, 0.3f);
+    }
+    
+    public async void Hide()
+    {
+        var tween = CreateTween();
+        tween.TweenProperty(this, "modulate:a", 0.0f, 0.3f);
+        await ToSignal(tween, "finished");
+        
+        Visible = false;
+        IsVisible = false;
+    }
+}
+
+# Example Usage
+public partial class GameUI : Control
+{
+    private IntegratedUIManager _uiManager;
+    
+    public override void _Ready()
+    {
+        _uiManager = new IntegratedUIManager();
+        AddChild(_uiManager);
+        
+        // Example: Setting up the main menu
+        var mainMenu = new VBoxContainer();
+        
+        var newGameBtn = new MainMenuButton { ButtonText = "New Game" };
+        var loadGameBtn = new MainMenuButton { ButtonText = "Load Game" };
+        var settingsBtn = new MainMenuButton { ButtonText = "Settings" };
+        
+        mainMenu.AddChild(newGameBtn);
+        mainMenu.AddChild(loadGameBtn);
+        mainMenu.AddChild(settingsBtn);
+        
+        AddChild(mainMenu);
+        
+        // Example: Setting up story panel
+        var storyPanel = new StoryPanel();
+        AddChild(storyPanel);
+        
+        // Example: Handle state changes with layers
+        newGameBtn.Pressed += async () =>
+        {
+            await _uiManager.ChangeState(UIStates.GAME_MENU);
+            
+            // Show inventory as modal
+            var inventory = new InventoryWindow();
+            AddChild(inventory);
+        };
+        
+        // Start with main menu
+        _ = _uiManager.ChangeState(UIStates.MAIN_MENU);
+    }
+}

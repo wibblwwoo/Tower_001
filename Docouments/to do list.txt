@@ -1,0 +1,114 @@
+# Implemented Systems
+
+## 1. Tower System ✓
+- Base tower data structure
+- Floor management
+- Room system
+- Floor branching paths
+- Floor pattern generation
+- JSON loading/saving for tower data
+- Validation system for tower data
+- Version control for tower configurations
+
+## 2. Floor System ✓
+- Different floor patterns (Linear, Circular, etc.)
+- Room connections
+- Branching paths logic
+- Floor difficulty scaling
+- Floor events and transitions
+- Floor completion tracking
+
+## 3. Room System ✓
+- Room types (Encounter, Rest, Reward)
+- Room events
+- Room states and transitions
+- Room connectivity
+- Room requirements
+
+## 4. Event System ✓
+- Generic event manager
+- Event registration
+- Event handling
+- Event args for different scenarios
+- UI event integration
+
+## 5. Character System ✓
+- Base character class
+- Character types (Knight, Mage)
+- Stat system with modifiers
+- Buff/Debuff system
+- Stat events and tracking
+- Multi-character support
+- Character ID system
+
+# TODO List
+
+## 1. Combat System
+- [ ] Combat mechanics
+- [ ] Damage calculation
+- [ ] Turn order system
+- [ ] Combat events
+- [ ] Combat rewards
+
+## 2. Equipment System
+- [ ] Equipment slots
+- [ ] Equipment stats
+- [ ] Equipment effects
+- [ ] Equipment upgrading
+- [ ] Equipment sets
+
+## 3. Ability System
+- [ ] Character abilities
+- [ ] Ability cooldowns
+- [ ] Ability effects
+- [ ] Ability upgrading
+- [ ] Ability unlocking
+
+## 4. Character Progression
+- [ ] Experience system
+- [ ] Level-up mechanics
+- [ ] Skill trees
+- [ ] Trait system
+- [ ] Character advancement
+
+## 5. Inventory System
+- [ ] Item management
+- [ ] Item stacking
+- [ ] Item categories
+- [ ] Item usage
+- [ ] Item events
+
+## 6. Save/Load System
+- [ ] Character persistence
+- [ ] Progress saving
+- [ ] Tower state saving
+- [ ] Equipment saving
+- [ ] Achievement saving
+
+## 7. UI System Expansion
+- [ ] Character UI
+- [ ] Inventory UI
+- [ ] Equipment UI
+- [ ] Combat UI
+- [ ] Tower navigation UI
+
+## 8. Reward System
+- [ ] Drop tables
+- [ ] Reward scaling
+- [ ] Rare item system
+- [ ] Achievement rewards
+- [ ] Quest rewards
+
+## 9. Game Balance
+- [ ] Difficulty scaling
+- [ ] Reward balancing
+- [ ] Character balancing
+- [ ] Tower progression
+- [ ] Combat balancing
+
+## 10. Game Flow
+- [ ] Game states
+- [ ] Menu system
+- [ ] Scene transitions
+- [ ] Loading screens
+- [ ] Game progression

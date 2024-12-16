@@ -1,0 +1,776 @@
+// Combined Manager Classes
+// Date: 2024-12-05
+// This file contains all manager classes from the Tower_001 project
+
+using Godot;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Diagnostics;
+using System.IO;
+using System.Text;
+using System.Threading.Tasks;
+using static GlobalEnums;
+
+// =====================================
+// Base Manager
+// =====================================
+
+public abstract class BaseManager : IManager
+{
+    protected EventManager EventManager;
+    public IEnumerable<Type> Dependencies { get; }
+
+    public virtual void Setup()
+    {
+        // Get EventManager reference after it's been initialized
+        EventManager = Globals.Instance.gameMangers.Events;
+        RegisterEventHandlers();
+    }
+
+    protected abstract void RegisterEventHandlers();
+}
+
+// =====================================
+// Manager Container
+// =====================================
+
+public partial class ManagerContainer : IManagerContainer
+{
+    public EventManager Events { get; set; }
+    public UIManager UI { get; set; }
+    public PlayerManager Player { get; set; }
+    public WorldManager World { get; set; }
+    public HeartbeatManager Heartbeat { get; set; }
+    public UIResourceManager ResourceManager { get; set; }
+
+    public ManagerContainer()
+    {
+        InitializeManagers();
+    }
+
+    private void InitializeManagers()
+    {
+        // Initialize in dependency order
+        Events = new EventManager();
+        Events.Setup(); // Setup EventManager first
+    }
+
+    public void Setup()
+    {
+        ResourceManager = new UIResourceManager();
+        UI = new UIManager();
+        Player = new PlayerManager();
+        World = new WorldManager();
+
+        Heartbeat = new HeartbeatManager();
+        // EventManager already setup in InitializeManagers
+        UI.Setup();
+        ResourceManager.Setup();
+        Player.Setup();
+        World.Setup();
+    }
+}
+
+// =====================================
+// Event Manager
+// =====================================
+
+public partial class EventManager : IManager
+{
+    private readonly Dictionary<EventType, List<Delegate>> _eventHandlers = new();
+    public IEnumerable<Type> Dependencies { get; }
+    private readonly Queue<(EventType type, GameEventArgs args)> _eventQueue = new();
+    private readonly object _lockObject = new();
+    private bool _isProcessing;
+
+    public void Setup()
+    {
+        RegisterCoreEvents();
+    }
+
+    private void RegisterCoreEvents()
+    {
+        AddHandler<GameEventArgs>(EventType.None, OnSystemEvent);
+    }
+
+    public void AddHandler<T>(EventType eventType, Action<T> handler) where T : GameEventArgs
+    {
+        lock (_lockObject)
+        {
+            if (!_eventHandlers.ContainsKey(eventType))
+            {
+                _eventHandlers[eventType] = new List<Delegate>();
+            }
+            _eventHandlers[eventType].Add(handler);
+        }
+    }
+
+    public void RemoveHandler<T>(EventType eventType, Action<T> handler) where T : GameEventArgs
+    {
+        lock (_lockObject)
+        {
+            if (_eventHandlers.ContainsKey(eventType))
+            {
+                _eventHandlers[eventType].Remove(handler);
+            }
+        }
+    }
+
+    public bool RaiseEvent<T>(EventType eventType, T args) where T : GameEventArgs
+    {
+        if (!_eventHandlers.ContainsKey(eventType))
+            return false;
+
+        bool handled = false;
+        foreach (var handler in _eventHandlers[eventType].ToList())
+        {
+            try
+            {
+                if (handler is Action<T> typedHandler)
+                {
+                    typedHandler(args);
+                    handled = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleEventError(eventType, args, ex);
+            }
+        }
+        return handled;
+    }
+
+    public void QueueEvent<T>(EventType eventType, T args) where T : GameEventArgs
+    {
+        lock (_lockObject)
+        {
+            _eventQueue.Enqueue((eventType, args));
+        }
+    }
+
+    public void ProcessEvents()
+    {
+        if (_isProcessing) return;
+
+        _isProcessing = true;
+        try
+        {
+            while (_eventQueue.Count > 0)
+            {
+                (EventType type, GameEventArgs args) = _eventQueue.Dequeue();
+                RaiseEvent(type, args);
+            }
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private void HandleEventError(EventType eventType, GameEventArgs args, Exception ex)
+    {
+        GD.PrintErr($"Error processing event {eventType}: {ex.Message}");
+    }
+
+    private void OnSystemEvent(GameEventArgs args)
+    {
+        // Handle system-level events
+    }
+}
+
+// =====================================
+// Heartbeat Manager
+// =====================================
+
+public partial class HeartbeatManager : BaseManager
+{
+    private float _baseTickRate = 1.0f;
+    private float _timeAccumulator = 0.0f;
+    private bool _isPaused = false;
+    private Stopwatch _tickStopwatch;
+    private float _lastTickDuration;
+    private int _tickCount;
+    private float _globalSpeedMultiplier = 1.0f;
+    private Dictionary<string, float> _systemSpeedMultipliers = new();
+    private DateTime _gameStartTime;
+    private TimeSpan _totalGameTime;
+    private TimeSpan _sessionTime;
+
+    public HeartbeatManager()
+    {
+    }
+
+    public override void Setup()
+    {
+        base.Setup();
+        _tickStopwatch = new Stopwatch();
+        _gameStartTime = DateTime.UtcNow;
+        Pause();
+    }
+
+    protected override void RegisterEventHandlers()
+    {
+        _tickStopwatch.Start();
+        _sessionTime = TimeSpan.Zero;
+    }
+
+    public void Update(double delta)
+    {
+        if (_isPaused) return;
+
+        _timeAccumulator += (float)delta * _globalSpeedMultiplier;
+
+        while (_timeAccumulator >= _baseTickRate)
+        {
+            ProcessTick();
+            _timeAccumulator -= _baseTickRate;
+        }
+
+        _sessionTime = DateTime.UtcNow - _gameStartTime;
+    }
+
+    private void ProcessTick()
+    {
+        _tickStopwatch.Restart();
+
+        if (Globals.Instance?.gameMangers?.Events != null)
+        {
+            var tickEventArgs = new TickEventArgs(_tickCount, _baseTickRate, _globalSpeedMultiplier, _systemSpeedMultipliers);
+            Globals.Instance.gameMangers.Events.RaiseEvent(EventType.GameTick, tickEventArgs);
+        }
+
+        _tickStopwatch.Stop();
+        _lastTickDuration = (float)_tickStopwatch.Elapsed.TotalSeconds;
+        _tickCount++;
+    }
+
+    public void Pause()
+    {
+        _isPaused = true;
+        _tickStopwatch.Stop();
+    }
+
+    public void Resume()
+    {
+        _isPaused = false;
+        _tickStopwatch.Start();
+    }
+
+    public void SetSpeed(float multiplier)
+    {
+        _globalSpeedMultiplier = Math.Max(0, multiplier);
+    }
+
+    public void SetSystemSpeed(string system, float multiplier)
+    {
+        _systemSpeedMultipliers[system] = Math.Max(0, multiplier);
+    }
+
+    public (int tickCount, float lastTickDuration, TimeSpan sessionTime) GetMetrics()
+    {
+        return (_tickCount, _lastTickDuration, _sessionTime);
+    }
+}
+
+// =====================================
+// Menu Manager
+// =====================================
+
+public class MenuManager
+{
+    private Dictionary<string, IMenu> _menus;
+
+    public void Initialize()
+    {
+        _menus = new Dictionary<string, IMenu>();
+        InitializeMenus();
+        SubscribeToEvents();
+    }
+
+    private void InitializeMenus()
+    {
+        _menus.Add("MainMenu", new MainMenu());
+        _menus.Add("SettingsMenu", new SettingsMenu());
+        _menus.Add("TowerSettingsMenu", new TowerSettingMenu());
+
+        foreach (var menu in _menus.Values.Where(p => p.ShowOnStartup)) {
+            menu.Show();
+        }
+    }
+
+    private void SubscribeToEvents()
+    {
+        Globals.Instance.gameMangers.Events.AddHandler<MenuEventArgs>(
+            EventType.MenuAction,
+            HandleMenuAction
+        );
+    }
+
+    public void ShowMenu(string menuName)
+    {
+        if (_menus.TryGetValue(menuName, out var menu))
+        {
+            menu.Show();
+        }
+        else
+        {
+            GD.PrintErr($"Menu not found: {menuName}");
+        }
+    }
+
+    public void HideMenu(string menuName)
+    {
+        if (_menus.TryGetValue(menuName, out var menu))
+        {
+            menu.Hide();
+        }
+        else
+        {
+            GD.PrintErr($"Menu not found: {menuName}");
+        }
+    }
+
+    private void HandleMenuAction(MenuEventArgs args)
+    {
+        HideMenu(args.MenuParent);
+        ShowMenu(args.Menu);
+    }
+}
+
+// =====================================
+// Player Manager
+// =====================================
+
+public partial class PlayerManager : BaseManager
+{
+    private readonly Dictionary<string, Character> _characters = new();
+    private Character _currentCharacter;
+    public ProgressionManager progressionManager { get; set; }
+
+    public PlayerManager()
+    {
+    }
+
+    public override void Setup()
+    {
+        base.Setup();
+    }
+
+    protected override void RegisterEventHandlers()
+    {
+        progressionManager = new ProgressionManager(this);
+        progressionManager.Setup();
+
+        EventManager.AddHandler<CharacterStatEventArgs>(EventType.CharacterStatChanged, OnCharacterStatChanged);
+        EventManager.AddHandler<CharacterStatBuffEventArgs>(EventType.CharacterStatBuffApplied, OnCharacterStatBuffApplied);
+    }
+
+    public void CreateCharacter(string characterId, CharacterClass characterClass)
+    {
+        if (_characters.ContainsKey(characterId))
+        {
+            GD.PrintErr($"Character with ID {characterId} already exists");
+            return;
+        }
+
+        var character = new Character(characterId, characterClass);
+        _characters.Add(characterId, character);
+        
+        if (_currentCharacter == null)
+        {
+            SetCurrentCharacter(characterId);
+        }
+    }
+
+    public void SetCurrentCharacter(string characterId)
+    {
+        if (_characters.TryGetValue(characterId, out var character))
+        {
+            _currentCharacter = character;
+            RaiseCharacterEvent(EventType.CharacterSelected, characterId);
+        }
+    }
+
+    public Character GetCharacter(string characterId)
+    {
+        return _characters.TryGetValue(characterId, out var character) ? character : null;
+    }
+
+    public Character GetCurrentCharacter()
+    {
+        return _currentCharacter;
+    }
+
+    private void OnCharacterStatChanged(CharacterStatEventArgs args)
+    {
+        var character = GetCharacter(args.CharacterId);
+        if (character != null)
+        {
+            character.UpdateStat(args.StatType, args.NewValue);
+        }
+    }
+
+    private void OnCharacterStatBuffApplied(CharacterStatBuffEventArgs args)
+    {
+        var character = GetCharacter(args.CharacterId);
+        if (character != null)
+        {
+            character.ApplyStatBuff(args.StatType, args.Value, args.Duration);
+        }
+    }
+
+    private void RaiseCharacterEvent(EventType eventType, string characterId)
+    {
+        if (Globals.Instance?.gameMangers?.Events != null)
+        {
+            var args = new CharacterEventArgs(characterId);
+            Globals.Instance.gameMangers.Events.RaiseEvent(eventType, args);
+        }
+    }
+
+    private void RaiseCharacterStatEvent(string characterId, StatType statType, float oldValue, float newValue, EventType eventType)
+    {
+        if (Globals.Instance?.gameMangers?.Events != null)
+        {
+            var args = new CharacterStatEventArgs(characterId, statType, oldValue, newValue);
+            Globals.Instance.gameMangers.Events.RaiseEvent(eventType, args);
+        }
+    }
+}
+
+// =====================================
+// UI Manager
+// =====================================
+
+public partial class UIManager : BaseManager, IDisposable
+{
+    private Control _uiRoot;
+    private MenuManager _menuManager;
+    private Dictionary<string, IUIObject> _UIControls;
+    private Dictionary<string, List<IUIObject>> _UIMenus;
+
+    public UIManager()
+    {
+    }
+
+    public override void Setup()
+    {
+        List<IPanel> _uiitems = new List<IPanel>();
+        _UIControls = new Dictionary<string, IUIObject>();
+        _UIMenus = new Dictionary<string, List<IUIObject>>();
+
+        base.Setup();
+
+        Utils.FindNodesWithClass(Globals.Instance.RootNode, _uiitems);
+
+        foreach (var item in _uiitems)
+        {
+            if (item is UIControlItem _ucontrol)
+            {
+                if (_ucontrol.ControlType == UIControlType.Container)
+                {
+                    _ucontrol.RegisterControl();
+                    _ucontrol.Visible = _ucontrol.IsVisibleByDefault;
+
+                    if (!_ucontrol.Visible)
+                    {
+                        GD.PrintErr(_ucontrol.Name + " " + _ucontrol.ObjectID + " is hidden ");
+                    }
+                }
+            }
+        }
+        
+        _uiRoot = (Control)Globals.Instance.RootNode;
+        if (_uiRoot == null)
+        {
+            GD.PrintErr("UIManager: Root node not found!");
+            return;
+        }
+
+        _menuManager = new MenuManager();
+        _menuManager.Initialize();
+    }
+
+    protected override void RegisterEventHandlers()
+    {
+        if (Globals.Instance?.gameMangers?.Events == null)
+        {
+            GD.PrintErr("UIManager: Event system not initialized!");
+            return;
+        }
+
+        EventManager.AddHandler<UIControlEventArgs>(
+            EventType.UIControlRegister,
+            OnUIControlRegister
+        );
+
+        EventManager.AddHandler<UIControlEventArgs>(
+            EventType.UIControlAssign,
+            OnUIControlAssign
+        );
+    }
+
+    private void OnUIControlRegister(UIControlEventArgs args)
+    {
+        try
+        {
+            if (args.UIControlItem != null)
+            {
+                if (args.UIControlItem.ControlType == UIControlType.Container)
+                {
+                    _UIControls.Add(args.ControlID, args.UIControlItem);
+                }
+                else if (args.UIControlItem.ControlType == UIControlType.Control)
+                {
+                    if (!_UIMenus.ContainsKey(args.ControlParent.menuParentID))
+                    {
+                        _UIMenus[args.ControlParent.menuParentID] = new List<IUIObject>();
+                    }
+                    _UIMenus[args.ControlParent.menuParentID].Add(args.UIControlItem);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            GD.Print(ex.Message);
+        }
+    }
+
+    private void OnUIControlAssign(UIControlEventArgs args)
+    {
+        PanelPosition panelpostion = args.PanelLocation;
+        PanelSection panelSection = args.PanelSection;
+
+        try
+        {
+            foreach (KeyValuePair<string, IUIObject> _t in _UIControls.Where(p => p.Value.PanelLocation == panelpostion && p.Value.PanelSection == panelSection))
+            {
+                Node _n = (Node)_t.Value;
+                Control _b = (Control)args.UIControlItem;
+                _n.AddChild(_b);
+            }
+        }
+        catch(Exception ex)
+        {
+            GD.Print(ex.Message);
+        }
+    }
+
+    public List<IUIObject> GetListofAllIUIObjectByType<T>(List<T> resultList) where T : class
+    {
+        List<IUIObject> matchingObjects = new List<IUIObject>();
+
+        foreach (var control in _UIControls.Values)
+        {
+            if (control is T)
+            {
+                matchingObjects.Add(control);
+                resultList?.Add(control as T);
+            }
+        }
+        return matchingObjects;
+    }
+
+    public void Dispose()
+    {
+    }
+}
+
+// =====================================
+// World Manager
+// =====================================
+
+public partial class WorldManager : BaseManager
+{
+    public TowerManager Towers { get; private set; }
+    public FloorManager Floors { get; private set; }
+    public RoomManager Rooms { get; private set; }
+
+    public override void Setup()
+    {
+        RegisterEventHandlers();
+        InitializeSubManagers();
+    }
+
+    protected override void RegisterEventHandlers()
+    {
+        // Register world-level event handlers
+    }
+
+    private void InitializeSubManagers()
+    {
+        Towers = new TowerManager();
+        Floors = new FloorManager();
+        Rooms = new RoomManager();
+
+        // Setup in correct order
+        Towers.Setup();
+        Floors.Setup();
+        Rooms.Setup();
+    }
+}
+
+// =====================================
+// Resource Panel Manager
+// =====================================
+
+public partial class ResourcePanelManager : UIControlItem
+{
+    private const int MAX_RESOURCES = 10;
+    private Dictionary<int, ResourceControl> _resourceControls;
+    private Control _resourceContainer;
+
+    public override void RegisterControl()
+    {
+        base.RegisterControl();
+        menuParentID = "Resource_Panel_Top";
+        _resourceControls = new Dictionary<int, ResourceControl>();
+    }
+
+    public void Setup()
+    {
+        InitializeResourceControls();
+    }
+
+    private void InitializeResourceControls()
+    {
+        var _resourceItem = Globals.Instance.gameMangers.ResourceManager.GetUIResource(GlobalEnums.UIElementType.ResourcePanel, "resource_item_top");
+
+        for (int i = 1; i <= MAX_RESOURCES; i++)
+        {
+            var newResource = _resourceItem.Instantiate();
+            _resourceContainer.AddChild(newResource);
+            _resourceControls.Add(i, (ResourceControl)newResource);
+            ((ResourceControl)newResource).Setup(this);
+        }
+    }
+
+    public void UpdateResource(int slot, int value, string iconPath = null)
+    {
+        if (_resourceControls.TryGetValue(slot, out var control))
+        {
+            control.UpdateValue(value);
+            if (iconPath != null)
+            {
+                control.UpdateIcon(iconPath);
+            }
+        }
+    }
+
+    public void SetResourceVisibility(int slot, bool visible)
+    {
+        if (_resourceControls.TryGetValue(slot, out var control))
+        {
+            control.Visible = visible;
+        }
+    }
+
+    public void SetAllResourcesVisibility(bool visible)
+    {
+        foreach (var control in _resourceControls.Values)
+        {
+            control.Visible = visible;
+        }
+    }
+}
+
+// =====================================
+// UI Resource Manager
+// =====================================
+
+public partial class UIResourceManager : BaseManager
+{
+    private Dictionary<UIElementType, Dictionary<string, PackedScene>> _uiResources;
+    private List<IUIObject> _uiResourcesPanels;
+    private const string UI_SCENE_BASE_PATH = "res://Scene/UI/";
+
+    public UIResourceManager()
+    {
+    }
+
+    public override void Setup()
+    {
+        _uiResources = new Dictionary<UIElementType, Dictionary<string, PackedScene>>();
+        _uiResourcesPanels = new List<IUIObject>();
+        base.Setup();
+        LoadAllUIResources();
+
+        var myList = new List<ResourcePanelManager>();
+        List<IUIObject> myList2 = Globals.Instance.gameMangers.UI.GetListofAllIUIObjectByType(myList);
+        _uiResourcesPanels.AddRange(myList2);
+
+        foreach(IUIObject _ui in _uiResourcesPanels)
+        {
+            if (_ui is ResourcePanelManager _t)
+            {
+                _t.Setup();
+            }
+        }
+    }
+
+    protected override void RegisterEventHandlers()
+    {
+        if (EventManager != null)
+        {
+            Globals.Instance.gameMangers.Events.AddHandler<UIControlEventArgs>(EventType.UIControlRegister, OnUIControlRegister);
+        }
+    }
+
+    private void LoadAllUIResources()
+    {
+        foreach (UIElementType elementType in Enum.GetValues(typeof(UIElementType)))
+        {
+            _uiResources[elementType] = new Dictionary<string, PackedScene>();
+            LoadUIResourcesForType(elementType);
+        }
+    }
+
+    private void LoadUIResourcesForType(UIElementType elementType)
+    {
+        string typePath = Path.Combine(UI_SCENE_BASE_PATH, elementType.ToString());
+        var dir = DirAccess.Open(typePath);
+        
+        if (dir != null)
+        {
+            dir.ListDirBegin();
+            string fileName = dir.GetNext();
+            
+            while (fileName != "")
+            {
+                if (!dir.CurrentIsDir() && fileName.EndsWith(".tscn"))
+                {
+                    string resourcePath = Path.Combine(typePath, fileName);
+                    var scene = GD.Load<PackedScene>(resourcePath);
+                    if (scene != null)
+                    {
+                        string resourceName = Path.GetFileNameWithoutExtension(fileName);
+                        _uiResources[elementType][resourceName] = scene;
+                    }
+                }
+                fileName = dir.GetNext();
+            }
+            dir.ListDirEnd();
+        }
+    }
+
+    public PackedScene GetUIResource(UIElementType elementType, string resourceName)
+    {
+        if (_uiResources.TryGetValue(elementType, out var typeResources))
+        {
+            if (typeResources.TryGetValue(resourceName, out var resource))
+            {
+                return resource;
+            }
+        }
+        return null;
+    }
+
+    private void OnUIControlRegister(UIControlEventArgs args)
+    {
+        if (args.UIControlItem is ResourcePanelManager panel)
+        {
+            _uiResourcesPanels.Add(panel);
+        }
+    }
+}

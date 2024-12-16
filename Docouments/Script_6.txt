@@ -1,0 +1,368 @@
+I'll help create a clean, scalable system for managing resources with different collection methods and unlock requirements. We'll use a combination of design patterns to keep it organized and maintainable.
+Resource Management SystemClick to open code
+Here's how to use this system in your game:
+csharpCopypublic partial class GameScene : Node
+{
+    private ResourceManager _resourceManager;
+
+    public override void _Ready()
+    {
+        _resourceManager = GetNode<ResourceManager>("ResourceManager");
+        
+        // Connect to signals
+        _resourceManager.ResourceAmountChanged += OnResourceAmountChanged;
+        _resourceManager.ResourceUnlocked += OnResourceUnlocked;
+        
+        // Example of collecting resources
+        _resourceManager.CollectResources(CollectorType.BasicCollector, ResourceType.Resource_1);
+    }
+
+    private void OnResourceAmountChanged(ResourceType type, float newAmount)
+    {
+        GD.Print($"{type}: {newAmount}");
+        UpdateUI(type);
+    }
+
+    private void OnResourceUnlocked(ResourceType type)
+    {
+        GD.Print($"Unlocked: {type}");
+        ShowUnlockAnimation(type);
+    }
+}
+Key features of this system:
+
+Centralized Resource Management:
+
+Single ResourceManager class handles all resource-related operations
+Uses signals to notify of changes
+Maintains resource amounts, unlock states, and configurations
+
+
+Flexible Collection System:
+
+Interface-based collector system
+Each collector can handle multiple resources
+Easy to add new collector types
+
+
+Configurable Requirements:
+
+Resource configurations stored in data structures
+Unlock requirements can be easily modified
+Progressive difficulty scaling
+
+
+Clean Architecture:
+
+Separation of concerns
+Easy to extend and modify
+Well-documented
+
+
+
+To add a new resource:
+
+Add it to the ResourceType enum
+Configure its unlock requirements in InitializeResources
+Create appropriate collectors that can collect it
+
+To add a new collector:
+
+Create a new collector class inheriting from BaseCollector
+Add it to the CollectorType enum
+Register it in InitializeCollectors
+
+Would you like me to explain any part in more detail or add additional features like:
+
+Resource conversion systems
+Resource decay over time
+Advanced collection mechanics
+Resource storage limits
+Resource trading systems
+
+using Godot;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+/// <summary>
+/// Represents a collection of resources in the game
+/// </summary>
+public enum ResourceType
+{
+    Resource_1,
+    Resource_2,
+    Resource_3,
+    Resource_4,
+    Resource_5,
+    Resource_6,
+    Resource_7,
+    Resource_8,
+    Resource_9,
+    Resource_10,
+    Resource_11,
+    Resource_12,
+    Resource_13,
+    Resource_14,
+    Resource_15
+}
+
+/// <summary>
+/// Data structure for resource configuration
+/// </summary>
+public class ResourceConfig
+{
+    public string Name { get; set; }
+    public string Description { get; set; }
+    public string IconPath { get; set; }
+    public Dictionary<ResourceType, float> UnlockRequirements { get; set; } = new();
+    public HashSet<CollectorType> ValidCollectors { get; set; } = new();
+}
+
+/// <summary>
+/// Represents different types of resource collectors
+/// </summary>
+public enum CollectorType
+{
+    BasicCollector,
+    AdvancedCollector,
+    MultiCollector,
+    // Add more collector types as needed
+}
+
+/// <summary>
+/// Defines methods for collecting resources
+/// </summary>
+public interface IResourceCollector
+{
+    Dictionary<ResourceType, float> Collect();
+    bool CanCollect(ResourceType resourceType);
+}
+
+/// <summary>
+/// Base collector implementation
+/// </summary>
+public abstract class BaseCollector : IResourceCollector
+{
+    protected readonly HashSet<ResourceType> CollectableResources = new();
+    protected readonly Dictionary<ResourceType, float> CollectionRates = new();
+
+    public virtual Dictionary<ResourceType, float> Collect()
+    {
+        return CollectionRates.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+    }
+
+    public bool CanCollect(ResourceType resourceType)
+    {
+        return CollectableResources.Contains(resourceType);
+    }
+}
+
+/// <summary>
+/// Manages all resources in the game
+/// </summary>
+public partial class ResourceManager : Node
+{
+    // Signals
+    [Signal]
+    public delegate void ResourceAmountChangedEventHandler(ResourceType type, float newAmount);
+    
+    [Signal]
+    public delegate void ResourceUnlockedEventHandler(ResourceType type);
+    
+    [Signal]
+    public delegate void ResourceLockedEventHandler(ResourceType type);
+
+    // Resource state tracking
+    private readonly Dictionary<ResourceType, float> _resourceAmounts = new();
+    private readonly Dictionary<ResourceType, bool> _unlockedResources = new();
+    private readonly Dictionary<ResourceType, ResourceConfig> _resourceConfigs = new();
+    private readonly Dictionary<CollectorType, IResourceCollector> _collectors = new();
+
+    public override void _Ready()
+    {
+        InitializeResources();
+        InitializeCollectors();
+    }
+
+    /// <summary>
+    /// Initializes resource configurations and states
+    /// </summary>
+    private void InitializeResources()
+    {
+        // Example configuration for resources
+        foreach (ResourceType type in Enum.GetValues(typeof(ResourceType)))
+        {
+            _resourceAmounts[type] = 0;
+            _unlockedResources[type] = type == ResourceType.Resource_1; // Only Resource_1 starts unlocked
+            
+            var config = new ResourceConfig
+            {
+                Name = type.ToString(),
+                Description = $"Description for {type}",
+                IconPath = $"res://assets/icons/{type.ToString().ToLower()}.png"
+            };
+
+            // Configure unlock requirements
+            if (type != ResourceType.Resource_1)
+            {
+                ConfigureUnlockRequirements(type, config);
+            }
+
+            _resourceConfigs[type] = config;
+        }
+    }
+
+    /// <summary>
+    /// Configures unlock requirements for resources
+    /// </summary>
+    private void ConfigureUnlockRequirements(ResourceType type, ResourceConfig config)
+    {
+        // Example of setting up progressive unlock requirements
+        int resourceIndex = (int)type;
+        for (int i = 0; i < resourceIndex; i++)
+        {
+            var requiredType = (ResourceType)i;
+            float requirement = 1000 * (float)Math.Pow(2, i); // Exponential scaling
+            config.UnlockRequirements[requiredType] = requirement;
+        }
+    }
+
+    /// <summary>
+    /// Initializes resource collectors
+    /// </summary>
+    private void InitializeCollectors()
+    {
+        // Register collectors
+        _collectors[CollectorType.BasicCollector] = new BasicCollector();
+        _collectors[CollectorType.AdvancedCollector] = new AdvancedCollector();
+        _collectors[CollectorType.MultiCollector] = new MultiCollector();
+    }
+
+    /// <summary>
+    /// Attempts to collect resources using a specific collector
+    /// </summary>
+    public bool CollectResources(CollectorType collectorType, ResourceType targetResource)
+    {
+        if (!_collectors.TryGetValue(collectorType, out var collector))
+            return false;
+
+        if (!collector.CanCollect(targetResource) || !_unlockedResources[targetResource])
+            return false;
+
+        var collected = collector.Collect();
+        foreach (var (resourceType, amount) in collected)
+        {
+            AddResource(resourceType, amount);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Adds an amount of a resource and checks unlock conditions
+    /// </summary>
+    public void AddResource(ResourceType type, float amount)
+    {
+        _resourceAmounts[type] += amount;
+        EmitSignal(SignalName.ResourceAmountChanged, type, _resourceAmounts[type]);
+        CheckUnlockConditions();
+    }
+
+    /// <summary>
+    /// Checks if any locked resources can be unlocked
+    /// </summary>
+    private void CheckUnlockConditions()
+    {
+        foreach (var type in Enum.GetValues(typeof(ResourceType)).Cast<ResourceType>())
+        {
+            if (_unlockedResources[type])
+                continue;
+
+            if (CanUnlock(type))
+            {
+                UnlockResource(type);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Checks if a resource can be unlocked
+    /// </summary>
+    public bool CanUnlock(ResourceType type)
+    {
+        if (_unlockedResources[type])
+            return false;
+
+        var requirements = _resourceConfigs[type].UnlockRequirements;
+        return requirements.All(req => _resourceAmounts[req.Key] >= req.Value);
+    }
+
+    /// <summary>
+    /// Unlocks a resource
+    /// </summary>
+    private void UnlockResource(ResourceType type)
+    {
+        _unlockedResources[type] = true;
+        EmitSignal(SignalName.ResourceUnlocked, type);
+    }
+
+    /// <summary>
+    /// Gets the current amount of a resource
+    /// </summary>
+    public float GetResourceAmount(ResourceType type)
+    {
+        return _resourceAmounts.GetValueOrDefault(type, 0);
+    }
+
+    /// <summary>
+    /// Gets the configuration for a resource
+    /// </summary>
+    public ResourceConfig GetResourceConfig(ResourceType type)
+    {
+        return _resourceConfigs.GetValueOrDefault(type);
+    }
+
+    /// <summary>
+    /// Checks if a resource is unlocked
+    /// </summary>
+    public bool IsResourceUnlocked(ResourceType type)
+    {
+        return _unlockedResources.GetValueOrDefault(type, false);
+    }
+}
+
+/// <summary>
+/// Example collector implementations
+/// </summary>
+public class BasicCollector : BaseCollector
+{
+    public BasicCollector()
+    {
+        CollectableResources.Add(ResourceType.Resource_1);
+        CollectionRates[ResourceType.Resource_1] = 1;
+    }
+}
+
+public class AdvancedCollector : BaseCollector
+{
+    public AdvancedCollector()
+    {
+        CollectableResources.Add(ResourceType.Resource_2);
+        CollectionRates[ResourceType.Resource_2] = 2;
+    }
+}
+
+public class MultiCollector : BaseCollector
+{
+    public MultiCollector()
+    {
+        CollectableResources.Add(ResourceType.Resource_1);
+        CollectableResources.Add(ResourceType.Resource_2);
+        CollectableResources.Add(ResourceType.Resource_3);
+        
+        CollectionRates[ResourceType.Resource_1] = 0.5f;
+        CollectionRates[ResourceType.Resource_2] = 1;
+        CollectionRates[ResourceType.Resource_3] = 1.5f;
+    }
+}

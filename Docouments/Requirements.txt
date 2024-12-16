@@ -1,0 +1,528 @@
+your an expert c# developer and a expert in GODOT. you write clean and concise code which is well documented
+
+
+Questions Needing Clarification:
+
+Room Generation:
+
+Should room type distribution be configurable per floor? - initial build. fixed by tower. however i don't want to build 10,000 floors and have 100,000 rooms prebuild. we need to only build when required.
+Is there a minimum/maximum number of rooms per floor? - min of 1 room, max of 100. but lets max the maximum configurable at the time of generating the tower.  floors with only 1 room are major boss room and they should be ever 100 floors (configurable at the time of generating the tower)
+ 
+Should certain room types have minimum spacing requirements? (e.g., at least X rooms between Rest rooms) yes, but lets make this (configurable) at the time of generating the tower
+
+
+Difficulty Scaling:
+
+What is the base difficulty increment between rooms? - what do you think would be a good liner amount
+Is there a maximum difficulty cap per floor?, yes but i am not sure what they would be. we need to build tests to find this out.
+Do special rooms (Boss/MiniBoss) have difficulty multipliers? - yes again need to build tests to figure out what it should be
+
+
+Failure Mechanics:
+
+When a player fails a room, do they go back 5 rooms or exit the tower immediately? - if the player is more than 5 rooms into a floor, then they get send back to the start of the floor they can repeat this 5 times (configurable). if they fail on the first room. they get kicked out of the tower.
+Is there a difference in failure handling between normal rooms and boss rooms? - not at this stage. but lets put some comments in function where we can add this functionally later.
+Can players retry a failed room after being knocked back? yes up to a max of 5 times. (configurable)
+
+
+State Management:
+
+Can players voluntarily exit a room without failing?, yes
+Should room state persist if players exit and return?, yes, unless the player specificlly resets the floor (we will need an event for this)
+Are there any state transitions that should trigger special events? - not at this stage  but lets put some comments in function where we can add this functionally later.
+
+Event System Integration:
+
+What specific events need to be fired for room transitions? at the moment, lets keep it simple. if the player is stronger than the tower + floor + room difficulty. then they pass. but lets put some comments in function where we can expand this functionally later.
+
+Should there be events for difficulty checks? - not at this stage  but lets put some comments in function where we can add this functionally later.
+Are there specific event arguments needed for room events? - not at this stage  but lets put some comments in function where we can add this functionally later.
+
+Initial Technical Design Considerations
+
+Core Classes Needed:
+
+RoomManager: Handles room lifecycle and transitions
+RoomGenerator: Creates room sequences for floors
+RoomDifficulty: Manages difficulty calculations
+RoomEventHandler: Processes room-specific events
+
+
+Key Interfaces:
+
+IRoomValidator: Difficulty and requirement checks
+IRoomStateManager: State transition management
+IRoomEventProcessor: Event handling and processing
+
+
+Testing Requirements:
+
+Must integrate with EventSystemTests
+Need state transition tests
+Need difficulty calculation tests
+Need room generation distribution tests
+need to rest failure Mechanics
+need to test progression 
+need to come up with tests to work out difficuly scaling
+
+Idle game - low to no graphics.
+
+GameEventArgs
+├── TowerEventArgs
+├── FloorEventArgs
+└── RoomEventArgs
+
+TowerData
+├── Basic Properties (Id, Name, etc)
+├── LevelRequirement
+├── FloorGraph
+└── TowerDataVersion
+
+Tower (Runtime)
+├── State Management
+├── Floor Management
+└── Progress Tracking
+
+
+FloorData
+├── Basic Properties
+├── Room List
+├── Difficulty Settings
+└── Alternate Paths
+
+Floor (Runtime)
+├── Room Management
+├── State Transitions
+└── Navigation Logic
+
+RoomData
+├── Basic Properties
+├── Requirements
+├── Events
+└── Choices
+
+Room (Runtime)
+├── State Management
+├── Event Processing
+└── Choice Management
+
+FloorDifficulty
+├── Base Values
+└── Modifiers
+
+DifficultyModifier
+├── Types (Add, Multiply, etc)
+├── Conditions
+└── Special Values
+
+UIStatDisplay
+├── Value Display
+├── Buff Display
+└── Tooltip System
+
+UIRoomNavigation
+├── Room Display
+├── Path Indicators
+└── State Display
+
+EventManager
+├── Event Registration
+└── Event Processing
+
+RoomEventProcessor
+├── Event Validation
+├── Event Execution
+└── Result Handling
+
+RoomRequirement
+├── Validation Logic
+├── Conditions
+└── Sub-Requirements
+
+RoomChoice
+├── Requirements
+├── Consequences
+└── Results
+
+User Action
+    → Event Raised
+        → State Changed
+            → UI Updated
+                → Next Action Available
+
+Tower Load
+    → Floor Generation
+        → Room Setup
+            → Event Initialization
+                → Choice Configuration
+
+States:
+├── Tower States
+├── Floor States
+└── Room States
+
+Transitions:
+├── Validation
+├── Event Triggers
+└── UI Updates
+
+IManager
+IUIItem
+IEventProcessor
+
+RoomType
+FloorType
+EventType
+ModifierType
+RequirementType
+
+GameEventArgs
+├── TowerEventArgs
+│   └── TowerStateChangedArgs
+├── FloorEventArgs
+│   └── FloorPathEventArgs
+└── RoomEventArgs
+    ├── RoomStateChangedArgs
+    └── RoomChoiceEventArgs
+
+System Connections:
+├── Event → Tower
+├── Tower → Floor
+├── Floor → Room
+└── All → UI
+
+
+
+all events should be configured via the following event system
+
+Linear Room Connectivity:
+
+Confirm whether all rooms need to have a strict one-way progression or if backtracking is allowed. - strict one-way progression only play can only go backwards if they fail a room. a player can choose to go backwards.
+Should the linear connectivity allow for optional side paths (e.g., hidden rooms) or strictly a single path? - lets do strict path to start but put in place holders for branching
+
+Difficulty Scaling:
+
+Variable scaling is required. Would you like:
+A fixed formula for default scaling across the floor or room? room will have there own scaling for example on floor 50 and room 100. the difficulty would be lower than floor 50 and room 101
+Configurable difficulty adjustments (e.g., multipliers for bosses, rare rooms)? yes
+Should the scaling affect all room properties or specific aspects (like combat strength, resource requirements)? yes
+Room Types:
+
+Enumerated room types were mentioned. Clarify if there’s a priority or weighting for the randomness of the final boss/reward room. - yes 
+
+RoomType
+None,
+Encounter, - 3 percent
+Reward, - 1 percent
+Rest, - 16 percent
+Combat, 70 percent
+Event, 4 percent
+MiniBoss, 4 percent 
+Boss 2 percent
+
+Are there specific behaviors or events tied to each room type (e.g., combat, puzzle, reward)? - to be delt with later. ignore for now
+Room State Management:
+
+Should room transitions (states like "Locked," "In Progress," "Cleared") follow strict sequential logic, or can conditions bypass (e.g., skip a locked room)? - lets do sequential for now. but add place holders to allow for conditional bypass
+Player Interaction:
+
+Forced ejection if the player fails a room: Is this an immediate failure, or can retries or penalties apply (e.g., reduced health, lost progress)? - lets do lost progress - say they go back 5 rooms. if they fail the first room though. they are kicked out of the tower.
+Integration Tests:
+
+Since this must integrate with EventSystemTests:
+Are there pre-existing events or custom ones you expect for room transitions, completion, or failure? rooms should have the same kind of tests that floor have. see FloorSystemTests
+How will the tests validate dynamic elements like scaling and state changes? - same as FloorSystemTests
+Draft Plan for Room System:
+Data Structures:
+
+RoomData: Define base properties (ID, type, difficulty, connections, rewards, etc.). yes
+RoomState: Add transitions (Locked → In Progress → Cleared).  yes
+
+Room Manager:
+
+Handles linear room progression, state changes, and difficulty adjustments.  yes
+Integrates with EventManager for raising room-related events.  yes
+
+Difficulty System:
+
+Implement per-room and floor-wide scaling options.- per room
+
+Ensure boss rooms get unique scaling (e.g., configurable multiplier). - yes
+Room Connectivity:
+
+Sequentially connect rooms based on linearity while preparing for boss/reward randomization. yes 
+Test Cases:
+
+Validate room transitions (e.g., locked to cleared). yes
+Confirm difficulty adjustments at room and floor levels. yes
+Test forced ejection if room conditions fail. yes
+Test player get knocked back 5 rooms if they fail a room. unless is the first room, then exit tower. yes
+
+
+Questions Needing Clarification:
+
+Room Generation:
+
+Should room type distribution be configurable per floor? - initial build. fixed by tower. however i don't want to build 10,000 floors and have 100,000 rooms prebuild. we need to only build when required.
+Is there a minimum/maximum number of rooms per floor? - min of 1 room, max of 100. but lets max the maximum configurable at the time of generating the tower.  floors with only 1 room are major boss room and they should be ever 100 floors (configurable at the time of generating the tower)
+ 
+Should certain room types have minimum spacing requirements? (e.g., at least X rooms between Rest rooms) yes, but lets make this (configurable) at the time of generating the tower
+
+
+Difficulty Scaling:
+
+What is the base difficulty increment between rooms? - what do you think would be a good liner amount
+Is there a maximum difficulty cap per floor?, yes but i am not sure what they would be. we need to build tests to find this out.
+Do special rooms (Boss/MiniBoss) have difficulty multipliers? - yes again need to build tests to figure out what it should be
+
+
+Failure Mechanics:
+
+When a player fails a room, do they go back 5 rooms or exit the tower immediately? - if the player is more than 5 rooms into a floor, then they get send back to the start of the floor they can repeat this 5 times (configurable). if they fail on the first room. they get kicked out of the tower.
+Is there a difference in failure handling between normal rooms and boss rooms? - not at this stage. but lets put some comments in function where we can add this functionally later.
+Can players retry a failed room after being knocked back? yes up to a max of 5 times. (configurable)
+
+
+State Management:
+
+Can players voluntarily exit a room without failing?, yes
+Should room state persist if players exit and return?, yes, unless the player specificlly resets the floor (we will need an event for this)
+Are there any state transitions that should trigger special events? - not at this stage  but lets put some comments in function where we can add this functionally later.
+
+Event System Integration:
+
+What specific events need to be fired for room transitions? at the moment, lets keep it simple. if the player is stronger than the tower + floor + room difficulty. then they pass. but lets put some comments in function where we can expand this functionally later.
+
+Should there be events for difficulty checks? - not at this stage  but lets put some comments in function where we can add this functionally later.
+Are there specific event arguments needed for room events? - not at this stage  but lets put some comments in function where we can add this functionally later.
+
+
+that looks good. and i will do these changes. now lets move onto another section of this game. my plan is to build a tower in game (no graphics) each tower has a set number of floors  and each floor has a number of rooms. some rooms will require interaction while others will be automatic. upon completing a floor the user has the option of moving to the next floor or to exit the tower and take what ever they have rewards they have earned up to this point. 
+
+For Tower Details see section 1
+For Floor Details see section 2
+For Room Details see section 3
+For Rewards see section 4
+For Coding Requirements See section 5
+
+
+
+Section 1 - Tower Details 
+there can me many towers and the player has the option of selecting what tower they enter. these towers should be based upon a json file that can be easily modify.
+in the json file we should have a few default properties. but with the option to expand it.
+		1) Player character level requirements - a player needs to be between a specific level range to enter the tower for e.g. level 1 to 10, level 10 to 20.. etc.etc.etc.
+		2) Tower Difficulty. this will be the combined total of how hard it is to complete this tower. (this will be calculated late but keep this variable around)
+		3) Monster Type (this will be setup later, but need to start planning now)
+		4) Element Type default elements will be fire, water. but will add later - i will prompt you with Section 1 - Tower Details - Add new Element.
+		5) Rewards Type (this will be based around section 4 and will be a summary of what the player can expect to get from this tower)
+		6) will come back later to this when i do. i will prompt you with Section 1 - Tower Details - Add Item
+
+
+
+Section 2 - Floor Details
+		1) Each Tower will be made up with a specific number of floors. 
+		2) every 15 floors where the player has the option up to the left or to the right side of the next floor. this will take them to a differently configured floor. same floor number. but with a different layout
+		3) Each floor will have a random number of rooms. a room can contain either a encounter, reward, a place to rest. other items will be added later, i will prompt you with Section 2 - Floor Details - Add Room Type
+		4) will come back later to this when i do. i will prompt you with Section 2 - Floor Details - Add Item
+
+Section 3 - Room Details
+		1) A room is connected to a floor, which is connected to a tower. - 1 tower - many floors, each floor many rooms
+		2) A room will contain a an encounter, a reward, a place to reset or other events added later. - will drill into it more when we get to this
+
+Section 4 - Floor Rewards
+		1) at the moment, lets make this simple. for each floor complete. the player will receive a sword of the element of the tower e.g fire tower = fire sword. more details for this will come later.
+
+
+		
+Section 5 - Coding Requirements
+		1) Events for when entering / exiting the tower.
+		2) Events for entering / exiting a floor
+		3) Events for when the user has to select a path on a specific for see (Section 2.2)
+		4) Events when entering / exiting a room
+		5) event for when the event in the room as started
+		6) event for when the event in the room is finished (need status if player completed the event or failed it)
+		7) Towers / Floors / Rooms need to come from Json file. floors and Rooms can be mixed and match to tower.
+		8) Encounter, rewards need to come from the json file. these needs to be able to be modified on a tower by tower bases without updating the master version of the encounter. reward.
+		9) More points to come  i will prompt you with Section 5 - Coding Requirements - Add Item
+
+
+
+		
+
+
+
+For the character classes (Knight/Mage), do you want:
+
+Hard-coded base stat values for each class? base stats will be hardcoded by class (will come from a json later but lets hardcode from at the start)
+Different stat growth rates per class? Yes. this growth rate can be change via buffs as well.
+Class-specific abilities or traits? yes, but lets not worry about them now. create placeholder function for these.
+
+
+For the stats system:
+
+Should buffs/debuffs have durations? yes, there can be permanent buffs and buffs that expire and buff that get applied and remove when equipment or items are applied to the character or removed.
+Do you want to track the source of each buff/debuff? yes. this way we can tell the player what item contains what buff.
+Should there be different types of buffs (e.g., percentage vs flat bonuses)? yes.
+
+For events:
+
+Do you want events when stats hit certain thresholds (like low health)?, yes 
+Should there be events for when buffs are applied/expired?, yes
+
+should we create a base UI component that handles the event registration? yes. currently i have something like that. see attachment
+Would you like the tooltip system to use events or direct calls? - what do you think? i think direct calls would be better but happy to go on your suggestion
+Should the tooltip contain information about all active buffs affecting that stat? - yes will need it broken down and have several lines to display. 
+Should labels auto-format the values (e.g., percentages with % symbol, health as whole numbers)? yes, we should do this
+
+
+when reviewing the UI system. if you can think of better ways to do it. please make those suggestions.
+
+
+We need a few Ui components that are made up of several controls
+for example. in the tower we have floors.
+we need to have 11 label controls for this. the middle control to show the current floor (in green) and 5 controls before to show floors the character has already completed) and 5 floors in front of the current floor the player is in
+these need to have tool tips. that will explain what the floor contains and what reward they got. if we are at the end of the floor. then the middle control will still contain the floor number but (in Gold). how do you think we should handle the branching floors?
+
+We also need to do the same for rooms. so 11 labels for rooms. middle to show the current room (color code, red for combat, and other colors for other room types) we are not using much in the way of graphics. this will be mostly text. so how do we show to the user if the room is an event room where they need to make a choice.
+
+we also need a progress bar for tower floors so 1 to max number of floor in the tower
+we also need a progress bar for rooms per floor, so 1 to max number of rooms in floor 
+
+For branching paths, should we:
+
+
+Show both potential paths simultaneously (like a small split view)?
+Or show the current path with an indicator that an alternate exists? - do this. i think this adds a mystery to it.
+
+
+For room color coding, I'm thinking:
+
+Combat Rooms: Red
+Choice/Event Rooms: Purple
+Reward Rooms: Gold
+Rest Rooms: Blue
+Special/Hidden Rooms: ??? - lets made these able to be changed. as we might not be sure at the moment what other ones we add
+Would these colors work, or do you have different preferences? - this work for me
+
+
+For choice/event rooms, should we:
+
+Show a special symbol (like "?" or "!") how about we make it so we can choose what the specific symbol is per event. gives us a lot more flexibility
+Use a different label style
+Or both?
+
+
+# Implemented Systems
+
+## 1. Tower System ✓
+- Base tower data structure
+- Floor management
+- Room system
+- Floor branching paths
+- Floor pattern generation
+- JSON loading/saving for tower data
+- Validation system for tower data
+- Version control for tower configurations
+
+## 2. Floor System ✓
+- Different floor patterns (Linear, Circular, etc.)
+- Room connections
+- Branching paths logic
+- Floor difficulty scaling
+- Floor events and transitions
+- Floor completion tracking
+
+## 3. Room System ✓
+- Room types (Encounter, Rest, Reward)
+- Room events
+- Room states and transitions
+- Room connectivity
+- Room requirements
+
+## 4. Event System ✓
+- Generic event manager
+- Event registration
+- Event handling
+- Event args for different scenarios
+- UI event integration
+
+## 5. Character System ✓
+- Base character class
+- Character types (Knight, Mage)
+- Stat system with modifiers
+- Buff/Debuff system
+- Stat events and tracking
+- Multi-character support
+- Character ID system
+
+# TODO List
+
+## 1. Combat System
+- [ ] Combat mechanics
+- [ ] Damage calculation
+- [ ] Turn order system
+- [ ] Combat events
+- [ ] Combat rewards
+
+## 2. Equipment System
+- [ ] Equipment slots
+- [ ] Equipment stats
+- [ ] Equipment effects
+- [ ] Equipment upgrading
+- [ ] Equipment sets
+
+## 3. Ability System
+- [ ] Character abilities
+- [ ] Ability cooldowns
+- [ ] Ability effects
+- [ ] Ability upgrading
+- [ ] Ability unlocking
+
+## 4. Character Progression
+- [ ] Experience system
+- [ ] Level-up mechanics
+- [ ] Skill trees
+- [ ] Trait system
+- [ ] Character advancement
+
+## 5. Inventory System
+- [ ] Item management
+- [ ] Item stacking
+- [ ] Item categories
+- [ ] Item usage
+- [ ] Item events
+
+## 6. Save/Load System
+- [ ] Character persistence
+- [ ] Progress saving
+- [ ] Tower state saving
+- [ ] Equipment saving
+- [ ] Achievement saving
+
+## 7. UI System Expansion
+- [ ] Character UI
+- [ ] Inventory UI
+- [ ] Equipment UI
+- [ ] Combat UI
+- [ ] Tower navigation UI
+
+## 8. Reward System
+- [ ] Drop tables
+- [ ] Reward scaling
+- [ ] Rare item system
+- [ ] Achievement rewards
+- [ ] Quest rewards
+
+## 9. Game Balance
+- [ ] Difficulty scaling
+- [ ] Reward balancing
+- [ ] Character balancing
+- [ ] Tower progression
+- [ ] Combat balancing
+
+## 10. Game Flow
+- [ ] Game states
+- [ ] Menu system
+- [ ] Scene transitions
+- [ ] Loading screens
+- [ ] Game progression

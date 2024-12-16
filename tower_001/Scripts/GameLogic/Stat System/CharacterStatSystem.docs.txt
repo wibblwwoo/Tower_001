@@ -1,0 +1,95 @@
+/// <summary>
+/// Comprehensive character statistics management system that handles all aspects of character stats,
+/// including initialization, modification, experience, leveling, and event handling.
+/// </summary>
+/// <remarks>
+/// Dependencies:
+/// - Godot Engine: For core functionality and event system integration
+/// - GameBalanceConfig: Provides configuration values for stat balancing
+/// - ModifierManager: Handles temporary stat modifiers and buffs
+/// - ExperienceManager: Manages stat experience and leveling
+/// - PermanentBonusRegistry: Manages permanent stat bonuses
+/// - StatData: Core stat data container
+/// - StatModifier: Represents temporary stat modifications
+/// - StatThreshold: Handles stat-based event triggers
+/// 
+/// Core Features:
+/// - Complete stat lifecycle management
+/// - Modifier and buff system with stacking rules
+/// - Experience-based progression system
+/// - Event-driven architecture
+/// - Idle progression calculation
+/// - Permanent and temporary bonus management
+/// - Stat threshold monitoring
+/// - Derived stat calculation
+/// 
+/// Integration Points:
+/// - Character System: Provides stat management for characters
+/// - Progression System: Handles leveling and advancement
+/// - Combat System: Provides stat values for calculations
+/// - UI System: Provides stat values for display
+/// - Save System: Supports serialization of stat data
+/// 
+/// Performance Considerations:
+/// - Uses caching for frequently accessed values
+/// - Lazy evaluation of derived stats
+/// - Efficient modifier stacking calculation
+/// - Optimized event raising
+/// 
+/// Thread Safety:
+/// - Not thread-safe by default
+/// - All methods should be called from the main thread
+/// - Event handlers may run on different threads
+/// </remarks>
+public class CharacterStatSystem
+{
+    // Core component references
+    /// <summary>
+    /// Unique identifier for the character. Used to link stat data to specific characters
+    /// and for event propagation.
+    /// </summary>
+    private readonly string _characterId;
+
+    /// <summary>
+    /// Primary storage for character stats. Maps StatType to StatData which contains
+    /// base values, multipliers, and experience data.
+    /// </summary>
+    private Dictionary<StatType, StatData> _stats;
+
+    /// <summary>
+    /// Active modifiers for each stat type. Organized as StatType -> (ModifierId -> Modifier)
+    /// for efficient lookup and management.
+    /// </summary>
+    private readonly Dictionary<StatType, Dictionary<string, StatModifier>> _modifiers = new();
+
+    /// <summary>
+    /// Stat thresholds that trigger events when crossed. Used for achievements, quest progress,
+    /// and gameplay mechanics.
+    /// </summary>
+    private readonly Dictionary<StatType, List<StatThreshold>> _statThresholds = new();
+
+    /// <summary>
+    /// Tracks accumulated idle time for progression calculations. Reset after processing
+    /// idle gains.
+    /// </summary>
+    private float _idleTimeAccumulated;
+
+    /// <summary>
+    /// Registry for permanent stat bonuses from sources like achievements, ascension,
+    /// and prestige levels.
+    /// </summary>
+    private readonly PermanentBonusRegistry _bonusRegistry;
+
+    /// <summary>
+    /// Manages temporary stat modifiers including buffs, debuffs, and equipment bonuses.
+    /// Handles modifier stacking and duration tracking.
+    /// </summary>
+    private readonly ModifierManager _modifierManager;
+
+    /// <summary>
+    /// Manages experience points and leveling for each stat. Handles experience gain,
+    /// level-ups, and related events.
+    /// </summary>
+    private readonly ExperienceManager _experienceManager;
+
+    // Method documentation follows...

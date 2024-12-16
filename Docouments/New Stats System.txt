@@ -1,0 +1,4717 @@
+# Stat System Complete Update Implementation Plan
+
+## Table of Contents
+1. New Type Definitions
+   - Unlock System Classes
+   - Milestone System Classes
+   - Supporting Types
+2. Integration with Current System
+3. Testing & Validation
+4. Migration Plan
+
+## 1. New Type Definitions
+
+### A. Unlock System
+
+```csharp
+public enum UnlockType
+{
+    Feature,
+    Content,
+    Stat,
+    Achievement,
+    System
+}
+
+public abstract class BaseUnlock
+{
+    public string Id { get; }
+    public string Name { get; }
+    public UnlockType Type { get; }
+    public UnlockRequirement[] Requirements { get; }
+    public UnlockReward Reward { get; }
+    
+    protected BaseUnlock(
+        string name, 
+        UnlockType type,
+        UnlockRequirement[] requirements,
+        UnlockReward reward)
+    {
+        Id = Guid.NewGuid().ToString();
+        Name = name;
+        Type = type;
+        Requirements = requirements;
+        Reward = reward;
+    }
+
+    public virtual bool CheckRequirements(ProgressionData data)
+    {
+        return Requirements.All(r => r.IsMet(data));
+    }
+
+    public virtual void Apply(string characterId)
+    {
+        Reward?.Apply(characterId);
+    }
+}
+
+public class FeatureUnlock : BaseUnlock
+{
+    public string FeatureId { get; }
+    
+    public FeatureUnlock(
+        string name,
+        string featureId,
+        UnlockRequirement[] requirements,
+        UnlockReward reward) 
+        : base(name, UnlockType.Feature, requirements, reward)
+    {
+        FeatureId = featureId;
+    }
+}
+
+public class StatUnlock : BaseUnlock
+{
+    public StatType StatType { get; }
+    public float BonusValue { get; }
+    
+    public StatUnlock(
+        string name,
+        StatType statType,
+        float bonusValue,
+        UnlockRequirement[] requirements,
+        UnlockReward reward) 
+        : base(name, UnlockType.Stat, requirements, reward)
+    {
+        StatType = statType;
+        BonusValue = bonusValue;
+    }
+
+    public override void Apply(string characterId)
+    {
+        base.Apply(characterId);
+        var character = Globals.Instance.gameMangers.Player.GetCharacter(characterId);
+        character._statSystem.AddPermanentBonus(new PermanentBonus(
+            Name,
+            StatType,
+            BonusSource.Unlock,
+            BonusValue
+        ));
+    }
+}
+```
+
+[Would you like me to continue with the next section? The complete document will include all classes, integrations, and test updates]
+
+1. Next section will cover:
+   - Milestone System Classes
+   - Supporting Types (Requirements, Rewards, etc.)
+   - Integration points
+
+2. Then full test updates for:
+   - AscensionSystemTests
+   - PrestigeSystemTests
+   - BaseLevelingSystemTests
+   - CharacterSystemTests
+
+Should I continue with the complete implementation?
+### B. Milestone System
+
+```csharp
+public enum MilestoneType
+{
+    Progression,
+    Achievement,
+    Prestige,
+    Ascension,
+    Feature,
+    Stat
+}
+
+public abstract class BaseMilestone
+{
+    public string Id { get; }
+    public string Name { get; }
+    public MilestoneType Type { get; }
+    public bool Repeatable { get; }
+    public int RequiredLevel { get; }
+    public MilestoneReward Reward { get; }
+    public bool IsCompleted { get; private set; }
+    public int CompletionCount { get; private set; }
+
+    protected BaseMilestone(
+        string name,
+        MilestoneType type,
+        int requiredLevel,
+        MilestoneReward reward,
+        bool repeatable = false)
+    {
+        Id = Guid.NewGuid().ToString();
+        Name = name;
+        Type = type;
+        RequiredLevel = requiredLevel;
+        Reward = reward;
+        Repeatable = repeatable;
+    }
+
+    public virtual bool CheckRequirements(ProgressionData data)
+    {
+        if (IsCompleted && !Repeatable)
+            return false;
+
+        return CheckSpecificRequirements(data);
+    }
+
+    protected abstract bool CheckSpecificRequirements(ProgressionData data);
+
+    public virtual void Complete(string characterId)
+    {
+        if (IsCompleted && !Repeatable)
+            return;
+
+        CompletionCount++;
+        IsCompleted = true;
+        Reward?.Apply(characterId);
+        RaiseMilestoneCompletedEvent(characterId);
+    }
+
+    protected virtual void RaiseMilestoneCompletedEvent(string characterId)
+    {
+        Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+            EventType.MilestoneCompleted,
+            new MilestoneEventArgs(
+                characterId,
+                Id,
+                Type,
+                CompletionCount
+            )
+        );
+    }
+}
+
+public class ProgressionMilestone : BaseMilestone
+{
+    public ProgressionType ProgressionType { get; }
+
+    public ProgressionMilestone(
+        string name,
+        ProgressionType progressionType,
+        int requiredLevel,
+        MilestoneReward reward,
+        bool repeatable = false)
+        : base(name, MilestoneType.Progression, requiredLevel, reward, repeatable)
+    {
+        ProgressionType = progressionType;
+    }
+
+    protected override bool CheckSpecificRequirements(ProgressionData data)
+    {
+        return ProgressionType switch
+        {
+            ProgressionType.Prestige => data.PrestigeLevel >= RequiredLevel,
+            ProgressionType.Ascension => data.AscensionLevel >= RequiredLevel,
+            _ => false
+        };
+    }
+}
+
+public class StatMilestone : BaseMilestone
+{
+    public StatType StatType { get; }
+    public float RequiredValue { get; }
+
+    public StatMilestone(
+        string name,
+        StatType statType,
+        float requiredValue,
+        MilestoneReward reward,
+        bool repeatable = false)
+        : base(name, MilestoneType.Stat, 0, reward, repeatable)
+    {
+        StatType = statType;
+        RequiredValue = requiredValue;
+    }
+
+    protected override bool CheckSpecificRequirements(ProgressionData data)
+    {
+        var character = Globals.Instance.gameMangers.Player.GetCharacter(data.CharacterId);
+        float currentValue = character.GetStatValue(StatType);
+        return currentValue >= RequiredValue;
+    }
+}
+```
+
+### C. Supporting Types
+
+```csharp
+public abstract class UnlockRequirement
+{
+    public string Description { get; }
+
+    protected UnlockRequirement(string description)
+    {
+        Description = description;
+    }
+
+    public abstract bool IsMet(ProgressionData data);
+}
+
+public class StatRequirement : UnlockRequirement
+{
+    public StatType StatType { get; }
+    public float RequiredValue { get; }
+
+    public StatRequirement(
+        StatType statType,
+        float requiredValue)
+        : base($"Requires {statType} value of {requiredValue}")
+    {
+        StatType = statType;
+        RequiredValue = requiredValue;
+    }
+
+    public override bool IsMet(ProgressionData data)
+    {
+        var character = Globals.Instance.gameMangers.Player.GetCharacter(data.CharacterId);
+        return character.GetStatValue(StatType) >= RequiredValue;
+    }
+}
+
+public class ProgressionRequirement : UnlockRequirement
+{
+    public ProgressionType Type { get; }
+    public int RequiredLevel { get; }
+
+    public ProgressionRequirement(
+        ProgressionType type,
+        int requiredLevel)
+        : base($"Requires {type} level {requiredLevel}")
+    {
+        Type = type;
+        RequiredLevel = requiredLevel;
+    }
+
+    public override bool IsMet(ProgressionData data)
+    {
+        return Type switch
+        {
+            ProgressionType.Prestige => data.PrestigeLevel >= RequiredLevel,
+            ProgressionType.Ascension => data.AscensionLevel >= RequiredLevel,
+            _ => false
+        };
+    }
+}
+
+public abstract class MilestoneReward
+{
+    public string Description { get; }
+
+    protected MilestoneReward(string description)
+    {
+        Description = description;
+    }
+
+    public abstract void Apply(string characterId);
+}
+
+public class StatBonusReward : MilestoneReward
+{
+    public StatType StatType { get; }
+    public float BonusValue { get; }
+    public BonusSource Source { get; }
+
+    public StatBonusReward(
+        StatType statType,
+        float bonusValue,
+        BonusSource source)
+        : base($"+{bonusValue:P0} {statType} bonus")
+    {
+        StatType = statType;
+        BonusValue = bonusValue;
+        Source = source;
+    }
+
+    public override void Apply(string characterId)
+    {
+        var character = Globals.Instance.gameMangers.Player.GetCharacter(characterId);
+        var bonus = new PermanentBonus(
+            Description,
+            StatType,
+            Source,
+            BonusValue
+        );
+        character._statSystem.AddPermanentBonus(bonus);
+    }
+}
+```
+
+[I'll continue with the Integration section next. Would you like me to proceed?]
+
+The complete document will include:
+1. Integration with existing systems
+2. Test updates
+3. Migration steps
+4. Complete implementation plan
+
+Should I continue with these sections?
+## 2. Integration with Current System
+
+### A. CharacterStatSystem Updates
+
+```csharp
+public partial class CharacterStatSystem
+{
+    private readonly MilestoneManager _milestoneManager;
+    private readonly UnlockManager _unlockManager;
+
+    // Update constructor
+    public CharacterStatSystem(string characterId)
+    {
+        _characterId = characterId;
+        _stats = new Dictionary<StatType, StatData>();
+        _modifierManager = new ModifierManager(characterId);
+        _experienceManager = new ExperienceManager(characterId);
+        _bonusRegistry = new PermanentBonusRegistry(characterId);
+        _milestoneManager = new MilestoneManager(characterId);
+        _unlockManager = new UnlockManager(characterId);
+        InitializeStats();
+    }
+
+    // Add new methods
+    public void CheckMilestones(ProgressionData data)
+    {
+        _milestoneManager.CheckMilestones(data);
+    }
+
+    public void RegisterMilestone(BaseMilestone milestone)
+    {
+        _milestoneManager.RegisterMilestone(milestone);
+    }
+
+    public bool IsMilestoneCompleted(string milestoneId)
+    {
+        return _milestoneManager.IsMilestoneCompleted(milestoneId);
+    }
+
+    public void CheckUnlocks(ProgressionData data)
+    {
+        _unlockManager.CheckUnlocks(data);
+    }
+
+    public void RegisterUnlock(BaseUnlock unlock)
+    {
+        _unlockManager.RegisterUnlock(unlock);
+    }
+
+    public bool IsUnlocked(string unlockId)
+    {
+        return _unlockManager.IsUnlocked(unlockId);
+    }
+}
+```
+
+### B. Managers Implementation
+
+```csharp
+public class MilestoneManager
+{
+    private readonly string _characterId;
+    private readonly Dictionary<string, BaseMilestone> _milestones = new();
+    private readonly HashSet<string> _completedMilestones = new();
+
+    public MilestoneManager(string characterId)
+    {
+        _characterId = characterId;
+    }
+
+    public void RegisterMilestone(BaseMilestone milestone)
+    {
+        _milestones[milestone.Id] = milestone;
+    }
+
+    public void CheckMilestones(ProgressionData data)
+    {
+        foreach (var milestone in _milestones.Values)
+        {
+            if (milestone.CheckRequirements(data))
+            {
+                CompleteMilestone(milestone);
+            }
+        }
+    }
+
+    private void CompleteMilestone(BaseMilestone milestone)
+    {
+        _completedMilestones.Add(milestone.Id);
+        milestone.Complete(_characterId);
+    }
+
+    public bool IsMilestoneCompleted(string milestoneId)
+    {
+        return _completedMilestones.Contains(milestoneId);
+    }
+}
+
+public class UnlockManager
+{
+    private readonly string _characterId;
+    private readonly Dictionary<string, BaseUnlock> _unlocks = new();
+    private readonly HashSet<string> _unlockedFeatures = new();
+
+    public UnlockManager(string characterId)
+    {
+        _characterId = characterId;
+    }
+
+    public void RegisterUnlock(BaseUnlock unlock)
+    {
+        _unlocks[unlock.Id] = unlock;
+    }
+
+    public void CheckUnlocks(ProgressionData data)
+    {
+        foreach (var unlock in _unlocks.Values)
+        {
+            if (!_unlockedFeatures.Contains(unlock.Id) && 
+                unlock.CheckRequirements(data))
+            {
+                UnlockFeature(unlock);
+            }
+        }
+    }
+
+    private void UnlockFeature(BaseUnlock unlock)
+    {
+        _unlockedFeatures.Add(unlock.Id);
+        unlock.Apply(_characterId);
+    }
+
+    public bool IsUnlocked(string unlockId)
+    {
+        return _unlockedFeatures.Contains(unlockId);
+    }
+}
+```
+
+[Would you like me to continue with the Test Updates section next?]
+
+The remaining sections will cover:
+1. Complete test updates for all test classes
+2. Migration plan
+3. Implementation steps
+
+Should I continue with these sections?
+## 3. Test Updates
+
+### A. AscensionSystemTests Updates
+
+```csharp
+public class AscensionSystemTests : BaseTestSuite
+{
+    private const float BASE_ASCENSION_STAT_BONUS = 0.02f;
+    private const float ASCENSION_MILESTONE_BONUS = 0.02f;
+
+    [Test]
+    public void TestAscensionMilestones()
+    {
+        string testName = "Ascension Milestones";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var statSystem = character._statSystem;
+
+            // Register ascension milestones
+            statSystem.RegisterMilestone(new ProgressionMilestone(
+                "Ascension 1",
+                ProgressionType.Ascension,
+                1,
+                new StatBonusReward(
+                    StatType.Strength,
+                    BASE_ASCENSION_STAT_BONUS,
+                    BonusSource.Ascension
+                )
+            ));
+
+            statSystem.RegisterMilestone(new ProgressionMilestone(
+                "Ascension 2",
+                ProgressionType.Ascension,
+                2,
+                new StatBonusReward(
+                    StatType.Strength,
+                    ASCENSION_MILESTONE_BONUS,
+                    BonusSource.Milestone
+                )
+            ));
+
+            // Initial values
+            float initialStrength = character.GetStatValue(StatType.Strength);
+
+            // Perform ascensions
+            var progress = _playerManager.progressionManager.GetProgressData(characterId);
+            progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
+            _playerManager.progressionManager.TryAscend(characterId);
+
+            // Check first ascension
+            float expectedBonus1 = initialStrength * (1 + BASE_ASCENSION_STAT_BONUS);
+            float actualStrength1 = character.GetStatValue(StatType.Strength);
+
+            if (Math.Abs(expectedBonus1 - actualStrength1) > 0.001f)
+            {
+                testPassed = false;
+                LogError(testName, 
+                    $"First ascension bonus incorrect. Expected {expectedBonus1:F2}, got {actualStrength1:F2}");
+            }
+
+            // Second ascension
+            progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
+            _playerManager.progressionManager.TryAscend(characterId);
+
+            float expectedBonus2 = initialStrength * 
+                (1 + (2 * BASE_ASCENSION_STAT_BONUS) + ASCENSION_MILESTONE_BONUS);
+            float actualStrength2 = character.GetStatValue(StatType.Strength);
+
+            if (Math.Abs(expectedBonus2 - actualStrength2) > 0.001f)
+            {
+                testPassed = false;
+                LogError(testName, 
+                    $"Second ascension bonus incorrect. Expected {expectedBonus2:F2}, got {actualStrength2:F2}");
+            }
+
+            // Verify milestones are completed
+            if (!statSystem.IsMilestoneCompleted("Ascension 1") || 
+                !statSystem.IsMilestoneCompleted("Ascension 2"))
+            {
+                testPassed = false;
+                LogError(testName, "Not all milestones were completed");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+
+    [Test]
+    public void TestAscensionUnlocks()
+    {
+        string testName = "Ascension Unlocks";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var statSystem = character._statSystem;
+
+            // Register ascension unlock
+            statSystem.RegisterUnlock(new FeatureUnlock(
+                "Advanced Training",
+                "advanced_training",
+                new UnlockRequirement[]
+                {
+                    new ProgressionRequirement(
+                        ProgressionType.Ascension,
+                        2
+                    )
+                },
+                new StatBonusReward(
+                    StatType.Strength,
+                    0.05f,
+                    BonusSource.Unlock
+                )
+            ));
+
+            // Perform ascensions
+            var progress = _playerManager.progressionManager.GetProgressData(characterId);
+            
+            // First ascension
+            progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
+            _playerManager.progressionManager.TryAscend(characterId);
+
+            // Check feature not unlocked
+            if (statSystem.IsUnlocked("advanced_training"))
+            {
+                testPassed = false;
+                LogError(testName, "Feature unlocked too early");
+            }
+
+            // Second ascension
+            progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
+            _playerManager.progressionManager.TryAscend(characterId);
+
+            // Check feature unlocked
+            if (!statSystem.IsUnlocked("advanced_training"))
+            {
+                testPassed = false;
+                LogError(testName, "Feature not unlocked at correct level");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+}
+```
+
+[Would you like me to continue with the PrestigeSystemTests and BaseLevelingSystemTests updates next?]
+
+The remaining sections will cover:
+1. PrestigeSystemTests updates
+2. BaseLevelingSystemTests updates
+3. Migration plan
+4. Implementation steps
+
+Should I continue with these sections?
+### B. PrestigeSystemTests Updates
+
+```csharp
+public class PrestigeSystemTests : BaseTestSuite
+{
+    private const float BASE_PRESTIGE_STAT_BONUS = 0.10f; // 10% per level
+    private const float PRESTIGE_MILESTONE_BONUS = 0.05f; // 5% per milestone
+
+    [Test]
+    public void TestPrestigeMilestones()
+    {
+        string testName = "Prestige Milestones";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var statSystem = character._statSystem;
+
+            // Register prestige milestones
+            var milestone5 = new ProgressionMilestone(
+                "Prestige 5",
+                ProgressionType.Prestige,
+                5,
+                new StatBonusReward(
+                    StatType.Strength,
+                    PRESTIGE_MILESTONE_BONUS,
+                    BonusSource.Milestone
+                )
+            );
+            statSystem.RegisterMilestone(milestone5);
+
+            // Initial values
+            float initialStrength = character.GetStatValue(StatType.Strength);
+            
+            // Perform prestiges
+            for (int i = 1; i <= 5; i++)
+            {
+                var progress = _playerManager.progressionManager.GetProgressData(characterId);
+                progress.Level = _config.LevelsForPrestige;
+                _playerManager.progressionManager.TryPrestige(characterId);
+
+                // Calculate expected bonus
+                float expectedBonus = initialStrength * (1 + (i * BASE_PRESTIGE_STAT_BONUS));
+                if (i == 5)
+                {
+                    expectedBonus *= (1 + PRESTIGE_MILESTONE_BONUS);
+                }
+
+                float actualStrength = character.GetStatValue(StatType.Strength);
+
+                if (Math.Abs(expectedBonus - actualStrength) > 0.001f)
+                {
+                    testPassed = false;
+                    LogError(testName, 
+                        $"Prestige {i} bonus incorrect. Expected {expectedBonus:F2}, got {actualStrength:F2}");
+                }
+            }
+
+            // Verify milestone completion
+            if (!statSystem.IsMilestoneCompleted(milestone5.Id))
+            {
+                testPassed = false;
+                LogError(testName, "Prestige milestone not completed");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+
+    [Test]
+    public void TestPrestigeUnlocks()
+    {
+        string testName = "Prestige Unlocks";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var statSystem = character._statSystem;
+
+            // Register unlock requiring Prestige 3
+            var unlock = new StatUnlock(
+                "Enhanced Training",
+                StatType.Strength,
+                0.15f,
+                new UnlockRequirement[]
+                {
+                    new ProgressionRequirement(
+                        ProgressionType.Prestige,
+                        3
+                    )
+                },
+                new StatBonusReward(
+                    StatType.Strength,
+                    0.15f,
+                    BonusSource.Unlock
+                )
+            );
+            statSystem.RegisterUnlock(unlock);
+
+            // Track initial value
+            float initialStrength = character.GetStatValue(StatType.Strength);
+
+            // Perform prestiges
+            for (int i = 1; i <= 3; i++)
+            {
+                var progress = _playerManager.progressionManager.GetProgressData(characterId);
+                progress.Level = _config.LevelsForPrestige;
+                _playerManager.progressionManager.TryPrestige(characterId);
+
+                bool shouldBeUnlocked = i >= 3;
+                if (statSystem.IsUnlocked(unlock.Id) != shouldBeUnlocked)
+                {
+                    testPassed = false;
+                    LogError(testName, 
+                        $"Unlock state incorrect at prestige {i}. Expected: {shouldBeUnlocked}");
+                }
+            }
+
+            // Verify final value includes unlock bonus
+            float expectedFinalBonus = initialStrength * 
+                (1 + (3 * BASE_PRESTIGE_STAT_BONUS)) * 
+                (1 + 0.15f); // Unlock bonus
+            float actualFinalValue = character.GetStatValue(StatType.Strength);
+
+            if (Math.Abs(expectedFinalBonus - actualFinalValue) > 0.001f)
+            {
+                testPassed = false;
+                LogError(testName, 
+                    $"Final value incorrect. Expected {expectedFinalBonus:F2}, got {actualFinalValue:F2}");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+
+    [Test]
+    public void TestPrestigeWithAscension()
+    {
+        string testName = "Prestige With Ascension";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var statSystem = character._statSystem;
+
+            // Initial values
+            float initialStrength = character.GetStatValue(StatType.Strength);
+
+            // First prestige
+            var progress = _playerManager.progressionManager.GetProgressData(characterId);
+            progress.Level = _config.LevelsForPrestige;
+            _playerManager.progressionManager.TryPrestige(characterId);
+
+            // Ascend
+            progress.PrestigeLevel = _config.PrestigeLevelsForAscension;
+            _playerManager.progressionManager.TryAscend(characterId);
+
+            // Second prestige
+            progress.Level = _config.LevelsForPrestige;
+            _playerManager.progressionManager.TryPrestige(characterId);
+
+            // Calculate expected value:
+            // 1. First prestige bonus: (1 + 0.10)
+            // 2. Ascension bonus: * (1 + 0.02)
+            // 3. Second prestige bonus: * (1 + 0.10)
+            float expectedValue = initialStrength * 
+                (1 + BASE_PRESTIGE_STAT_BONUS) * 
+                (1 + 0.02f) * 
+                (1 + BASE_PRESTIGE_STAT_BONUS);
+
+            float actualValue = character.GetStatValue(StatType.Strength);
+
+            if (Math.Abs(expectedValue - actualValue) > 0.001f)
+            {
+                testPassed = false;
+                LogError(testName, 
+                    $"Combined bonus incorrect. Expected {expectedValue:F2}, got {actualValue:F2}");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+}
+```
+
+[Would you like me to continue with BaseLevelingSystemTests and the migration plan?]
+
+The remaining sections will cover:
+1. BaseLevelingSystemTests updates
+2. Complete migration plan
+3. Implementation steps
+
+Should I continue with these sections?
+
+### C. BaseLevelingSystemTests Updates
+
+```csharp
+public class BaseLevelingSystemTests : BaseTestSuite
+{
+    private const float BASE_LEVEL_MULTIPLIER = 0.05f; // 5% per level
+    private const float LEVEL_MILESTONE_BONUS = 0.10f; // 10% at level milestones
+
+    [Test]
+    public void TestLevelingMilestones()
+    {
+        string testName = "Leveling Milestones";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var statSystem = character._statSystem;
+
+            // Register level milestones
+            var milestone10 = new StatMilestone(
+                "Level 10 Power",
+                StatType.Strength,
+                10f,
+                new StatBonusReward(
+                    StatType.Strength,
+                    LEVEL_MILESTONE_BONUS,
+                    BonusSource.Milestone
+                )
+            );
+            statSystem.RegisterMilestone(milestone10);
+
+            // Initial values
+            float initialStrength = character.GetStatValue(StatType.Strength);
+
+            // Level up to 10
+            for (int i = 1; i <= 10; i++)
+            {
+                character.LevelUp(i);
+
+                // Calculate expected bonus
+                float levelBonus = 1 + (i * BASE_LEVEL_MULTIPLIER);
+                float milestoneBonus = i >= 10 ? (1 + LEVEL_MILESTONE_BONUS) : 1f;
+                float expectedValue = initialStrength * levelBonus * milestoneBonus;
+
+                float actualValue = character.GetStatValue(StatType.Strength);
+
+                if (Math.Abs(expectedValue - actualValue) > 0.001f)
+                {
+                    testPassed = false;
+                    LogError(testName,
+                        $"Level {i} value incorrect. Expected {expectedValue:F2}, got {actualValue:F2}");
+                }
+            }
+
+            // Verify milestone completion
+            if (!statSystem.IsMilestoneCompleted(milestone10.Id))
+            {
+                testPassed = false;
+                LogError(testName, "Level milestone not completed");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+
+    [Test]
+    public void TestStatLevelUnlocks()
+    {
+        string testName = "Stat Level Unlocks";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var statSystem = character._statSystem;
+
+            // Register unlock requiring 15 base strength
+            var unlock = new StatUnlock(
+                "Strength Mastery",
+                StatType.Strength,
+                0.20f,
+                new UnlockRequirement[]
+                {
+                    new StatRequirement(StatType.Strength, 15f)
+                },
+                new StatBonusReward(
+                    StatType.Strength,
+                    0.20f,
+                    BonusSource.Unlock
+                )
+            );
+            statSystem.RegisterUnlock(unlock);
+
+            // Level up until requirement met
+            float targetValue = 15f;
+            int currentLevel = 1;
+            
+            while (character.GetBaseStatValue(StatType.Strength) < targetValue)
+            {
+                currentLevel++;
+                character.LevelUp(currentLevel);
+            }
+
+            // Verify unlock triggered
+            if (!statSystem.IsUnlocked(unlock.Id))
+            {
+                testPassed = false;
+                LogError(testName, "Stat unlock not triggered when requirement met");
+            }
+
+            // Verify bonus applied
+            float baseValue = character.GetBaseStatValue(StatType.Strength);
+            float expectedValue = baseValue * (1 + 0.20f); // Unlock bonus
+            float actualValue = character.GetStatValue(StatType.Strength);
+
+            if (Math.Abs(expectedValue - actualValue) > 0.001f)
+            {
+                testPassed = false;
+                LogError(testName,
+                    $"Unlock bonus incorrect. Expected {expectedValue:F2}, got {actualValue:F2}");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+
+    [Test]
+    public void TestExperienceGain()
+    {
+        string testName = "Experience Gain";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var statSystem = character._statSystem;
+
+            // Add experience
+            float initialExp = 1000f;
+            statSystem.AddExperience(StatType.Strength, initialExp);
+
+            // Register experience milestone
+            var expMilestone = new StatMilestone(
+                "High XP",
+                StatType.Strength,
+                20f,
+                new StatBonusReward(
+                    StatType.Strength,
+                    0.05f,
+                    BonusSource.Milestone
+                )
+            );
+            statSystem.RegisterMilestone(expMilestone);
+
+            // Add more experience to trigger level up and milestone
+            statSystem.AddExperience(StatType.Strength, 5000f);
+
+            // Verify level increased
+            if (statSystem.GetStatLevel(StatType.Strength) <= 1)
+            {
+                testPassed = false;
+                LogError(testName, "Level did not increase with experience");
+            }
+
+            // Verify milestone triggered
+            if (!statSystem.IsMilestoneCompleted(expMilestone.Id))
+            {
+                testPassed = false;
+                LogError(testName, "Experience milestone not completed");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+}
+```
+
+[Should I continue with the Migration Plan and Implementation Steps?]
+
+The remaining sections will cover:
+1. Complete migration plan
+2. Step-by-step implementation guide
+3. System validation steps
+4. Rollback procedures
+
+Would you like me to continue with these sections?
+
+## 4. Migration Plan and Implementation Steps
+
+### A. Migration Plan
+
+```plaintext
+1. Pre-Migration Tasks
+   - Backup current system state
+   - Create feature flag for new system
+   - Set up parallel running capability
+
+2. Data Migration
+   - Stats
+   - Experience
+   - Modifiers
+   - Existing bonuses
+
+3. System Migration
+   - Component-by-component replacement
+   - Validation at each step
+   - Rollback capability
+```
+
+### B. Implementation Steps
+
+```plaintext
+Phase 1: Core System Updates
+├── Step 1: Update StatData
+│   ├── Add new properties for milestone tracking
+│   ├── Update calculation methods
+│   └── Add validation
+│
+├── Step 2: Implement New Managers
+│   ├── MilestoneManager setup
+│   ├── UnlockManager setup
+│   └── Integration with StatSystem
+│
+└── Step 3: Update Event System
+    ├── Add new event types
+    ├── Update event handlers
+    └── Add validation events
+```
+
+### C. Implementation Code
+
+```csharp
+// 1. System Configuration
+public class StatSystemConfig
+{
+    public static class Migration
+    {
+        public const string FEATURE_FLAG = "USE_NEW_STAT_SYSTEM";
+        public const string VERSION = "2.0.0";
+        public const bool ENABLE_PARALLEL = true;
+    }
+
+    public static class Validation
+    {
+        public const float TOLERANCE = 0.001f;
+        public const bool STRICT_MODE = true;
+    }
+}
+
+// 2. Migration Manager
+public class StatSystemMigrationManager
+{
+    private readonly string _characterId;
+    private readonly CharacterStatSystem _oldSystem;
+    private readonly CharacterStatSystem _newSystem;
+    private readonly ILogger _logger;
+
+    public StatSystemMigrationManager(string characterId)
+    {
+        _characterId = characterId;
+        _oldSystem = GetOldSystem();
+        _newSystem = CreateNewSystem();
+        _logger = new MigrationLogger();
+    }
+
+    public bool MigrateCharacter()
+    {
+        try
+        {
+            // 1. Migrate base stats
+            MigrateBaseStats();
+
+            // 2. Migrate experience and levels
+            MigrateExperience();
+
+            // 3. Migrate modifiers
+            MigrateModifiers();
+
+            // 4. Migrate permanent bonuses
+            MigrateBonuses();
+
+            // 5. Validate migration
+            return ValidateMigration();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Migration failed: {ex.Message}");
+            RollbackMigration();
+            return false;
+        }
+    }
+
+    private void MigrateBaseStats()
+    {
+        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        {
+            float oldValue = _oldSystem.GetBaseStatValue(statType);
+            _newSystem.SetBaseValue(statType, oldValue);
+            
+            ValidateStatMigration(statType);
+        }
+    }
+
+    private void MigrateExperience()
+    {
+        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        {
+            int oldLevel = _oldSystem.GetStatLevel(statType);
+            float oldExp = _oldSystem.GetExperience(statType);
+
+            _newSystem.SetLevel(statType, oldLevel);
+            _newSystem.AddExperience(statType, oldExp);
+
+            ValidateExperienceMigration(statType);
+        }
+    }
+
+    private void MigrateModifiers()
+    {
+        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        {
+            var oldModifiers = _oldSystem.GetModifiers(statType);
+            foreach (var modifier in oldModifiers)
+            {
+                _newSystem.AddModifier(statType, modifier.Id, modifier);
+            }
+
+            ValidateModifierMigration(statType);
+        }
+    }
+
+    private void MigrateBonuses()
+    {
+        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        {
+            var oldBonuses = _oldSystem.GetPermanentBonuses(statType);
+            foreach (var bonus in oldBonuses)
+            {
+                _newSystem.AddPermanentBonus(bonus);
+            }
+
+            ValidateBonusMigration(statType);
+        }
+    }
+
+    private bool ValidateMigration()
+    {
+        bool isValid = true;
+        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        {
+            float oldValue = _oldSystem.GetStatValue(statType);
+            float newValue = _newSystem.GetStatValue(statType);
+
+            if (Math.Abs(oldValue - newValue) > StatSystemConfig.Validation.TOLERANCE)
+            {
+                _logger.LogError(
+                    $"Validation failed for {statType}: " +
+                    $"Old={oldValue:F3}, New={newValue:F3}");
+                isValid = false;
+            }
+        }
+        return isValid;
+    }
+
+    private void RollbackMigration()
+    {
+        _logger.LogInfo("Rolling back migration...");
+        // Restore from backup
+        RestoreSystemFromBackup();
+    }
+}
+
+// 3. Validation System
+public class StatSystemValidator
+{
+    private readonly CharacterStatSystem _system;
+    private readonly ILogger _logger;
+
+    public StatSystemValidator(CharacterStatSystem system)
+    {
+        _system = system;
+        _logger = new ValidationLogger();
+    }
+
+    public bool ValidateSystem()
+    {
+        bool isValid = true;
+        isValid &= ValidateStats();
+        isValid &= ValidateModifiers();
+        isValid &= ValidateBonuses();
+        isValid &= ValidateMilestones();
+        isValid &= ValidateUnlocks();
+        return isValid;
+    }
+
+    private bool ValidateStats()
+    {
+        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        {
+            // Validate base values
+            float baseValue = _system.GetBaseStatValue(statType);
+            if (baseValue < 0)
+            {
+                _logger.LogError($"Invalid base value for {statType}: {baseValue}");
+                return false;
+            }
+
+            // Validate calculated values
+            float calculatedValue = _system.GetStatValue(statType);
+            if (calculatedValue < baseValue)
+            {
+                _logger.LogError(
+                    $"Invalid calculated value for {statType}: " +
+                    $"Base={baseValue}, Calculated={calculatedValue}");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private bool ValidateModifiers()
+    {
+        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        {
+            var modifiers = _system.GetModifiers(statType);
+            
+            // Check for duplicate IDs
+            var duplicateIds = modifiers
+                .GroupBy(m => m.Id)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key);
+
+            if (duplicateIds.Any())
+            {
+                _logger.LogError(
+                    $"Duplicate modifier IDs found for {statType}: " +
+                    string.Join(", ", duplicateIds));
+                return false;
+            }
+        }
+        return true;
+    }
+}
+```
+
+[Would you like me to continue with the Implementation Guide and System Validation sections?]
+
+The remaining sections will cover:
+1. Detailed implementation guide
+2. System validation procedures
+3. Testing procedures
+4. Performance optimization
+
+Should I continue with these sections?
+## 5. Implementation Guide and System Validation
+
+### A. Implementation Guide
+
+```plaintext
+1. Code Deployment Order
+   ├── Core Classes (Base System)
+   │   ├── Interfaces & Base Classes
+   │   ├── Event Arguments
+   │   └── Configuration Classes
+   │
+   ├── Feature Classes
+   │   ├── Milestones
+   │   ├── Unlocks
+   │   ├── Bonuses
+   │   └── Modifiers
+   │
+   ├── Management Classes
+   │   ├── MilestoneManager
+   │   ├── UnlockManager
+   │   └── BonusRegistry
+   │
+   └── Integration Classes
+       ├── CharacterStatSystem Updates
+       ├── EventManager Updates
+       └── PlayerManager Updates
+```
+
+### B. System Integration Code
+
+```csharp
+public class SystemIntegrator
+{
+    private readonly ILogger _logger;
+    private readonly EventManager _eventManager;
+    private Dictionary<string, CharacterStatSystem> _statSystems;
+
+    public SystemIntegrator(EventManager eventManager)
+    {
+        _logger = new IntegrationLogger();
+        _eventManager = eventManager;
+        _statSystems = new Dictionary<string, CharacterStatSystem>();
+    }
+
+    public bool IntegrateNewSystem(string characterId)
+    {
+        try
+        {
+            // 1. Create new system
+            var newSystem = CreateNewSystem(characterId);
+            
+            // 2. Register event handlers
+            RegisterEventHandlers(newSystem);
+            
+            // 3. Migrate data
+            MigrateData(characterId, newSystem);
+            
+            // 4. Validate integration
+            if (!ValidateIntegration(characterId, newSystem))
+            {
+                RollbackIntegration(characterId);
+                return false;
+            }
+
+            // 5. Switch to new system
+            _statSystems[characterId] = newSystem;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Integration failed: {ex.Message}");
+            RollbackIntegration(characterId);
+            return false;
+        }
+    }
+
+    private void RegisterEventHandlers(CharacterStatSystem system)
+    {
+        // Register core stat events
+        _eventManager.AddHandler<StatEventArgs>(
+            EventType.CharacterStatChanged,
+            args => HandleStatChanged(system, args)
+        );
+
+        // Register milestone events
+        _eventManager.AddHandler<MilestoneEventArgs>(
+            EventType.MilestoneCompleted,
+            args => HandleMilestoneCompleted(system, args)
+        );
+
+        // Register unlock events
+        _eventManager.AddHandler<UnlockEventArgs>(
+            EventType.UnlockTriggered,
+            args => HandleUnlockTriggered(system, args)
+        );
+    }
+
+    private void HandleStatChanged(CharacterStatSystem system, StatEventArgs args)
+    {
+        _logger.LogInfo(
+            $"Stat changed: {args.StatType} " +
+            $"from {args.OldValue:F2} to {args.NewValue:F2}"
+        );
+
+        // Check for milestone triggers
+        system.CheckMilestones(GetProgressionData(args.CharacterId));
+        
+        // Check for unlocks
+        system.CheckUnlocks(GetProgressionData(args.CharacterId));
+    }
+
+    private void HandleMilestoneCompleted(
+        CharacterStatSystem system, 
+        MilestoneEventArgs args)
+    {
+        _logger.LogInfo($"Milestone completed: {args.MilestoneId}");
+        
+        // Apply milestone rewards
+        system.ApplyMilestoneRewards(args.MilestoneId);
+        
+        // Check for cascading unlocks
+        system.CheckUnlocks(GetProgressionData(args.CharacterId));
+    }
+}
+```
+
+### C. Performance Optimization
+
+```csharp
+public class StatSystemOptimizer
+{
+    private readonly ILogger _logger;
+    private readonly Dictionary<string, PerformanceMetrics> _metrics;
+
+    public StatSystemOptimizer()
+    {
+        _logger = new OptimizationLogger();
+        _metrics = new Dictionary<string, PerformanceMetrics>();
+    }
+
+    public void OptimizeSystem(CharacterStatSystem system)
+    {
+        // 1. Analyze current performance
+        var baseMetrics = MeasurePerformance(system);
+        
+        // 2. Optimize caching
+        OptimizeCache(system);
+        
+        // 3. Optimize calculations
+        OptimizeCalculations(system);
+        
+        // 4. Optimize event handling
+        OptimizeEvents(system);
+        
+        // 5. Verify optimizations
+        var optimizedMetrics = MeasurePerformance(system);
+        LogOptimizationResults(baseMetrics, optimizedMetrics);
+    }
+
+    private PerformanceMetrics MeasurePerformance(CharacterStatSystem system)
+    {
+        var metrics = new PerformanceMetrics();
+        
+        // Measure stat calculations
+        metrics.CalculationTime = MeasureCalculationTime(system);
+        
+        // Measure event handling
+        metrics.EventProcessingTime = MeasureEventProcessingTime(system);
+        
+        // Measure memory usage
+        metrics.MemoryUsage = MeasureMemoryUsage(system);
+        
+        return metrics;
+    }
+
+    private TimeSpan MeasureCalculationTime(CharacterStatSystem system)
+    {
+        var sw = Stopwatch.StartNew();
+        
+        // Perform standard calculations
+        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        {
+            system.GetStatValue(statType);
+        }
+        
+        sw.Stop();
+        return sw.Elapsed;
+    }
+
+    private void OptimizeCache(CharacterStatSystem system)
+    {
+        // Implement cache size limits
+        const int MAX_CACHE_SIZE = 1000;
+        
+        // Implement cache expiration
+        const int CACHE_EXPIRATION_MINUTES = 5;
+        
+        // Implement cache pruning
+        system.PruneCache();
+        
+        _logger.LogInfo("Cache optimization complete");
+    }
+
+    private void LogOptimizationResults(
+        PerformanceMetrics before, 
+        PerformanceMetrics after)
+    {
+        var calcImprovement = (before.CalculationTime - after.CalculationTime)
+            .TotalMilliseconds;
+        var eventImprovement = (before.EventProcessingTime - after.EventProcessingTime)
+            .TotalMilliseconds;
+        var memoryImprovement = before.MemoryUsage - after.MemoryUsage;
+
+        _logger.LogInfo("Optimization Results:");
+        _logger.LogInfo($"Calculation Time: -{calcImprovement:F2}ms");
+        _logger.LogInfo($"Event Processing: -{eventImprovement:F2}ms");
+        _logger.LogInfo($"Memory Usage: -{memoryImprovement:F2}KB");
+    }
+}
+```
+
+[Would you like me to continue with the Testing Procedures and Deployment Guide?]
+
+The remaining sections will cover:
+1. Testing procedures and automation
+2. Deployment guide
+3. Monitoring and maintenance
+4. Troubleshooting guide
+
+Should I continue with these sections?
+
+## 6. Testing Procedures and Deployment Guide
+
+### A. Testing Framework
+
+```csharp
+public class StatSystemTestFramework
+{
+    private readonly ILogger _logger;
+    private readonly Dictionary<string, TestResult> _results;
+    private readonly StatSystemValidator _validator;
+
+    public StatSystemTestFramework()
+    {
+        _logger = new TestLogger();
+        _results = new Dictionary<string, TestResult>();
+        _validator = new StatSystemValidator();
+    }
+
+    public async Task RunAllTests()
+    {
+        // 1. Unit Tests
+        await RunUnitTests();
+        
+        // 2. Integration Tests
+        await RunIntegrationTests();
+        
+        // 3. Performance Tests
+        await RunPerformanceTests();
+        
+        // 4. Migration Tests
+        await RunMigrationTests();
+
+        // Log results
+        LogTestResults();
+    }
+
+    private async Task RunUnitTests()
+    {
+        var tests = new[]
+        {
+            new StatDataTests(),
+            new ModifierTests(),
+            new MilestoneTests(),
+            new UnlockTests(),
+            new BonusTests()
+        };
+
+        foreach (var test in tests)
+        {
+            var result = await RunTestSuite(test);
+            _results[test.GetType().Name] = result;
+        }
+    }
+
+    private async Task RunIntegrationTests()
+    {
+        var character = CreateTestCharacter();
+        
+        // 1. Test Stat Calculations
+        await TestStatCalculations(character);
+        
+        // 2. Test Modifier Integration
+        await TestModifierIntegration(character);
+        
+        // 3. Test Milestone System
+        await TestMilestoneSystem(character);
+        
+        // 4. Test Unlock System
+        await TestUnlockSystem(character);
+    }
+
+    private async Task TestStatCalculations(Character character)
+    {
+        // Test base stat values
+        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        {
+            float baseValue = character.GetBaseStatValue(statType);
+            float calculatedValue = character.GetStatValue(statType);
+            
+            Assert.IsTrue(calculatedValue >= baseValue,
+                $"Calculated value should not be less than base value for {statType}");
+        }
+
+        // Test modifier stacking
+        var statType = StatType.Strength;
+        float initialValue = character.GetStatValue(statType);
+        
+        // Add flat modifier
+        character._statSystem.AddModifier(
+            statType,
+            "test_flat",
+            new StatModifier(
+                "test_flat",
+                "Test",
+                statType,
+                BuffType.Flat,
+                5f
+            )
+        );
+        
+        // Add percentage modifier
+        character._statSystem.AddModifier(
+            statType,
+            "test_percent",
+            new StatModifier(
+                "test_percent",
+                "Test",
+                statType,
+                BuffType.Percentage,
+                0.1f
+            )
+        );
+
+        float expectedValue = (initialValue + 5f) * 1.1f;
+        float actualValue = character.GetStatValue(statType);
+        
+        Assert.AreEqual(expectedValue, actualValue, 0.001f,
+            "Modifier stacking calculation incorrect");
+    }
+}
+```
+
+### B. Deployment Process
+
+```csharp
+public class StatSystemDeployment
+{
+    private readonly ILogger _logger;
+    private readonly StatSystemMigrationManager _migrationManager;
+    private readonly StatSystemValidator _validator;
+
+    public StatSystemDeployment()
+    {
+        _logger = new DeploymentLogger();
+        _migrationManager = new StatSystemMigrationManager();
+        _validator = new StatSystemValidator();
+    }
+
+    public async Task<bool> Deploy()
+    {
+        try
+        {
+            // 1. Pre-deployment checks
+            if (!await PreDeploymentChecks())
+                return false;
+
+            // 2. Create backups
+            if (!await CreateBackups())
+                return false;
+
+            // 3. Deploy new system
+            if (!await DeployNewSystem())
+                return false;
+
+            // 4. Migrate data
+            if (!await MigrateData())
+                return false;
+
+            // 5. Validate deployment
+            if (!await ValidateDeployment())
+                return false;
+
+            // 6. Finalize deployment
+            await FinalizeDeployment();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Deployment failed: {ex.Message}");
+            await RollbackDeployment();
+            return false;
+        }
+    }
+
+    private async Task<bool> PreDeploymentChecks()
+    {
+        // Check system requirements
+        if (!SystemRequirementsMet())
+            return false;
+
+        // Verify database connectivity
+        if (!await VerifyDatabaseConnection())
+            return false;
+
+        // Check for active users
+        if (await GetActiveUserCount() > 0)
+        {
+            _logger.LogWarning("Active users detected. Schedule deployment for maintenance window.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task<bool> CreateBackups()
+    {
+        try
+        {
+            // Backup database
+            await BackupDatabase();
+
+            // Backup character data
+            await BackupCharacterData();
+
+            // Backup system state
+            await BackupSystemState();
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Backup failed: {ex.Message}");
+            return false;
+        }
+    }
+
+    private async Task<bool> DeployNewSystem()
+    {
+        // Deploy in phases
+        var phases = new[]
+        {
+            DeployPhase.Core,
+            DeployPhase.Modifiers,
+            DeployPhase.Milestones,
+            DeployPhase.Unlocks
+        };
+
+        foreach (var phase in phases)
+        {
+            if (!await DeployPhase(phase))
+            {
+                _logger.LogError($"Deployment failed at phase: {phase}");
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
+```
+
+### C. Monitoring System
+
+```csharp
+public class StatSystemMonitor
+{
+    private readonly ILogger _logger;
+    private readonly Dictionary<string, PerformanceMetrics> _metrics;
+    private readonly Queue<SystemEvent> _eventLog;
+
+    public StatSystemMonitor()
+    {
+        _logger = new MonitoringLogger();
+        _metrics = new Dictionary<string, PerformanceMetrics>();
+        _eventLog = new Queue<SystemEvent>();
+    }
+
+    public void StartMonitoring()
+    {
+        // Setup performance counters
+        SetupPerformanceCounters();
+
+        // Start monitoring tasks
+        Task.Run(MonitorPerformance);
+        Task.Run(MonitorEvents);
+        Task.Run(MonitorErrors);
+    }
+
+    private void SetupPerformanceCounters()
+    {
+        // Register counters
+        RegisterCounter("StatCalculations", "Rate of stat calculations per second");
+        RegisterCounter("ModifierApplications", "Rate of modifier applications");
+        RegisterCounter("CacheHitRate", "Cache hit rate percentage");
+        RegisterCounter("AverageCalculationTime", "Average time for stat calculations");
+    }
+
+    private async Task MonitorPerformance()
+    {
+        while (true)
+        {
+            var metrics = CollectPerformanceMetrics();
+            AnalyzePerformance(metrics);
+            await Task.Delay(TimeSpan.FromMinutes(1));
+        }
+    }
+
+    private void AnalyzePerformance(PerformanceMetrics metrics)
+    {
+        // Check for performance issues
+        if (metrics.CalculationTime.TotalMilliseconds > 100)
+        {
+            _logger.LogWarning("Stat calculations taking longer than expected");
+        }
+
+        if (metrics.CacheHitRate < 0.8)
+        {
+            _logger.LogWarning("Cache hit rate below threshold");
+        }
+
+        // Store metrics for trending
+        _metrics[DateTime.UtcNow.ToString("o")] = metrics;
+    }
+}
+```
+
+[Would you like me to continue with the Troubleshooting Guide and Maintenance Procedures?]
+
+The final sections will cover:
+1. Troubleshooting procedures
+2. Maintenance guide
+3. System recovery procedures
+4. Documentation
+
+Should I continue with these sections?
+
+# 1. Event System Components
+
+### A. Event Arguments
+
+```csharp
+public abstract class BaseStatEventArgs : GameEventArgs
+{
+    public string CharacterId { get; }
+    public DateTime Timestamp { get; }
+
+    protected BaseStatEventArgs(string characterId)
+    {
+        CharacterId = characterId;
+        Timestamp = DateTime.UtcNow;
+    }
+}
+
+public class StatChangeEventArgs : BaseStatEventArgs
+{
+    public StatType StatType { get; }
+    public float OldValue { get; }
+    public float NewValue { get; }
+    public ChangeSource Source { get; }
+    public string ModifierId { get; }
+
+    public StatChangeEventArgs(
+        string characterId,
+        StatType statType,
+        float oldValue,
+        float newValue,
+        ChangeSource source,
+        string modifierId = null) : base(characterId)
+    {
+        StatType = statType;
+        OldValue = oldValue;
+        NewValue = newValue;
+        Source = source;
+        ModifierId = modifierId;
+    }
+}
+
+public class MilestoneProgressEventArgs : BaseStatEventArgs
+{
+    public string MilestoneId { get; }
+    public float Progress { get; }
+    public float Target { get; }
+    public bool IsComplete { get; }
+
+    public MilestoneProgressEventArgs(
+        string characterId,
+        string milestoneId,
+        float progress,
+        float target) : base(characterId)
+    {
+        MilestoneId = milestoneId;
+        Progress = progress;
+        Target = target;
+        IsComplete = progress >= target;
+    }
+}
+
+public class MultipleMilestoneEventArgs : BaseStatEventArgs
+{
+    public IReadOnlyList<MilestoneCompletion> Completions { get; }
+    
+    public MultipleMilestoneEventArgs(
+        string characterId,
+        IEnumerable<MilestoneCompletion> completions) : base(characterId)
+    {
+        Completions = completions.ToList();
+    }
+}
+
+public class StatOverflowEventArgs : BaseStatEventArgs
+{
+    public StatType StatType { get; }
+    public float AttemptedValue { get; }
+    public float MaxAllowedValue { get; }
+    public string Source { get; }
+
+    public StatOverflowEventArgs(
+        string characterId,
+        StatType statType,
+        float attemptedValue,
+        float maxAllowedValue,
+        string source) : base(characterId)
+    {
+        StatType = statType;
+        AttemptedValue = attemptedValue;
+        MaxAllowedValue = maxAllowedValue;
+        Source = source;
+    }
+}
+```
+
+### B. Event Throttling System
+
+```csharp
+public class EventThrottler
+{
+    private readonly Dictionary<Type, ThrottleSettings> _settings;
+    private readonly Dictionary<Type, Queue<GameEventArgs>> _eventQueues;
+    private readonly Dictionary<Type, DateTime> _lastProcessedTime;
+    
+    public EventThrottler()
+    {
+        _settings = new Dictionary<Type, ThrottleSettings>();
+        _eventQueues = new Dictionary<Type, Queue<GameEventArgs>>();
+        _lastProcessedTime = new Dictionary<Type, DateTime>();
+        
+        InitializeDefaultSettings();
+    }
+
+    private void InitializeDefaultSettings()
+    {
+        // Stat changes - batch every 100ms
+        RegisterEventType<StatChangeEventArgs>(
+            TimeSpan.FromMilliseconds(100),
+            100
+        );
+
+        // Milestone progress - batch every 500ms
+        RegisterEventType<MilestoneProgressEventArgs>(
+            TimeSpan.FromMilliseconds(500),
+            50
+        );
+
+        // Multiple milestones - process immediately
+        RegisterEventType<MultipleMilestoneEventArgs>(
+            TimeSpan.Zero,
+            1
+        );
+    }
+
+    public void QueueEvent<T>(T eventArgs) where T : GameEventArgs
+    {
+        var type = typeof(T);
+        if (!_eventQueues.ContainsKey(type))
+        {
+            _eventQueues[type] = new Queue<GameEventArgs>();
+        }
+
+        _eventQueues[type].Enqueue(eventArgs);
+        TryProcessQueue(type);
+    }
+
+    private void TryProcessQueue(Type eventType)
+    {
+        if (!_settings.TryGetValue(eventType, out var settings))
+            return;
+
+        var now = DateTime.UtcNow;
+        if (!_lastProcessedTime.TryGetValue(eventType, out var lastProcessed))
+        {
+            lastProcessed = DateTime.MinValue;
+        }
+
+        if (now - lastProcessed < settings.ThrottleInterval)
+            return;
+
+        var queue = _eventQueues[eventType];
+        if (queue.Count >= settings.BatchSize || settings.ThrottleInterval == TimeSpan.Zero)
+        {
+            ProcessEvents(eventType, queue);
+            _lastProcessedTime[eventType] = now;
+        }
+    }
+
+    private void ProcessEvents(Type eventType, Queue<GameEventArgs> queue)
+    {
+        var events = new List<GameEventArgs>();
+        while (queue.Count > 0 && events.Count < _settings[eventType].BatchSize)
+        {
+            events.Add(queue.Dequeue());
+        }
+
+        // Handle based on event type
+        if (eventType == typeof(StatChangeEventArgs))
+        {
+            ProcessStatChangeBatch(events.Cast<StatChangeEventArgs>());
+        }
+        else if (eventType == typeof(MilestoneProgressEventArgs))
+        {
+            ProcessMilestoneProgressBatch(events.Cast<MilestoneProgressEventArgs>());
+        }
+        else
+        {
+            // Process individual events
+            foreach (var evt in events)
+            {
+                Globals.Instance.gameMangers.Events.RaiseEvent(
+                    GetEventTypeForArgs(evt), evt);
+            }
+        }
+    }
+
+    private void ProcessStatChangeBatch(IEnumerable<StatChangeEventArgs> events)
+    {
+        // Group by character and stat type
+        var grouped = events.GroupBy(
+            e => (e.CharacterId, e.StatType),
+            e => e
+        );
+
+        foreach (var group in grouped)
+        {
+            var first = group.First();
+            var last = group.Last();
+            
+            // Only raise event for net change
+            Globals.Instance.gameMangers.Events.RaiseEvent(
+                EventType.CharacterStatChanged,
+                new StatChangeEventArgs(
+                    first.CharacterId,
+                    first.StatType,
+                    first.OldValue,
+                    last.NewValue,
+                    ChangeSource.Multiple
+                )
+            );
+        }
+    }
+}
+```
+
+# 2. Configuration System
+
+```csharp
+public static class GameBalanceConfig
+{
+    public static class Stats
+    {
+        public static class Limits
+        {
+            public static readonly Dictionary<StatType, StatLimits> StatLimits = 
+                new()
+            {
+                {
+                    StatType.Strength,
+                    new StatLimits
+                    {
+                        MinValue = 1,
+                        MaxValue = 999999,
+                        SoftCap = 100000,
+                        OverflowBehavior = OverflowBehavior.Clamp
+                    }
+                },
+                // Add other stats...
+            };
+        }
+
+        public static class Modifiers
+        {
+            public const int MAX_STACKED_MODIFIERS = 100;
+            public const float MAX_TOTAL_PERCENTAGE_BONUS = 10.0f; // 1000%
+            public const float MAX_SINGLE_PERCENTAGE_BONUS = 5.0f; // 500%
+        }
+
+        public static class Milestones
+        {
+            public const int MAX_CONCURRENT_MILESTONES = 50;
+            public const float MILESTONE_PROGRESS_THRESHOLD = 0.001f;
+        }
+    }
+
+    public static class ConfigValidator
+    {
+        public static bool ValidateConfig()
+        {
+            bool isValid = true;
+            
+            // Validate stat limits
+            foreach (var limit in Stats.Limits.StatLimits.Values)
+            {
+                if (limit.MinValue >= limit.MaxValue)
+                {
+                    Debug.LogError($"Invalid stat limits: Min ({limit.MinValue}) >= Max ({limit.MaxValue})");
+                    isValid = false;
+                }
+
+                if (limit.SoftCap > limit.MaxValue)
+                {
+                    Debug.LogError($"Invalid soft cap: {limit.SoftCap} > {limit.MaxValue}");
+                    isValid = false;
+                }
+            }
+
+            // Validate modifier settings
+            if (Stats.Modifiers.MAX_TOTAL_PERCENTAGE_BONUS <= 0)
+            {
+                Debug.LogError("Invalid max total percentage bonus");
+                isValid = false;
+            }
+
+            return isValid;
+        }
+    }
+}
+```
+
+# 3. Test Cases for Edge Scenarios
+
+```csharp
+[TestFixture]
+public class StatSystemEdgeCaseTests : BaseTestSuite
+{
+    [Test]
+    public void TestMultipleMilestonesTriggered()
+    {
+        string testName = "Multiple Milestone Triggers";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var statSystem = character._statSystem;
+
+            // Register multiple milestones with same requirement
+            var milestones = new[]
+            {
+                new StatMilestone(
+                    "Power1",
+                    StatType.Strength,
+                    100f,
+                    new StatBonusReward(StatType.Strength, 0.1f, BonusSource.Milestone)
+                ),
+                new StatMilestone(
+                    "Power2",
+                    StatType.Strength,
+                    100f,
+                    new StatBonusReward(StatType.Strength, 0.1f, BonusSource.Milestone)
+                ),
+                new StatMilestone(
+                    "Power3",
+                    StatType.Strength,
+                    100f,
+                    new StatBonusReward(StatType.Strength, 0.1f, BonusSource.Milestone)
+                )
+            };
+
+            foreach (var milestone in milestones)
+            {
+                statSystem.RegisterMilestone(milestone);
+            }
+
+            // Set up event monitoring
+            List<string> completedMilestones = new();
+            Globals.Instance.gameMangers.Events.AddHandler<MultipleMilestoneEventArgs>(
+                EventType.MultiMilestoneCompleted,
+                args => completedMilestones.AddRange(
+                    args.Completions.Select(c => c.MilestoneId))
+            );
+
+            // Trigger milestones
+            statSystem.SetBaseValue(StatType.Strength, 150f);
+
+            // Verify all milestones completed
+            if (completedMilestones.Count != milestones.Length)
+            {
+                testPassed = false;
+                LogError(testName, 
+                    $"Not all milestones completed. Expected {milestones.Length}, " +
+                    $"got {completedMilestones.Count}");
+            }
+
+            // Verify bonuses stacked correctly
+            float expectedBonus = 1 + (0.1f * milestones.Length);
+            float actualValue = character.GetStatValue(StatType.Strength);
+            float expectedValue = 150f * expectedBonus;
+
+            if (Math.Abs(actualValue - expectedValue) > 0.001f)
+            {
+                testPassed = false;
+                LogError(testName,
+                    $"Incorrect bonus stacking. Expected {expectedValue}, got {actualValue}");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+}
+```
+
+[Would you like me to continue with the UI notification system and remaining test cases?]
+
+The remaining sections will cover:
+1. UI notification system
+2. Progress tracking
+3. Additional edge case tests
+4. Integration examples
+
+Should I continue with these sections?
+
+# 4. UI Notification System
+
+### A. Notification Manager
+
+```csharp
+public class StatNotificationManager
+{
+    private readonly Dictionary<string, NotificationSettings> _notificationSettings;
+    private readonly Queue<StatNotification> _pendingNotifications;
+    private readonly HashSet<string> _activeNotifications;
+
+    public StatNotificationManager()
+    {
+        _notificationSettings = new Dictionary<string, NotificationSettings>();
+        _pendingNotifications = new Queue<StatNotification>();
+        _activeNotifications = new HashSet<string>();
+        
+        InitializeDefaultSettings();
+        RegisterEventHandlers();
+    }
+
+    private void RegisterEventHandlers()
+    {
+        var events = Globals.Instance.gameMangers.Events;
+
+        events.AddHandler<StatChangeEventArgs>(
+            EventType.CharacterStatChanged,
+            OnStatChanged);
+
+        events.AddHandler<MilestoneProgressEventArgs>(
+            EventType.MilestoneProgress,
+            OnMilestoneProgress);
+
+        events.AddHandler<MultipleMilestoneEventArgs>(
+            EventType.MultiMilestoneCompleted,
+            OnMultipleMilestoneCompleted);
+    }
+
+    private void OnStatChanged(StatChangeEventArgs args)
+    {
+        if (!ShouldNotifyStatChange(args))
+            return;
+
+        QueueNotification(new StatChangeNotification(
+            args.CharacterId,
+            args.StatType,
+            args.OldValue,
+            args.NewValue,
+            GetStatChangeImportance(args)
+        ));
+    }
+
+    private bool ShouldNotifyStatChange(StatChangeEventArgs args)
+    {
+        // Don't notify small changes
+        float changePercent = Math.Abs(args.NewValue - args.OldValue) / args.OldValue;
+        if (changePercent < 0.05f) // 5% threshold
+            return false;
+
+        // Don't spam notifications
+        string notificationKey = $"stat_{args.CharacterId}_{args.StatType}";
+        if (_activeNotifications.Contains(notificationKey))
+            return false;
+
+        return true;
+    }
+
+    private NotificationImportance GetStatChangeImportance(StatChangeEventArgs args)
+    {
+        float changePercent = (args.NewValue - args.OldValue) / args.OldValue;
+
+        return changePercent switch
+        {
+            > 1.0f => NotificationImportance.High,   // Over 100% increase
+            > 0.5f => NotificationImportance.Medium, // Over 50% increase
+            _ => NotificationImportance.Low
+        };
+    }
+}
+```
+
+### B. Notification Types
+
+```csharp
+public abstract class StatNotification
+{
+    public string Id { get; } = Guid.NewGuid().ToString();
+    public string CharacterId { get; }
+    public DateTime Timestamp { get; }
+    public NotificationImportance Importance { get; }
+    public TimeSpan Duration { get; }
+
+    protected StatNotification(
+        string characterId,
+        NotificationImportance importance,
+        TimeSpan? duration = null)
+    {
+        CharacterId = characterId;
+        Timestamp = DateTime.UtcNow;
+        Importance = importance;
+        Duration = duration ?? TimeSpan.FromSeconds(3);
+    }
+
+    public abstract NotificationData GetNotificationData();
+}
+
+public class StatChangeNotification : StatNotification
+{
+    public StatType StatType { get; }
+    public float OldValue { get; }
+    public float NewValue { get; }
+
+    public StatChangeNotification(
+        string characterId,
+        StatType statType,
+        float oldValue,
+        float newValue,
+        NotificationImportance importance)
+        : base(characterId, importance)
+    {
+        StatType = statType;
+        OldValue = oldValue;
+        NewValue = newValue;
+    }
+
+    public override NotificationData GetNotificationData()
+    {
+        float changePercent = (NewValue - OldValue) / OldValue * 100;
+        string direction = changePercent > 0 ? "increased" : "decreased";
+
+        return new NotificationData
+        {
+            Title = $"{StatType} {direction}!",
+            Message = $"{StatType} {direction} by {Math.Abs(changePercent):F1}%",
+            Type = NotificationType.StatChange,
+            Icon = GetStatIcon(StatType),
+            Color = GetImportanceColor(Importance)
+        };
+    }
+}
+
+public class MilestoneNotification : StatNotification
+{
+    public string MilestoneId { get; }
+    public string MilestoneName { get; }
+    public string RewardDescription { get; }
+
+    public MilestoneNotification(
+        string characterId,
+        string milestoneId,
+        string milestoneName,
+        string rewardDescription)
+        : base(characterId, NotificationImportance.High)
+    {
+        MilestoneId = milestoneId;
+        MilestoneName = milestoneName;
+        RewardDescription = rewardDescription;
+    }
+
+    public override NotificationData GetNotificationData()
+    {
+        return new NotificationData
+        {
+            Title = "Milestone Achieved!",
+            Message = $"Completed: {MilestoneName}\nReward: {RewardDescription}",
+            Type = NotificationType.Milestone,
+            Icon = "milestone_icon",
+            Color = GetImportanceColor(Importance)
+        };
+    }
+}
+```
+
+### C. UI Components
+
+```csharp
+public class StatDisplayManager : Node
+{
+    private readonly Dictionary<StatType, StatDisplayPanel> _statPanels;
+    private readonly Dictionary<string, MilestoneProgressBar> _milestoneProgress;
+    private readonly NotificationPanel _notificationPanel;
+
+    public override void _Ready()
+    {
+        _statPanels = new Dictionary<StatType, StatDisplayPanel>();
+        _milestoneProgress = new Dictionary<string, MilestoneProgressBar>();
+        _notificationPanel = GetNode<NotificationPanel>("NotificationPanel");
+
+        InitializeStatPanels();
+        RegisterEventHandlers();
+    }
+
+    private void InitializeStatPanels()
+    {
+        var container = GetNode("StatContainer");
+        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        {
+            var panel = (StatDisplayPanel)ResourceLoader
+                .Load<PackedScene>("res://Scenes/UI/StatPanel.tscn")
+                .Instance();
+            
+            panel.Initialize(statType);
+            container.AddChild(panel);
+            _statPanels[statType] = panel;
+        }
+    }
+
+    private void OnStatChanged(StatChangeEventArgs args)
+    {
+        if (_statPanels.TryGetValue(args.StatType, out var panel))
+        {
+            panel.UpdateValue(args.NewValue, args.OldValue);
+        }
+    }
+
+    private void OnMilestoneProgress(MilestoneProgressEventArgs args)
+    {
+        if (!_milestoneProgress.TryGetValue(args.MilestoneId, out var progressBar))
+        {
+            progressBar = CreateMilestoneProgressBar(args.MilestoneId);
+            _milestoneProgress[args.MilestoneId] = progressBar;
+        }
+
+        progressBar.UpdateProgress(args.Progress / args.Target);
+
+        if (args.IsComplete)
+        {
+            // Animate completion and remove after delay
+            progressBar.AnimateCompletion();
+            RemoveMilestoneProgressAfterDelay(args.MilestoneId);
+        }
+    }
+}
+
+public class StatDisplayPanel : Control
+{
+    private Label _nameLabel;
+    private Label _valueLabel;
+    private TextureProgress _changeIndicator;
+    private Tween _tween;
+
+    public void Initialize(StatType statType)
+    {
+        _nameLabel.Text = statType.ToString();
+        _tween = new Tween();
+        AddChild(_tween);
+    }
+
+    public void UpdateValue(float newValue, float oldValue)
+    {
+        // Animate value change
+        _tween.InterpolateProperty(
+            _valueLabel,
+            "text",
+            oldValue.ToString("F1"),
+            newValue.ToString("F1"),
+            0.5f,
+            Tween.TransitionType.Cubic,
+            Tween.EaseType.Out
+        );
+
+        // Show change indicator
+        float changePercent = (newValue - oldValue) / oldValue;
+        _changeIndicator.Value = changePercent * 100;
+        _changeIndicator.Modulate = changePercent > 0 ? 
+            Colors.Green : Colors.Red;
+        
+        _changeIndicator.Visible = true;
+        GetTree().CreateTimer(2.0f).Connect(
+            "timeout",
+            this,
+            nameof(HideChangeIndicator)
+        );
+
+        _tween.Start();
+    }
+}
+```
+
+[Would you like me to continue with additional edge case tests and integration examples?]
+
+The remaining sections will cover:
+1. More edge case tests
+2. Integration examples
+3. Performance optimization
+4. Documentation
+
+Should I continue with these sections?
+
+# 5. Additional Edge Case Tests
+
+### A. Stat Value Overflow Tests
+
+```csharp
+[TestFixture]
+public class StatOverflowTests : BaseTestSuite
+{
+    [Test]
+    public void TestStatValueOverflow()
+    {
+        string testName = "Stat Value Overflow";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var statSystem = character._statSystem;
+
+            // Track overflow events
+            bool overflowEventReceived = false;
+            Globals.Instance.gameMangers.Events.AddHandler<StatOverflowEventArgs>(
+                EventType.StatOverflow,
+                args => overflowEventReceived = true
+            );
+
+            // Try to set value above max
+            var maxValue = GameBalanceConfig.Stats.Limits.StatLimits[StatType.Strength].MaxValue;
+            var attemptedValue = maxValue * 2;
+
+            statSystem.SetBaseValue(StatType.Strength, attemptedValue);
+
+            // Verify value was clamped
+            float actualValue = character.GetStatValue(StatType.Strength);
+            if (actualValue > maxValue)
+            {
+                testPassed = false;
+                LogError(testName, 
+                    $"Value not clamped. Got {actualValue}, expected <= {maxValue}");
+            }
+
+            // Verify overflow event was raised
+            if (!overflowEventReceived)
+            {
+                testPassed = false;
+                LogError(testName, "Overflow event not raised");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+
+    [Test]
+    public void TestModifierStackingOverflow()
+    {
+        string testName = "Modifier Stacking Overflow";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var statSystem = character._statSystem;
+
+            float baseValue = 100f;
+            statSystem.SetBaseValue(StatType.Strength, baseValue);
+
+            // Add maximum allowed modifiers
+            int maxModifiers = GameBalanceConfig.Stats.Modifiers.MAX_STACKED_MODIFIERS;
+            for (int i = 0; i < maxModifiers + 5; i++)
+            {
+                var modifier = new StatModifier(
+                    $"test_{i}",
+                    "Test",
+                    StatType.Strength,
+                    BuffType.Percentage,
+                    0.1f  // 10% each
+                );
+
+                statSystem.AddModifier(StatType.Strength, modifier.Id, modifier);
+            }
+
+            // Verify modifier limit enforced
+            var activeModifiers = character.GetStatModifiers(StatType.Strength);
+            if (activeModifiers.Count() > maxModifiers)
+            {
+                testPassed = false;
+                LogError(testName, 
+                    $"Modifier limit exceeded. Got {activeModifiers.Count()}, " +
+                    $"expected <= {maxModifiers}");
+            }
+
+            // Verify total bonus capped
+            float maxBonus = GameBalanceConfig.Stats.Modifiers.MAX_TOTAL_PERCENTAGE_BONUS;
+            float actualValue = character.GetStatValue(StatType.Strength);
+            float maxAllowedValue = baseValue * (1 + maxBonus);
+
+            if (actualValue > maxAllowedValue)
+            {
+                testPassed = false;
+                LogError(testName,
+                    $"Total bonus not capped. Got {actualValue}, expected <= {maxAllowedValue}");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+}
+```
+
+### B. Modifier Stacking Edge Cases
+
+```csharp
+[TestFixture]
+public class ModifierStackingTests : BaseTestSuite
+{
+    [Test]
+    public void TestModifierPriority()
+    {
+        string testName = "Modifier Priority";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var statSystem = character._statSystem;
+
+            float baseValue = 100f;
+            statSystem.SetBaseValue(StatType.Strength, baseValue);
+
+            // Add modifiers in specific order
+            var modifiers = new[]
+            {
+                // Multiplicative modifiers should apply after additive
+                new StatModifier("mult1", "Test", StatType.Strength, 
+                    BuffType.Multiplicative, 2.0f),  // 2x
+                new StatModifier("add1", "Test", StatType.Strength, 
+                    BuffType.Flat, 50f),  // +50
+                new StatModifier("percent1", "Test", StatType.Strength, 
+                    BuffType.Percentage, 0.5f),  // +50%
+            };
+
+            foreach (var mod in modifiers)
+            {
+                statSystem.AddModifier(StatType.Strength, mod.Id, mod);
+            }
+
+            // Expected calculation:
+            // 1. Base (100) + Flat (50) = 150
+            // 2. Apply percentage (150 * 1.5) = 225
+            // 3. Apply multiplicative (225 * 2) = 450
+            float expectedValue = 450f;
+            float actualValue = character.GetStatValue(StatType.Strength);
+
+            if (Math.Abs(actualValue - expectedValue) > 0.001f)
+            {
+                testPassed = false;
+                LogError(testName,
+                    $"Incorrect modifier priority calculation. Expected {expectedValue}, got {actualValue}");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+
+    [Test]
+    public void TestModifierRemovalOrder()
+    {
+        string testName = "Modifier Removal Order";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var statSystem = character._statSystem;
+
+            float baseValue = 100f;
+            statSystem.SetBaseValue(StatType.Strength, baseValue);
+
+            // Add modifiers
+            var modifier1 = new StatModifier("mod1", "Test", StatType.Strength, 
+                BuffType.Percentage, 0.5f);
+            var modifier2 = new StatModifier("mod2", "Test", StatType.Strength, 
+                BuffType.Percentage, 0.3f);
+
+            statSystem.AddModifier(StatType.Strength, modifier1.Id, modifier1);
+            statSystem.AddModifier(StatType.Strength, modifier2.Id, modifier2);
+
+            // Remove in reverse order
+            float valueAfterFirst = character.GetStatValue(StatType.Strength);
+            statSystem.RemoveModifier(StatType.Strength, modifier2.Id);
+
+            float expectedAfterRemoval = baseValue * 1.5f; // Only first modifier remains
+            float actualAfterRemoval = character.GetStatValue(StatType.Strength);
+
+            if (Math.Abs(actualAfterRemoval - expectedAfterRemoval) > 0.001f)
+            {
+                testPassed = false;
+                LogError(testName,
+                    $"Incorrect value after modifier removal. Expected {expectedAfterRemoval}, got {actualAfterRemoval}");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+}
+```
+
+[Should I continue with the integration examples and performance optimization?]
+
+The remaining sections will cover:
+1. Integration examples
+2. Performance optimization
+3. Documentation
+4. Best practices
+
+Would you like me to continue with these sections?
+
+# 6. Integration Examples and Performance Optimization
+
+### A. Integration with Combat System
+
+```csharp
+public class CombatStatIntegration
+{
+    private readonly CharacterStatSystem _statSystem;
+    private readonly Dictionary<string, List<StatModifier>> _combatModifiers;
+    private readonly HashSet<string> _activeCombatEffects;
+
+    public CombatStatIntegration(CharacterStatSystem statSystem)
+    {
+        _statSystem = statSystem;
+        _combatModifiers = new Dictionary<string, List<StatModifier>>();
+        _activeCombatEffects = new HashSet<string>();
+    }
+
+    public void ApplyCombatEffect(CombatEffect effect)
+    {
+        if (_activeCombatEffects.Contains(effect.Id))
+            return;
+
+        var modifiers = CreateCombatModifiers(effect);
+        foreach (var modifier in modifiers)
+        {
+            _statSystem.AddModifier(
+                modifier.StatType,
+                modifier.Id,
+                modifier
+            );
+        }
+
+        _combatModifiers[effect.Id] = modifiers;
+        _activeCombatEffects.Add(effect.Id);
+    }
+
+    private List<StatModifier> CreateCombatModifiers(CombatEffect effect)
+    {
+        var modifiers = new List<StatModifier>();
+
+        switch (effect.Type)
+        {
+            case CombatEffectType.Buff:
+                modifiers.Add(new StatModifier(
+                    $"combat_buff_{effect.Id}",
+                    "Combat",
+                    effect.AffectedStat,
+                    BuffType.Percentage,
+                    effect.Value,
+                    effect.Duration
+                ));
+                break;
+
+            case CombatEffectType.Debuff:
+                modifiers.Add(new StatModifier(
+                    $"combat_debuff_{effect.Id}",
+                    "Combat",
+                    effect.AffectedStat,
+                    BuffType.Percentage,
+                    -effect.Value,
+                    effect.Duration
+                ));
+                break;
+
+            case CombatEffectType.MultiStat:
+                foreach (var statEffect in effect.StatEffects)
+                {
+                    modifiers.Add(new StatModifier(
+                        $"combat_multi_{effect.Id}_{statEffect.StatType}",
+                        "Combat",
+                        statEffect.StatType,
+                        statEffect.Type,
+                        statEffect.Value,
+                        effect.Duration
+                    ));
+                }
+                break;
+        }
+
+        return modifiers;
+    }
+
+    public void RemoveCombatEffect(string effectId)
+    {
+        if (!_combatModifiers.TryGetValue(effectId, out var modifiers))
+            return;
+
+        foreach (var modifier in modifiers)
+        {
+            _statSystem.RemoveModifier(modifier.StatType, modifier.Id);
+        }
+
+        _combatModifiers.Remove(effectId);
+        _activeCombatEffects.Remove(effectId);
+    }
+}
+```
+
+### B. Performance Optimization
+
+```csharp
+public class StatCalculationCache
+{
+    private readonly struct CacheKey
+    {
+        public readonly StatType StatType;
+        public readonly int ModifierHash;
+        public readonly int BonusHash;
+
+        public CacheKey(
+            StatType statType, 
+            IEnumerable<StatModifier> modifiers,
+            IEnumerable<PermanentBonus> bonuses)
+        {
+            StatType = statType;
+            ModifierHash = CalculateModifierHash(modifiers);
+            BonusHash = CalculateBonusHash(bonuses);
+        }
+
+        private static int CalculateModifierHash(IEnumerable<StatModifier> modifiers)
+        {
+            int hash = 17;
+            foreach (var mod in modifiers.OrderBy(m => m.Id))
+            {
+                hash = hash * 31 + mod.GetHashCode();
+            }
+            return hash;
+        }
+
+        private static int CalculateBonusHash(IEnumerable<PermanentBonus> bonuses)
+        {
+            int hash = 17;
+            foreach (var bonus in bonuses.OrderBy(b => b.Id))
+            {
+                hash = hash * 31 + bonus.GetHashCode();
+            }
+            return hash;
+        }
+    }
+
+    private class CacheEntry
+    {
+        public float Value { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+
+    private readonly Dictionary<CacheKey, CacheEntry> _cache;
+    private readonly int _maxCacheSize;
+    private readonly TimeSpan _cacheTimeout;
+
+    public StatCalculationCache(
+        int maxCacheSize = 1000,
+        TimeSpan? cacheTimeout = null)
+    {
+        _cache = new Dictionary<CacheKey, CacheEntry>();
+        _maxCacheSize = maxCacheSize;
+        _cacheTimeout = cacheTimeout ?? TimeSpan.FromMinutes(1);
+    }
+
+    public bool TryGetCachedValue(
+        StatType statType,
+        IEnumerable<StatModifier> modifiers,
+        IEnumerable<PermanentBonus> bonuses,
+        out float value)
+    {
+        var key = new CacheKey(statType, modifiers, bonuses);
+        
+        if (_cache.TryGetValue(key, out var entry))
+        {
+            if (DateTime.UtcNow - entry.Timestamp <= _cacheTimeout)
+            {
+                value = entry.Value;
+                return true;
+            }
+            
+            _cache.Remove(key);
+        }
+
+        value = 0f;
+        return false;
+    }
+
+    public void CacheValue(
+        StatType statType,
+        IEnumerable<StatModifier> modifiers,
+        IEnumerable<PermanentBonus> bonuses,
+        float value)
+    {
+        var key = new CacheKey(statType, modifiers, bonuses);
+        
+        if (_cache.Count >= _maxCacheSize)
+        {
+            // Remove oldest entries
+            var oldestKeys = _cache
+                .OrderBy(kvp => kvp.Value.Timestamp)
+                .Take(_cache.Count - _maxCacheSize + 1)
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var oldKey in oldestKeys)
+            {
+                _cache.Remove(oldKey);
+            }
+        }
+
+        _cache[key] = new CacheEntry
+        {
+            Value = value,
+            Timestamp = DateTime.UtcNow
+        };
+    }
+
+    public void InvalidateCache()
+    {
+        _cache.Clear();
+    }
+}
+```
+
+### C. Optimization Integration
+
+```csharp
+public partial class CharacterStatSystem
+{
+    private readonly StatCalculationCache _calculationCache;
+    private readonly ConcurrentDictionary<StatType, object> _calculationLocks;
+
+    public CharacterStatSystem(string characterId)
+    {
+        // ... existing initialization ...
+        _calculationCache = new StatCalculationCache();
+        _calculationLocks = new ConcurrentDictionary<StatType, object>();
+    }
+
+    public float GetStatValue(StatType statType)
+    {
+        // Try cache first
+        if (_calculationCache.TryGetCachedValue(
+            statType,
+            GetModifiers(statType),
+            GetPermanentBonuses(statType),
+            out float cachedValue))
+        {
+            return cachedValue;
+        }
+
+        // Get or create lock for this stat type
+        var lockObj = _calculationLocks.GetOrAdd(
+            statType,
+            _ => new object()
+        );
+
+        // Perform thread-safe calculation
+        lock (lockObj)
+        {
+            float value = CalculateStatValue(statType);
+            
+            // Cache the result
+            _calculationCache.CacheValue(
+                statType,
+                GetModifiers(statType),
+                GetPermanentBonuses(statType),
+                value
+            );
+            
+            return value;
+        }
+    }
+
+    private float CalculateStatValue(StatType statType)
+    {
+        if (!_stats.TryGetValue(statType, out var stat))
+            return 0f;
+
+        var (flatBonus, percentageBonus) = _modifierManager
+            .CalculateModifiers(statType);
+
+        float baseWithFlat = stat.BaseValue + flatBonus;
+        float withPercentage = baseWithFlat * (1 + percentageBonus);
+
+        // Apply permanent bonuses
+        float permanentBonus = _bonusRegistry
+            .GetTotalBonusForStat(statType);
+        
+        return withPercentage * (1 + permanentBonus);
+    }
+
+    public void InvalidateCache(StatType? statType = null)
+    {
+        if (statType.HasValue)
+        {
+            // Invalidate specific stat
+            var lockObj = _calculationLocks.GetOrAdd(
+                statType.Value,
+                _ => new object()
+            );
+
+            lock (lockObj)
+            {
+                _calculationCache.InvalidateCache();
+            }
+        }
+        else
+        {
+            // Invalidate all stats
+            _calculationCache.InvalidateCache();
+        }
+    }
+}
+```
+
+[Would you like me to continue with the documentation and best practices sections?]
+
+The remaining sections will cover:
+1. Documentation
+2. Best practices
+3. Example usage patterns
+4. Troubleshooting guide
+
+Should I continue with these sections?
+
+# 1. Bonus Type Implementations
+
+### A. Bonus Base Classes
+
+```csharp
+public abstract class BaseStatBonus
+{
+    public string Id { get; }
+    public string Name { get; }
+    public StatType StatType { get; }
+    public float Value { get; }
+    public DateTime AcquiredTime { get; }
+    public abstract BonusType Type { get; }
+    public virtual bool IsStackable => false;
+    public virtual int StackPriority => 0;
+
+    protected BaseStatBonus(
+        string name,
+        StatType statType,
+        float value)
+    {
+        Id = Guid.NewGuid().ToString();
+        Name = name;
+        StatType = statType;
+        Value = value;
+        AcquiredTime = DateTime.UtcNow;
+    }
+
+    public abstract float CalculateBonus(float baseValue);
+    
+    public virtual bool CanStackWith(BaseStatBonus other)
+    {
+        return IsStackable && other.IsStackable && 
+               Type == other.Type &&
+               StatType == other.StatType;
+    }
+}
+```
+
+### B. Specific Bonus Types
+
+```csharp
+public class AscensionBonus : BaseStatBonus
+{
+    public int AscensionLevel { get; }
+    public override BonusType Type => BonusType.Ascension;
+    public override bool IsStackable => true;
+    public override int StackPriority => 100; // High priority
+
+    public AscensionBonus(
+        StatType statType,
+        int ascensionLevel,
+        float value) 
+        : base($"Ascension Level {ascensionLevel}", statType, value)
+    {
+        AscensionLevel = ascensionLevel;
+    }
+
+    public override float CalculateBonus(float baseValue)
+    {
+        // Ascension bonuses stack additively
+        return baseValue * Value;
+    }
+}
+
+public class PrestigeBonus : BaseStatBonus
+{
+    public int PrestigeLevel { get; }
+    public override BonusType Type => BonusType.Prestige;
+    public override bool IsStackable => true;
+    public override int StackPriority => 90; // High priority, but below ascension
+
+    public PrestigeBonus(
+        StatType statType,
+        int prestigeLevel,
+        float value)
+        : base($"Prestige Level {prestigeLevel}", statType, value)
+    {
+        PrestigeLevel = prestigeLevel;
+    }
+
+    public override float CalculateBonus(float baseValue)
+    {
+        // Prestige bonuses are multiplicative
+        return baseValue * (1 + Value);
+    }
+}
+
+public class MilestoneBonus : BaseStatBonus
+{
+    public string MilestoneId { get; }
+    public MilestoneType MilestoneType { get; }
+    public override BonusType Type => BonusType.Milestone;
+    public override int StackPriority => 80;
+
+    public MilestoneBonus(
+        string milestoneId,
+        string name,
+        StatType statType,
+        MilestoneType milestoneType,
+        float value)
+        : base(name, statType, value)
+    {
+        MilestoneId = milestoneId;
+        MilestoneType = milestoneType;
+    }
+
+    public override float CalculateBonus(float baseValue)
+    {
+        return baseValue * Value;
+    }
+}
+```
+
+# 2. Modifier Type Implementations
+
+### A. Base Modifier
+
+```csharp
+public abstract class BaseModifier
+{
+    public string Id { get; }
+    public string Source { get; }
+    public StatType StatType { get; }
+    public float Value { get; }
+    public DateTime StartTime { get; }
+    public TimeSpan? Duration { get; }
+    public virtual ModifierPriority Priority => ModifierPriority.Normal;
+    
+    public bool IsExpired => Duration.HasValue && 
+        DateTime.UtcNow - StartTime >= Duration.Value;
+
+    protected BaseModifier(
+        string source,
+        StatType statType,
+        float value,
+        TimeSpan? duration = null)
+    {
+        Id = Guid.NewGuid().ToString();
+        Source = source;
+        StatType = statType;
+        Value = value;
+        StartTime = DateTime.UtcNow;
+        Duration = duration;
+    }
+
+    public abstract float Apply(float baseValue);
+}
+```
+
+### B. Specific Modifier Types
+
+```csharp
+public class FlatModifier : BaseModifier
+{
+    public override ModifierPriority Priority => ModifierPriority.First;
+
+    public FlatModifier(
+        string source,
+        StatType statType,
+        float value,
+        TimeSpan? duration = null)
+        : base(source, statType, value, duration)
+    {
+    }
+
+    public override float Apply(float baseValue)
+    {
+        return baseValue + Value;
+    }
+}
+
+public class PercentageModifier : BaseModifier
+{
+    public override ModifierPriority Priority => ModifierPriority.Second;
+
+    public PercentageModifier(
+        string source,
+        StatType statType,
+        float value,
+        TimeSpan? duration = null)
+        : base(source, statType, value, duration)
+    {
+    }
+
+    public override float Apply(float baseValue)
+    {
+        return baseValue * (1 + Value);
+    }
+}
+
+public class MultiplicativeModifier : BaseModifier
+{
+    public override ModifierPriority Priority => ModifierPriority.Last;
+
+    public MultiplicativeModifier(
+        string source,
+        StatType statType,
+        float value,
+        TimeSpan? duration = null)
+        : base(source, statType, value, duration)
+    {
+    }
+
+    public override float Apply(float baseValue)
+    {
+        return baseValue * Value;
+    }
+}
+```
+
+# 3. Bonus Managers
+
+### A. AscensionBonusManager
+
+```csharp
+public class AscensionBonusManager
+{
+    private readonly string _characterId;
+    private readonly BonusRegistry _bonusRegistry;
+    private int _currentAscensionLevel;
+    private readonly Dictionary<int, HashSet<StatType>> _appliedBonuses;
+
+    public AscensionBonusManager(
+        string characterId,
+        BonusRegistry bonusRegistry)
+    {
+        _characterId = characterId;
+        _bonusRegistry = bonusRegistry;
+        _appliedBonuses = new Dictionary<int, HashSet<StatType>>();
+    }
+
+    public void OnAscensionLevelUp(int newLevel)
+    {
+        if (newLevel <= _currentAscensionLevel)
+            return;
+
+        // Apply base ascension bonus
+        ApplyAscensionLevelBonus(newLevel);
+
+        // Check for milestone bonuses
+        if (newLevel % 2 == 0) // Every 2 levels
+        {
+            ApplyAscensionMilestoneBonus(newLevel);
+        }
+
+        _currentAscensionLevel = newLevel;
+    }
+
+    private void ApplyAscensionLevelBonus(int level)
+    {
+        foreach (StatType statType in GetAscensionAffectedStats())
+        {
+            var bonus = new AscensionBonus(
+                statType,
+                level,
+                GameBalanceConfig.Stats.Ascension.BaseBonusPerLevel
+            );
+
+            _bonusRegistry.AddBonus(bonus);
+            
+            if (!_appliedBonuses.ContainsKey(level))
+                _appliedBonuses[level] = new HashSet<StatType>();
+                
+            _appliedBonuses[level].Add(statType);
+        }
+    }
+
+    private void ApplyAscensionMilestoneBonus(int level)
+    {
+        foreach (StatType statType in GetAscensionAffectedStats())
+        {
+            var bonus = new MilestoneBonus(
+                $"ascension_milestone_{level}",
+                $"Ascension Milestone {level}",
+                statType,
+                MilestoneType.Ascension,
+                GameBalanceConfig.Stats.Ascension.MilestoneBonusValue
+            );
+
+            _bonusRegistry.AddBonus(bonus);
+        }
+    }
+}
+```
+
+[Would you like me to continue with PrestigeBonusManager, MilestoneBonusManager, and the test cases?]
+
+The remaining sections will cover:
+1. PrestigeBonusManager implementation
+2. MilestoneBonusManager implementation
+3. Complete test suite for all bonus types
+4. Integration examples
+
+Should I continue with these sections?
+
+### B. PrestigeBonusManager
+
+```csharp
+public class PrestigeBonusManager
+{
+    private readonly string _characterId;
+    private readonly BonusRegistry _bonusRegistry;
+    private int _currentPrestigeLevel;
+    private readonly Dictionary<int, HashSet<StatType>> _appliedBonuses;
+    private readonly HashSet<int> _appliedMilestones;
+
+    public PrestigeBonusManager(
+        string characterId,
+        BonusRegistry bonusRegistry)
+    {
+        _characterId = characterId;
+        _bonusRegistry = bonusRegistry;
+        _appliedBonuses = new Dictionary<int, HashSet<StatType>>();
+        _appliedMilestones = new HashSet<int>();
+    }
+
+    public void OnPrestigeLevelUp(int newLevel)
+    {
+        if (newLevel <= _currentPrestigeLevel)
+            return;
+
+        // Apply base prestige bonus
+        ApplyPrestigeLevelBonus(newLevel);
+
+        // Check for milestone bonuses (every 5 levels)
+        if (newLevel % 5 == 0 && !_appliedMilestones.Contains(newLevel))
+        {
+            ApplyPrestigeMilestoneBonus(newLevel);
+            _appliedMilestones.Add(newLevel);
+        }
+
+        _currentPrestigeLevel = newLevel;
+    }
+
+    private void ApplyPrestigeLevelBonus(int level)
+    {
+        foreach (StatType statType in GetPrestigeAffectedStats())
+        {
+            var bonus = new PrestigeBonus(
+                statType,
+                level,
+                GameBalanceConfig.Stats.Prestige.BaseBonusPerLevel
+            );
+
+            _bonusRegistry.AddBonus(bonus);
+            
+            if (!_appliedBonuses.ContainsKey(level))
+                _appliedBonuses[level] = new HashSet<StatType>();
+                
+            _appliedBonuses[level].Add(statType);
+        }
+
+        RaisePrestigeBonusAppliedEvent(level);
+    }
+
+    private void ApplyPrestigeMilestoneBonus(int level)
+    {
+        foreach (StatType statType in GetPrestigeAffectedStats())
+        {
+            var bonus = new MilestoneBonus(
+                $"prestige_milestone_{level}",
+                $"Prestige Milestone {level}",
+                statType,
+                MilestoneType.Prestige,
+                GameBalanceConfig.Stats.Prestige.MilestoneBonusValue
+            );
+
+            _bonusRegistry.AddBonus(bonus);
+        }
+
+        RaisePrestigeMilestoneCompletedEvent(level);
+    }
+
+    private void RaisePrestigeBonusAppliedEvent(int level)
+    {
+        Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+            EventType.PrestigeBonusApplied,
+            new PrestigeBonusEventArgs(
+                _characterId,
+                level,
+                GameBalanceConfig.Stats.Prestige.BaseBonusPerLevel
+            )
+        );
+    }
+
+    private void RaisePrestigeMilestoneCompletedEvent(int level)
+    {
+        Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+            EventType.PrestigeMilestoneCompleted,
+            new PrestigeMilestoneEventArgs(
+                _characterId,
+                level,
+                GameBalanceConfig.Stats.Prestige.MilestoneBonusValue
+            )
+        );
+    }
+}
+```
+
+### C. MilestoneBonusManager
+
+```csharp
+public class MilestoneBonusManager
+{
+    private readonly string _characterId;
+    private readonly BonusRegistry _bonusRegistry;
+    private readonly Dictionary<string, MilestoneProgress> _milestoneProgress;
+    private readonly List<MilestoneDefinition> _milestoneDefinitions;
+
+    public MilestoneBonusManager(
+        string characterId,
+        BonusRegistry bonusRegistry)
+    {
+        _characterId = characterId;
+        _bonusRegistry = bonusRegistry;
+        _milestoneProgress = new Dictionary<string, MilestoneProgress>();
+        _milestoneDefinitions = LoadMilestoneDefinitions();
+    }
+
+    public void UpdateProgress(string milestoneId, float progress)
+    {
+        if (!_milestoneProgress.TryGetValue(milestoneId, out var milestoneProgress))
+        {
+            milestoneProgress = new MilestoneProgress();
+            _milestoneProgress[milestoneId] = milestoneProgress;
+        }
+
+        float oldProgress = milestoneProgress.CurrentProgress;
+        milestoneProgress.CurrentProgress = progress;
+
+        var definition = _milestoneDefinitions.FirstOrDefault(m => m.Id == milestoneId);
+        if (definition == null)
+            return;
+
+        // Check if any tiers were completed
+        foreach (var tier in definition.Tiers.OrderBy(t => t.RequiredProgress))
+        {
+            if (!milestoneProgress.CompletedTiers.Contains(tier.Level) &&
+                progress >= tier.RequiredProgress)
+            {
+                CompleteMilestoneTier(definition, tier);
+                milestoneProgress.CompletedTiers.Add(tier.Level);
+            }
+        }
+
+        RaiseMilestoneProgressEvent(
+            milestoneId, 
+            oldProgress, 
+            progress,
+            definition.MaxProgress
+        );
+    }
+
+    private void CompleteMilestoneTier(
+        MilestoneDefinition definition,
+        MilestoneTier tier)
+    {
+        foreach (var reward in tier.Rewards)
+        {
+            if (reward is StatBonusReward statReward)
+            {
+                var bonus = new MilestoneBonus(
+                    $"{definition.Id}_tier_{tier.Level}",
+                    $"{definition.Name} Tier {tier.Level}",
+                    statReward.StatType,
+                    MilestoneType.Achievement,
+                    statReward.BonusValue
+                );
+
+                _bonusRegistry.AddBonus(bonus);
+            }
+        }
+
+        RaiseMilestoneTierCompletedEvent(definition.Id, tier.Level);
+    }
+
+    private void RaiseMilestoneProgressEvent(
+        string milestoneId,
+        float oldProgress,
+        float newProgress,
+        float maxProgress)
+    {
+        Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+            EventType.MilestoneProgress,
+            new MilestoneProgressEventArgs(
+                _characterId,
+                milestoneId,
+                oldProgress,
+                newProgress,
+                maxProgress
+            )
+        );
+    }
+
+    private void RaiseMilestoneTierCompletedEvent(
+        string milestoneId,
+        int tier)
+    {
+        Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+            EventType.MilestoneTierCompleted,
+            new MilestoneTierEventArgs(
+                _characterId,
+                milestoneId,
+                tier
+            )
+        );
+    }
+}
+```
+
+[Would you like me to continue with the Test Cases and Integration Examples?]
+
+The remaining sections will cover:
+1. Complete test suite for all bonus types
+2. Integration examples
+3. Example usage scenarios
+4. Debugging and validation
+
+Should I continue with these sections?
+
+# 4. Test Cases
+
+### A. Bonus Type Tests
+
+```csharp
+[TestFixture]
+public class BonusTypeTests : BaseTestSuite
+{
+    [Test]
+    public void TestAscensionBonusStacking()
+    {
+        string testName = "Ascension Bonus Stacking";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var bonusRegistry = new BonusRegistry(characterId);
+            var ascensionManager = new AscensionBonusManager(characterId, bonusRegistry);
+
+            // Initial value
+            float baseValue = 100f;
+            character._statSystem.SetBaseValue(StatType.Strength, baseValue);
+
+            // Apply multiple ascension levels
+            for (int i = 1; i <= 3; i++)
+            {
+                ascensionManager.OnAscensionLevelUp(i);
+                
+                // Calculate expected bonuses:
+                // - Base ascension bonus (2% per level)
+                // - Milestone bonus every 2 levels (2% additional)
+                float expectedBonus = i * 0.02f; // Base bonus
+                float milestoneBonus = (i / 2) * 0.02f; // Milestone bonus
+                float totalExpectedBonus = expectedBonus + milestoneBonus;
+                
+                float expectedValue = baseValue * (1 + totalExpectedBonus);
+                float actualValue = character.GetStatValue(StatType.Strength);
+
+                if (Math.Abs(actualValue - expectedValue) > 0.001f)
+                {
+                    testPassed = false;
+                    LogError(testName,
+                        $"Incorrect bonus at level {i}. " +
+                        $"Expected {expectedValue:F2}, got {actualValue:F2}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+
+    [Test]
+    public void TestPrestigeBonusApplication()
+    {
+        string testName = "Prestige Bonus Application";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var bonusRegistry = new BonusRegistry(characterId);
+            var prestigeManager = new PrestigeBonusManager(characterId, bonusRegistry);
+
+            float baseValue = 100f;
+            character._statSystem.SetBaseValue(StatType.Strength, baseValue);
+
+            // Apply prestige levels and verify bonuses
+            for (int i = 1; i <= 6; i++) // Test past milestone at level 5
+            {
+                prestigeManager.OnPrestigeLevelUp(i);
+
+                // Calculate expected value:
+                // Base prestige bonus (10% per level)
+                float prestigeBonus = i * 0.10f;
+                
+                // Milestone bonus at level 5 (additional 5%)
+                float milestoneBonus = i >= 5 ? 0.05f : 0f;
+                
+                float expectedValue = baseValue * (1 + prestigeBonus + milestoneBonus);
+                float actualValue = character.GetStatValue(StatType.Strength);
+
+                if (Math.Abs(actualValue - expectedValue) > 0.001f)
+                {
+                    testPassed = false;
+                    LogError(testName,
+                        $"Incorrect value at prestige {i}. " +
+                        $"Expected {expectedValue:F2}, got {actualValue:F2}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+
+    [Test]
+    public void TestMilestoneBonusProgression()
+    {
+        string testName = "Milestone Bonus Progression";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var bonusRegistry = new BonusRegistry(characterId);
+            var milestoneManager = new MilestoneBonusManager(characterId, bonusRegistry);
+
+            float baseValue = 100f;
+            character._statSystem.SetBaseValue(StatType.Strength, baseValue);
+
+            // Test milestone with multiple tiers
+            string milestoneId = "strength_milestone";
+            float[] progressPoints = { 0.25f, 0.50f, 0.75f, 1.0f };
+            float bonusPerTier = 0.05f; // 5% per tier
+
+            for (int i = 0; i < progressPoints.Length; i++)
+            {
+                milestoneManager.UpdateProgress(milestoneId, progressPoints[i]);
+
+                // Each completed tier adds its bonus
+                float expectedBonus = (i + 1) * bonusPerTier;
+                float expectedValue = baseValue * (1 + expectedBonus);
+                float actualValue = character.GetStatValue(StatType.Strength);
+
+                if (Math.Abs(actualValue - expectedValue) > 0.001f)
+                {
+                    testPassed = false;
+                    LogError(testName,
+                        $"Incorrect value at progress {progressPoints[i]}. " +
+                        $"Expected {expectedValue:F2}, got {actualValue:F2}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+}
+```
+
+### B. Integration Tests
+
+```csharp
+[TestFixture]
+public class BonusSystemIntegrationTests : BaseTestSuite
+{
+    [Test]
+    public void TestCombinedBonusSystems()
+    {
+        string testName = "Combined Bonus Systems";
+        bool testPassed = true;
+
+        try
+        {
+            var characterId = CreateTestCharacter();
+            var character = _playerManager.GetCharacter(characterId);
+            var bonusRegistry = new BonusRegistry(characterId);
+
+            // Create managers
+            var ascensionManager = new AscensionBonusManager(characterId, bonusRegistry);
+            var prestigeManager = new PrestigeBonusManager(characterId, bonusRegistry);
+            var milestoneManager = new MilestoneBonusManager(characterId, bonusRegistry);
+
+            float baseValue = 100f;
+            character._statSystem.SetBaseValue(StatType.Strength, baseValue);
+
+            // Apply bonuses from different systems
+            // 1. Prestige Level 2 (20% bonus)
+            prestigeManager.OnPrestigeLevelUp(2);
+
+            // 2. Ascension Level 2 (4% base + 2% milestone)
+            ascensionManager.OnAscensionLevelUp(2);
+
+            // 3. Achievement Milestone (5% bonus)
+            milestoneManager.UpdateProgress("achievement_1", 1.0f);
+
+            // Calculate expected value:
+            // 1. Base value: 100
+            // 2. Prestige bonus: 20%
+            // 3. Ascension bonus: 6%
+            // 4. Milestone bonus: 5%
+            // Order: ((100 * 1.2) * 1.06) * 1.05
+            float expectedValue = baseValue * 1.2f * 1.06f * 1.05f;
+            float actualValue = character.GetStatValue(StatType.Strength);
+
+            if (Math.Abs(actualValue - expectedValue) > 0.001f)
+            {
+                testPassed = false;
+                LogError(testName,
+                    $"Incorrect final value. " +
+                    $"Expected {expectedValue:F2}, got {actualValue:F2}");
+            }
+
+            // Verify bonus order
+            var bonuses = bonusRegistry.GetAllBonuses(StatType.Strength)
+                .OrderByDescending(b => b.StackPriority);
+
+            if (bonuses.First() is not AscensionBonus)
+            {
+                testPassed = false;
+                LogError(testName, "Incorrect bonus priority order");
+            }
+        }
+        catch (Exception ex)
+        {
+            testPassed = false;
+            LogError(testName, $"Exception: {ex.Message}");
+        }
+
+        LogTestResult(testName, testPassed);
+    }
+}
+```
+
+[Should I continue with the Example Usage and Debugging sections?]
+
+The remaining sections will cover:
+1. Example usage scenarios
+2. Debugging and validation
+3. Performance considerations
+4. Best practices
+
+Would you like me to continue with these sections?
+
+```csharp
+public class StatDebugger
+{
+    private readonly CharacterStatSystem _statSystem;
+    
+    public StatDebugger(CharacterStatSystem statSystem)
+    {
+        _statSystem = statSystem;
+    }
+
+    public string GetStatBreakdown(StatType statType)
+    {
+        var stat = _statSystem.GetStat(statType);
+        if (stat == null)
+            return $"No stat found for {statType}";
+
+        var breakdown = new StringBuilder();
+        breakdown.AppendLine($"=== {statType} Breakdown ===");
+        breakdown.AppendLine($"Base Value: {stat.BaseValue:F2}");
+
+        // Get modifiers
+        var (flatBonus, percentageBonus) = _statSystem._modifierManager.CalculateModifiers(statType);
+        breakdown.AppendLine($"Flat Modifiers: +{flatBonus:F2}");
+        breakdown.AppendLine($"Percentage Modifiers: +{percentageBonus:P2}");
+
+        // Get permanent bonuses
+        var permanentBonuses = _statSystem.GetPermanentBonuses(statType);
+        if (permanentBonuses.Any())
+        {
+            breakdown.AppendLine("\nPermanent Bonuses:");
+            foreach (var bonus in permanentBonuses)
+            {
+                breakdown.AppendLine($"- {bonus.Name}: +{bonus.Value:P2}");
+            }
+        }
+
+        // Final calculation
+        float finalValue = _statSystem.GetStatValue(statType);
+        breakdown.AppendLine($"\nFinal Value: {finalValue:F2}");
+
+        return breakdown.ToString();
+    }
+
+    public string GetModifierStackInspection(StatType statType)
+    {
+        var modifiers = _statSystem._modifierManager.GetModifiersForStat(statType);
+        if (!modifiers.Any())
+            return $"No active modifiers for {statType}";
+
+        var inspection = new StringBuilder();
+        inspection.AppendLine($"=== {statType} Modifier Stack ===");
+        
+        // Group by modifier type
+        var grouped = modifiers
+            .GroupBy(m => m.Type)
+            .OrderBy(g => g.Key);
+
+        foreach (var group in grouped)
+        {
+            inspection.AppendLine($"\n{group.Key} Modifiers:");
+            foreach (var mod in group.OrderBy(m => m.Source))
+            {
+                var timeLeft = mod.Duration.HasValue ? 
+                    (mod.StartTime + mod.Duration.Value - DateTime.UtcNow).TotalSeconds : 
+                    double.PositiveInfinity;
+                
+                inspection.AppendLine(
+                    $"- {mod.Source}: {mod.Value:F2} " +
+                    $"(ID: {mod.Id}, Time Left: {(timeLeft == double.PositiveInfinity ? "Permanent" : $"{timeLeft:F1}s")})");
+            }
+        }
+
+        return inspection.ToString();
+    }
+
+    public string GetBonusCalculationTrace(StatType statType)
+    {
+        var trace = new StringBuilder();
+        trace.AppendLine($"=== {statType} Bonus Calculation Trace ===");
+
+        var stat = _statSystem.GetStat(statType);
+        float baseValue = stat.BaseValue;
+        trace.AppendLine($"Starting with base value: {baseValue:F2}");
+
+        // Trace flat modifiers
+        var (flatBonus, percentageBonus) = _statSystem._modifierManager.CalculateModifiers(statType);
+        if (flatBonus != 0)
+        {
+            float afterFlat = baseValue + flatBonus;
+            trace.AppendLine($"Adding flat modifiers (+{flatBonus:F2}): {afterFlat:F2}");
+            baseValue = afterFlat;
+        }
+
+        // Trace percentage modifiers
+        if (percentageBonus != 0)
+        {
+            float afterPercentage = baseValue * (1 + percentageBonus);
+            trace.AppendLine($"Applying percentage modifiers (+{percentageBonus:P2}): {afterPercentage:F2}");
+            baseValue = afterPercentage;
+        }
+
+        // Trace permanent bonuses
+        var permanentBonuses = _statSystem.GetPermanentBonuses(statType);
+        foreach (var bonus in permanentBonuses.OrderByDescending(b => b.StackPriority))
+        {
+            float afterBonus = bonus.CalculateBonus(baseValue);
+            trace.AppendLine($"Applying {bonus.Name} ({bonus.Type}): {afterBonus:F2}");
+            baseValue = afterBonus;
+        }
+
+        trace.AppendLine($"\nFinal Value: {baseValue:F2}");
+        return trace.ToString();
+    }
+}
+```
+
+Usage example:
+```csharp
+// In Character class
+public string GetStatDebugInfo(StatType statType)
+{
+    var debugger = new StatDebugger(_statSystem);
+    var info = new StringBuilder();
+    
+    info.AppendLine(debugger.GetStatBreakdown(statType));
+    info.AppendLine("\n" + debugger.GetModifierStackInspection(statType));
+    info.AppendLine("\n" + debugger.GetBonusCalculationTrace(statType));
+    
+    return info.ToString();
+}
+```
+
+This debug system provides:
+1. Clear breakdown of stat values and their sources
+2. Detailed view of active modifiers and their state
+3. Step-by-step calculation trace
+
+Would you like me to:
+1. Add more specific debugging features?
+2. Create additional inspection tools?
+3. Add performance monitoring capabilities?
+
+```csharp
+public class StatSystemInspector
+{
+    private readonly CharacterStatSystem _statSystem;
+
+    public StatSystemInspector(CharacterStatSystem statSystem)
+    {
+        _statSystem = statSystem;
+    }
+
+    public string GetModifierHistory(StatType statType, int maxEntries = 10)
+    {
+        var history = _statSystem._modifierManager.GetModifierHistory(statType);
+        var output = new StringBuilder();
+        output.AppendLine($"=== Recent Modifier Changes for {statType} ===");
+
+        foreach (var entry in history.Take(maxEntries))
+        {
+            output.AppendLine(
+                $"{entry.Timestamp:HH:mm:ss.fff} - {entry.Action}: " +
+                $"{entry.ModifierId} ({entry.Source}) - {entry.Value:F2}"
+            );
+        }
+
+        return output.ToString();
+    }
+
+    public string GetBonusStackingOrder(StatType statType)
+    {
+        var bonuses = _statSystem.GetPermanentBonuses(statType)
+            .OrderByDescending(b => b.StackPriority)
+            .ThenBy(b => b.AcquiredTime);
+
+        var output = new StringBuilder();
+        output.AppendLine($"=== Bonus Stacking Order for {statType} ===");
+        output.AppendLine("Priority | Type      | Name                | Value  | Acquired Time");
+        output.AppendLine("---------|-----------|---------------------|--------|---------------");
+
+        foreach (var bonus in bonuses)
+        {
+            output.AppendLine(
+                $"{bonus.StackPriority,8} | {bonus.Type,-9} | {bonus.Name,-19} | {bonus.Value,6:P2} | {bonus.AcquiredTime:HH:mm:ss}"
+            );
+        }
+
+        return output.ToString();
+    }
+
+    public string GetStatDependencyChain(StatType statType)
+    {
+        var output = new StringBuilder();
+        output.AppendLine($"=== Dependency Chain for {statType} ===");
+
+        BuildDependencyChain(statType, output, 0);
+        return output.ToString();
+    }
+
+    private void BuildDependencyChain(StatType statType, StringBuilder output, int depth)
+    {
+        string indent = new string(' ', depth * 2);
+        output.AppendLine($"{indent}{statType}");
+
+        var dependencies = _statSystem.GetStatDependencies(statType);
+        foreach (var dep in dependencies)
+        {
+            BuildDependencyChain(dep, output, depth + 1);
+        }
+    }
+
+    public string GetStatSnapshot()
+    {
+        var output = new StringBuilder();
+        output.AppendLine("=== Stat System Snapshot ===");
+        output.AppendLine($"Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss.fff}");
+
+        // Group stats by category
+        var stats = _statSystem.GetAllStats()
+            .GroupBy(s => GetStatCategory(s.Key));
+
+        foreach (var category in stats)
+        {
+            output.AppendLine($"\n{category.Key}:");
+            foreach (var stat in category)
+            {
+                output.AppendLine(
+                    $"  {stat.Key,-15} = {stat.Value,10:F2} " +
+                    $"(Base: {_statSystem.GetBaseStatValue(stat.Key),10:F2})"
+                );
+            }
+        }
+
+        return output.ToString();
+    }
+
+    public string GetModifierEffectiveness(StatType statType)
+    {
+        var output = new StringBuilder();
+        output.AppendLine($"=== Modifier Effectiveness for {statType} ===");
+
+        var baseValue = _statSystem.GetBaseStatValue(statType);
+        var modifiers = _statSystem._modifierManager.GetModifiersForStat(statType);
+
+        output.AppendLine($"Base Value: {baseValue:F2}");
+        output.AppendLine("\nModifier Contributions:");
+
+        foreach (var mod in modifiers.OrderBy(m => m.Priority))
+        {
+            float valueWithout = CalculateValueWithoutModifier(statType, mod.Id);
+            float valueWith = _statSystem.GetStatValue(statType);
+            float contribution = valueWith - valueWithout;
+            float effectiveness = contribution / mod.Value;
+
+            output.AppendLine(
+                $"- {mod.Source} ({mod.Type})\n" +
+                $"  Value: {mod.Value:F2}\n" +
+                $"  Actual Contribution: {contribution:F2}\n" +
+                $"  Effectiveness: {effectiveness:P2}"
+            );
+        }
+
+        return output.ToString();
+    }
+
+    private float CalculateValueWithoutModifier(StatType statType, string modifierId)
+    {
+        // Temporarily remove modifier
+        _statSystem._modifierManager.RemoveModifier(statType, modifierId);
+        float value = _statSystem.GetStatValue(statType);
+        
+        // Re-add modifier
+        var modifier = _statSystem._modifierManager.GetModifierById(modifierId);
+        if (modifier != null)
+        {
+            _statSystem._modifierManager.AddModifier(statType, modifier);
+        }
+
+        return value;
+    }
+
+    public string GetRecentStatChanges(StatType statType, TimeSpan window)
+    {
+        var changes = _statSystem.GetStatChangeHistory(statType)
+            .Where(c => DateTime.UtcNow - c.Timestamp <= window)
+            .OrderByDescending(c => c.Timestamp);
+
+        var output = new StringBuilder();
+        output.AppendLine($"=== Recent Changes for {statType} (Last {window.TotalMinutes:F1} minutes) ===");
+        
+        float totalChange = 0f;
+        foreach (var change in changes)
+        {
+            float delta = change.NewValue - change.OldValue;
+            totalChange += delta;
+
+            output.AppendLine(
+                $"{change.Timestamp:HH:mm:ss.fff} - {change.Source}: " +
+                $"{change.OldValue:F2} -> {change.NewValue:F2} " +
+                $"(Δ {(delta >= 0 ? "+" : "")}{delta:F2})"
+            );
+        }
+
+        output.AppendLine($"\nTotal Change: {(totalChange >= 0 ? "+" : "")}{totalChange:F2}");
+        return output.ToString();
+    }
+
+    private static string GetStatCategory(StatType statType)
+    {
+        return statType switch
+        {
+            StatType.Strength or
+            StatType.Dexterity or
+            StatType.Intelligence or
+            StatType.Stamina => "Primary Stats",
+            
+            StatType.Health or
+            StatType.Shield or
+            StatType.Energy => "Resources",
+            
+            StatType.Attack or
+            StatType.Defense or
+            StatType.Speed => "Combat Stats",
+            
+            _ => "Other Stats"
+        };
+    }
+}
+```
+
+This adds several new inspection tools:
+1. Modifier History - tracks recent modifier changes
+2. Bonus Stacking Order - shows how bonuses are being applied
+3. Stat Dependency Chain - shows stat relationships
+4. Stat Snapshot - gives full system state
+5. Modifier Effectiveness - shows actual impact of each modifier
+6. Recent Stat Changes - tracks value changes over time
+
+Would you like me to:
+1. Add more specific inspection features?
+2. Create a way to compare stats between characters?
+3. Add benchmark tools for stat calculations?
+
+```csharp
+public class StatComparisonAnalyzer
+{
+    public class StatComparison
+    {
+        public StatType StatType { get; set; }
+        public float FirstValue { get; set; }
+        public float SecondValue { get; set; }
+        public float Difference { get; set; }
+        public float PercentageDifference { get; set; }
+        public Dictionary<string, float> ModifierComparison { get; set; }
+        public Dictionary<string, float> BonusComparison { get; set; }
+    }
+
+    public string CompareCharacters(Character first, Character second)
+    {
+        var output = new StringBuilder();
+        output.AppendLine($"=== Character Comparison ===");
+        output.AppendLine($"{first.Name} vs {second.Name}\n");
+
+        var comparisons = new Dictionary<StatType, StatComparison>();
+
+        // Compare each stat type
+        foreach (StatType statType in Enum.GetValues(typeof(StatType)))
+        {
+            var comparison = CompareStats(first, second, statType);
+            comparisons[statType] = comparison;
+        }
+
+        // Group by significance
+        var significantDiffs = comparisons
+            .Where(c => Math.Abs(c.Value.PercentageDifference) >= 0.1f) // 10% or more
+            .OrderByDescending(c => Math.Abs(c.Value.PercentageDifference));
+
+        output.AppendLine("Significant Differences:");
+        foreach (var diff in significantDiffs)
+        {
+            var comp = diff.Value;
+            output.AppendLine(
+                $"{comp.StatType}:\n" +
+                $"  {first.Name}: {comp.FirstValue:F2}\n" +
+                $"  {second.Name}: {comp.SecondValue:F2}\n" +
+                $"  Difference: {(comp.Difference >= 0 ? "+" : "")}{comp.Difference:F2} ({comp.PercentageDifference:P2})"
+            );
+
+            // Show modifier differences
+            if (comp.ModifierComparison.Any())
+            {
+                output.AppendLine("  Modifier Differences:");
+                foreach (var mod in comp.ModifierComparison)
+                {
+                    output.AppendLine($"    {mod.Key}: {(mod.Value >= 0 ? "+" : "")}{mod.Value:P2}");
+                }
+            }
+        }
+
+        return output.ToString();
+    }
+
+    private StatComparison CompareStats(Character first, Character second, StatType statType)
+    {
+        float firstValue = first.GetStatValue(statType);
+        float secondValue = second.GetStatValue(statType);
+
+        var comparison = new StatComparison
+        {
+            StatType = statType,
+            FirstValue = firstValue,
+            SecondValue = secondValue,
+            Difference = secondValue - firstValue,
+            PercentageDifference = (secondValue - firstValue) / firstValue,
+            ModifierComparison = CompareModifiers(first, second, statType),
+            BonusComparison = CompareBonuses(first, second, statType)
+        };
+
+        return comparison;
+    }
+
+    private Dictionary<string, float> CompareModifiers(
+        Character first, 
+        Character second, 
+        StatType statType)
+    {
+        var differences = new Dictionary<string, float>();
+        var firstMods = first._statSystem._modifierManager.GetModifiersForStat(statType)
+            .GroupBy(m => m.Source)
+            .ToDictionary(g => g.Key, g => g.Sum(m => m.Value));
+        var secondMods = second._statSystem._modifierManager.GetModifiersForStat(statType)
+            .GroupBy(m => m.Source)
+            .ToDictionary(g => g.Key, g => g.Sum(m => m.Value));
+
+        foreach (var source in firstMods.Keys.Union(secondMods.Keys))
+        {
+            float firstValue = firstMods.GetValueOrDefault(source);
+            float secondValue = secondMods.GetValueOrDefault(source);
+            if (Math.Abs(firstValue - secondValue) > 0.001f)
+            {
+                differences[source] = secondValue - firstValue;
+            }
+        }
+
+        return differences;
+    }
+}
+
+public class StatBenchmarkTool
+{
+    public class StatBenchmark
+    {
+        public StatType StatType { get; set; }
+        public float MinValue { get; set; }
+        public float MaxValue { get; set; }
+        public float AverageValue { get; set; }
+        public float Median { get; set; }
+        public Dictionary<int, float> Percentiles { get; set; }
+        public float StandardDeviation { get; set; }
+    }
+
+    public string BenchmarkStatType(StatType statType, IEnumerable<Character> characters)
+    {
+        var values = characters
+            .Select(c => c.GetStatValue(statType))
+            .OrderBy(v => v)
+            .ToList();
+
+        if (!values.Any())
+            return $"No data available for {statType}";
+
+        var benchmark = new StatBenchmark
+        {
+            StatType = statType,
+            MinValue = values.First(),
+            MaxValue = values.Last(),
+            AverageValue = values.Average(),
+            Median = CalculateMedian(values),
+            Percentiles = CalculatePercentiles(values),
+            StandardDeviation = CalculateStandardDeviation(values)
+        };
+
+        return FormatBenchmarkReport(benchmark);
+    }
+
+    public string PowerLevelAnalysis(
+        IEnumerable<Character> characters, 
+        Dictionary<StatType, PowerWeight> weights)
+    {
+        var output = new StringBuilder();
+        output.AppendLine("=== Power Level Analysis ===\n");
+
+        // Calculate weighted power levels
+        var powerLevels = characters
+            .Select(c => new
+            {
+                Character = c,
+                PowerLevel = CalculateWeightedPower(c, weights)
+            })
+            .OrderByDescending(x => x.PowerLevel)
+            .ToList();
+
+        // Calculate statistics
+        float averagePower = powerLevels.Average(x => x.PowerLevel);
+        float standardDev = CalculateStandardDeviation(
+            powerLevels.Select(x => x.PowerLevel));
+
+        output.AppendLine($"Average Power Level: {averagePower:F2}");
+        output.AppendLine($"Standard Deviation: {standardDev:F2}\n");
+
+        // Identify outliers
+        output.AppendLine("Power Level Distribution:");
+        foreach (var entry in powerLevels)
+        {
+            float zScore = (entry.PowerLevel - averagePower) / standardDev;
+            string outlierMark = Math.Abs(zScore) > 2 ? " <!>" : "";
+            
+            output.AppendLine(
+                $"{entry.Character.Name}: {entry.PowerLevel:F2} " +
+                $"(z-score: {zScore:F2}){outlierMark}"
+            );
+        }
+
+        return output.ToString();
+    }
+
+    private float CalculateWeightedPower(
+        Character character, 
+        Dictionary<StatType, PowerWeight> weights)
+    {
+        float power = 0f;
+        foreach (var (statType, weight) in weights)
+        {
+            float value = character.GetStatValue(statType);
+            power += value * weight.Value * weight.Scaling;
+        }
+        return power;
+    }
+
+    private string FormatBenchmarkReport(StatBenchmark benchmark)
+    {
+        var output = new StringBuilder();
+        output.AppendLine($"=== Benchmark Report for {benchmark.StatType} ===\n");
+
+        output.AppendLine($"Range: {benchmark.MinValue:F2} - {benchmark.MaxValue:F2}");
+        output.AppendLine($"Average: {benchmark.AverageValue:F2}");
+        output.AppendLine($"Median: {benchmark.Median:F2}");
+        output.AppendLine($"Standard Deviation: {benchmark.StandardDeviation:F2}\n");
+
+        output.AppendLine("Percentiles:");
+        foreach (var percentile in benchmark.Percentiles.OrderBy(p => p.Key))
+        {
+            output.AppendLine($"{percentile.Key}th: {percentile.Value:F2}");
+        }
+
+        return output.ToString();
+    }
+
+    private float CalculateMedian(List<float> values)
+    {
+        int mid = values.Count / 2;
+        if (values.Count % 2 == 0)
+            return (values[mid - 1] + values[mid]) / 2;
+        return values[mid];
+    }
+
+    private Dictionary<int, float> CalculatePercentiles(List<float> values)
+    {
+        return new[] { 10, 25, 75, 90 }
+            .ToDictionary(
+                p => p,
+                p => CalculatePercentile(values, p)
+            );
+    }
+
+    private float CalculatePercentile(List<float> values, int percentile)
+    {
+        int index = (int)Math.Round(values.Count * (percentile / 100f)) - 1;
+        return values[Math.Max(0, Math.Min(index, values.Count - 1))];
+    }
+
+    private float CalculateStandardDeviation(IEnumerable<float> values)
+    {
+        float average = values.Average();
+        float sumOfSquaresOfDifferences = values.Sum(v => (v - average) * (v - average));
+        return (float)Math.Sqrt(sumOfSquaresOfDifferences / values.Count());
+    }
+}
+
+public class PowerWeight
+{
+    public float Value { get; set; }    // Base weight
+    public float Scaling { get; set; }  // How the stat scales with level
+    
+    public PowerWeight(float value, float scaling)
+    {
+        Value = value;
+        Scaling = scaling;
+    }
+}
+```
+
+Usage example:
+```csharp
+// Compare characters
+var comparator = new StatComparisonAnalyzer();
+var comparison = comparator.CompareCharacters(character1, character2);
+DebugLogger.Log(comparison, DebugLogger.LogCategory.Stats);
+
+// Benchmark stats
+var benchmarker = new StatBenchmarkTool();
+
+// Set up power weights
+var powerWeights = new Dictionary<StatType, PowerWeight>
+{
+    { StatType.Strength, new PowerWeight(1.0f, 1.0f) },
+    { StatType.Health, new PowerWeight(0.5f, 1.2f) },
+    { StatType.Defense, new PowerWeight(0.8f, 1.1f) }
+};
+
+// Analyze power levels
+var powerAnalysis = benchmarker.PowerLevelAnalysis(
+    GetAllCharacters(), 
+    powerWeights
+);
+DebugLogger.Log(powerAnalysis, DebugLogger.LogCategory.Stats);
+
+// Benchmark specific stat
+var strengthBenchmark = benchmarker.BenchmarkStatType(
+    StatType.Strength, 
+    GetAllCharacters()
+);
+DebugLogger.Log(strengthBenchmark, DebugLogger.LogCategory.Stats);
+```
+
+This provides:
+1. Detailed character stat comparisons
+2. Power level analysis with configurable weights
+3. Statistical analysis of stat distributions
+4. Outlier detection for balancing
+5. Percentile breakdowns for understanding stat ranges
+
+Would you like me to:
+1. Add more statistical analysis tools?
+2. Create visualization data for the benchmarks?
+3. Add more specific comparison features?
+
+public abstract class BaseMilestone
+{
+    public string Id { get; }
+    public string Name { get; }
+    public MilestoneType Type { get; }
+    public bool IsRepeatable { get; }
+    public MilestoneProgress Progress { get; private set; }
+    public List<MilestoneReward> Rewards { get; }
+    public DateTime CreatedTime { get; }
+
+    protected BaseMilestone(
+        string name,
+        MilestoneType type,
+        List<MilestoneReward> rewards,
+        bool isRepeatable = false)
+    {
+        Id = Guid.NewGuid().ToString();
+        Name = name;
+        Type = type;
+        Rewards = rewards;
+        IsRepeatable = isRepeatable;
+        Progress = new MilestoneProgress();
+        CreatedTime = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Abstract method for checking if the milestone is completed
+    /// </summary>
+    public abstract bool CheckCompletion(string characterId);
+
+    /// <summary>
+    /// Abstract method for updating milestone progress
+    /// </summary>
+    public abstract void UpdateProgress(string characterId, float value);
+
+    /// <summary>
+    /// Completes the milestone and applies rewards
+    /// </summary>
+    public virtual void Complete(string characterId)
+    {
+        if (Progress.IsCompleted && !IsRepeatable)
+            return;
+
+        Progress.CompleteCount++;
+        Progress.LastCompletionTime = DateTime.UtcNow;
+
+        foreach (var reward in Rewards)
+        {
+            reward.Apply(characterId);
+        }
+
+        RaiseMilestoneCompletedEvent(characterId);
+    }
+
+    /// <summary>
+    /// Resets milestone progress
+    /// </summary>
+    public virtual void Reset()
+    {
+        Progress = new MilestoneProgress();
+    }
+
+    /// <summary>
+    /// Gets the current completion percentage
+    /// </summary>
+    public abstract float GetCompletionPercentage();
+
+    protected void RaiseMilestoneCompletedEvent(string characterId)
+    {
+        Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+            EventType.MilestoneCompleted,
+            new MilestoneEventArgs(
+                characterId,
+                Id,
+                Type,
+                Progress.CompleteCount,
+                Rewards.Select(r => r.Description).ToList()
+            )
+        );
+    }
+
+    protected void RaiseMilestoneProgressEvent(string characterId, float oldProgress, float newProgress)
+    {
+        Globals.Instance?.gameMangers?.Events?.RaiseEvent(
+            EventType.MilestoneProgress,
+            new MilestoneProgressEventArgs(
+                characterId,
+                Id,
+                Name,
+                oldProgress,
+                newProgress,
+                GetCompletionPercentage()
+            )
+        );
+    }
+}
+
+public class MilestoneProgress
+{
+    public int CompleteCount { get; set; }
+    public DateTime? LastCompletionTime { get; set; }
+    public float CurrentValue { get; set; }
+    public bool IsCompleted => CompleteCount > 0;
+}
+
+public class StatMilestone : BaseMilestone
+{
+    public StatType StatType { get; }
+    public float TargetValue { get; }
+
+    public StatMilestone(
+        string name,
+        StatType statType,
+        float targetValue,
+        List<MilestoneReward> rewards,
+        bool isRepeatable = false)
+        : base(name, MilestoneType.Stat, rewards, isRepeatable)
+    {
+        StatType = statType;
+        TargetValue = targetValue;
+    }
+
+    public override bool CheckCompletion(string characterId)
+    {
+        var character = Globals.Instance.gameMangers.Player.GetCharacter(characterId);
+        float currentValue = character.GetStatValue(StatType);
+        return currentValue >= TargetValue;
+    }
+
+    public override void UpdateProgress(string characterId, float value)
+    {
+        float oldValue = Progress.CurrentValue;
+        Progress.CurrentValue = value;
+
+        RaiseMilestoneProgressEvent(characterId, oldValue, value);
+
+        if (CheckCompletion(characterId))
+        {
+            Complete(characterId);
+        }
+    }
+
+    public override float GetCompletionPercentage()
+    {
+        return Math.Min(1f, Progress.CurrentValue / TargetValue);
+    }
+}

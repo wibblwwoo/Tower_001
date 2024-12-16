@@ -1,0 +1,117 @@
+# Tower_001 Project Directory Structure
+
+## Scripts
+This folder contains all the C# scripts that drive the game's functionality.
+
+### Character
+Scripts related to the character system, including character data, stats, and specific character types (e.g., Knight, Mage).
+
+- `Character.cs`: Defines the base `Character` class, which represents a playable character in the game.
+- `CharacterStat.cs`: Defines the `CharacterStat` class, which represents a single statistic or attribute of a character.
+- `Types` folder:
+  - `Knight.cs`: Defines the `Knight` class, a specific character type that inherits from the base `Character` class.
+  - `Mage.cs`: Defines the `Mage` class, a specific character type that inherits from the base `Character` class.
+
+### Events
+Scripts related to various events that occur in the game, such as character events, error events, floor events, game events, room events, and tower events.
+
+- `CharacterEvents.cs`: Defines events related to character-specific actions and state changes.
+- `ErrorEventArgs.cs`: Defines the `ErrorEventArgs` class, which is used to pass error-related information as part of an event.
+- `FloorEventArgs.cs`: Defines the `FloorEventArgs` class, which is used to pass floor-related information as part of an event.
+- `GameEventArgs.cs`: Defines the `GameEventArgs` class, which is used to pass general game-related information as part of an event.
+- `RoomEventArgs.cs`: Defines the `RoomEventArgs` class, which is used to pass room-related information as part of an event.
+- `TowerEventArgs.cs`: Defines the `TowerEventArgs` class, which is used to pass tower-related information as part of an event.
+
+### GameLogic
+Scripts related to the core game logic, including the reward system, stat system, and the tower system (difficulty, floor, room, and tower management).
+
+#### Reward System
+- `RewardData.cs`: Defines the `RewardData` class, which represents the data for a single reward in the game.
+
+#### Stat System
+- `StatModifier.cs`: Defines the `StatModifier` class, which represents a modification to a character's statistic or attribute.
+
+#### Tower System
+- `Difficulty` folder:
+  - `DifficultyModifier.cs`: Defines the `DifficultyModifier` class, which represents a modifier to the overall difficulty of the tower.
+  - `FloorDifficulty.cs`: Defines the `FloorDifficulty` class, which represents the difficulty of a single floor in the tower.
+  - `LevelRequirement.cs`: Defines the `LevelRequirement` class, which represents the level requirement for accessing a specific floor in the tower.
+- `Floor` folder:
+  - `Floor.cs`: Defines the `Floor` class, which represents a single floor in the tower.
+  - `FloorData.cs`: Defines the `FloorData` class, which is used to store and serialize the data for a single floor.
+  - `FloorManager.cs`: Defines the `FloorManager` class, which is responsible for managing the overall floor system.
+- `Room` folder:
+  - `ChoiceConsequence.cs`: Defines the `ChoiceConsequence` class, which represents the consequences of a player's choice in a room.
+  - `Room.cs`: Defines the `Room` class, which represents a single room within the tower.
+  - `RoomChoice.cs`: Defines the `RoomChoice` class, which represents a single choice that the player can make in a room.
+  - `RoomData.cs`: Defines the `RoomData` class, which is used to store and serialize the data for a single room.
+  - `RoomManager.cs`: Defines the `RoomManager` class, which is responsible for managing the overall room system.
+  - `RoomRequirement.cs`: Defines the `RoomRequirement` class, which represents a set of conditions that must be met for a player to access a particular room.
+- `Tower` folder:
+  - `Tower.cs`: Defines the `Tower` class, which represents the overall tower structure.
+  - `TowerData.cs`: Defines the `TowerData` class, which is used to store and serialize the data for the entire tower.
+  - `TowerDataVersion.cs`: Defines the `TowerDataVersion` class, which represents a specific version of the tower data.
+  - `TowerManager.cs`: Defines the `TowerManager` class, which is responsible for managing the overall tower system.
+
+### Interfaces
+Scripts that define various interfaces used throughout the project, such as managers, manager containers, panels, and UI items.
+
+- `IManager.cs`: Defines the `IManager` interface, which is implemented by various managers in the game.
+- `IManagerContainer.cs`: Defines the `IManagerContainer` interface, which is implemented by objects that contain and manage multiple managers.
+- `IPanel.cs`: Defines the `IPanel` interface, which is implemented by UI panels in the game.
+- `IUIItem.cs`: Defines the `IUIItem` interface, which is implemented by UI items in the game.
+
+### Managers
+Scripts that implement the game's managers, responsible for handling different aspects of the game, such as events, the game state, the menu system, player data, and the user interface.
+
+- `EventManager.cs`: Defines the `EventManager` class, which is responsible for handling game events.
+- `GameManager.cs`: Defines the `GameManager` class, which is responsible for managing the overall game state and logic.
+- `ManagerContainer.cs`: Defines the `ManagerContainer` class, which is responsible for containing and managing multiple managers.
+- `MenuManager.cs`: Defines the `MenuManager` class, which is responsible for managing the game's menu system.
+- `PlayerManager.cs`: Defines the `PlayerManager` class, which is responsible for managing player-specific data and progression.
+- `UIManager.cs`: Defines the `UIManager` class, which is responsible for managing the game's user interface.
+- `UIManager_PanelControler.cs`: Defines the `UIManager_PanelController` class, which is responsible for controlling the visibility and state of UI panels.
+
+### Menus
+Scripts related to the game's menu system, such as the main menu.
+
+- `MainMenu` folder: Contains scripts related to the main menu UI and functionality.
+
+### Utils
+Utility scripts that provide helper functions, enumerations, constants, and other common functionality used across the project.
+
+- `GlobalEnums_Character.cs`: Defines global enumerations related to characters.
+- `GlobalEnums_Event.cs`: Defines global enumerations related to events.
+- `GlobalEnums_Game.cs`: Defines global enumerations related to general game mechanics.
+- `GlobalEnums_Tower.cs`: Defines global enumerations related to the tower system.
+- `GlobalEnums_UI.cs`: Defines global enumerations related to the user interface.
+- `UIConstants.cs`: Defines constants related to the user interface.
+- `Utils.cs`: Defines various utility functions used across the project.
+
+## UI
+This folder contains all the user interface-related scripts, prefabs, and scenes.
+
+### Controls
+Scripts that define various UI controls, including buttons, experience bars, generic items, labels, resource bars, stat displays, and stat progress bars. It also includes specialized tower-related UI controls, such as floor navigation, room navigation, and tower progress.
+
+- `UIButton_Item.cs`: Defines a custom UI button control.
+- `UIExperienceBar.cs`: Defines a UI experience bar control.
+- `UIGeneric_Item.cs`: Defines a generic UI item control.
+- `UILabel_Item.cs`: Defines a UI label control.
+- `UIResourceBar.cs`: Defines a UI resource bar control.
+- `UIStatDisplay.cs`: Defines a UI stat display control.
+- `UIStatProgressBar.cs`: Defines a UI stat progress bar control.
+- `Tower Controls` folder:
+  - `FloorNavigationItem.cs`: Defines a UI control for navigating between floors in the tower.
+  - `RoomDisplayConfig.cs`: Defines the configuration for displaying room-related UI elements.
+  - `RoomNavigationItem.cs`: Defines a UI control for navigating between rooms in the tower.
+  - `TowerNavigationPanel.cs`: Defines a UI panel for navigating the tower structure.
+  - `UIFloorNavigation.cs`: Defines a UI control for displaying the current floor in the tower.
+  - `UITowerProgress.cs`: Defines a UI control for displaying the player's progress through the tower.
+
+### Windows
+Scripts that define the different UI panels and windows displayed in the game, such as the character stats panel.
+
+- `CharacterStatsPanel.cs`: Defines a UI panel for displaying the player character's stats.
+- `UIContainer.cs`: Defines a base class for UI container elements.
+- `UIPanel.cs`: Defines a base class for UI panel elements.

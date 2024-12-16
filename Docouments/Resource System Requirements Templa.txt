@@ -1,0 +1,86 @@
+Resource System Requirements Template
+1. Core System Context
+
+Current version/state of resource system
+Related systems that interact with resources
+Non-modifiable components/constraints
+
+2. Resource Specifications
+Basic Resource Info
+
+Total number of resources
+Resource categories/types
+Special resource properties
+Resource state requirements (locked/unlocked)
+
+Resource Requirements
+
+Unlock conditions
+Scaling formulas
+Dependencies between resources
+Storage limits
+
+Collection Methods
+
+Available collectors
+Collection rates
+Multi-resource collection rules
+Collection limitations
+
+3. System Integration
+Event System
+
+Required events
+Event hierarchy
+Event args structure
+Event handling patterns
+
+Manager Integration
+
+Manager responsibilities
+Interface requirements
+Dependencies
+State management
+
+UI Integration
+
+UI update requirements
+User interaction patterns
+Display requirements
+Tooltip/info requirements
+
+4. New Features/Changes
+Feature Description
+
+Core functionality
+Technical requirements
+Integration points
+Expected behavior
+
+Impact Analysis
+
+Affected systems
+Required modifications
+Performance considerations
+Migration requirements
+
+5. Technical Constraints
+
+Performance requirements
+Memory limitations
+Threading considerations
+Platform-specific requirements
+
+6. Testing Requirements
+
+Unit test coverage
+Integration test needs
+Performance test criteria
+Edge cases to consider
+
+7. Documentation Needs
+
+API documentation
+Integration guides
+Usage examples
+Migration guides

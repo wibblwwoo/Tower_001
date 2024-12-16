@@ -1,0 +1,1466 @@
+# ProgressBar.cs
+using Godot;
+
+public partial class CustomProgressBar : Control
+{
+    [Export]
+    public float Value { get; set; } = 0;
+    
+    private ColorRect _background;
+    private ColorRect _fill;
+    
+    // Default colors
+    private readonly Color DEFAULT_BLUE = Colors.Blue;
+    private readonly Color DEFAULT_GREEN = Colors.Green;
+    private readonly Color DEFAULT_RED = Colors.Red;
+    private readonly Color DEFAULT_YELLOW = Colors.Yellow;
+    private readonly Color DEFAULT_BACKGROUND = Colors.Gray;
+    
+    // Current colors - these can be modified during runtime
+    [Export]
+    public Color BlueStageColor { get; set; }
+    [Export]
+    public Color GreenStageColor { get; set; }
+    [Export]
+    public Color RedStageColor { get; set; }
+    [Export]
+    public Color YellowStageColor { get; set; }
+    [Export]
+    public Color BackgroundColor { get; set; }
+    
+    public override void _Ready()
+    {
+        ResetColors();
+        
+        CustomMinimumSize = new Vector2(200, 20);
+        
+        _background = new ColorRect
+        {
+            Color = BackgroundColor,
+            CustomMinimumSize = CustomMinimumSize
+        };
+        AddChild(_background);
+        
+        _fill = new ColorRect
+        {
+            Color = BlueStageColor,
+            CustomMinimumSize = new Vector2(0, CustomMinimumSize.Y)
+        };
+        AddChild(_fill);
+    }
+    
+    public override void _Process(double delta)
+    {
+        _fill.Color = GetColorForProgress(Value);
+        _fill.Size = new Vector2((Value / 100) * Size.X, Size.Y);
+        _background.Color = BackgroundColor;
+        CheckProgress();
+    }
+    
+    /// <summary>
+    /// Resets all colors back to their default values
+    /// </summary>
+    public void ResetColors()
+    {
+        BlueStageColor = DEFAULT_BLUE;
+        GreenStageColor = DEFAULT_GREEN;
+        RedStageColor = DEFAULT_RED;
+        YellowStageColor = DEFAULT_YELLOW;
+        BackgroundColor = DEFAULT_BACKGROUND;
+    }
+    
+    /// <summary>
+    /// Resets the progress value back to 0
+    /// </summary>
+    public void ResetProgress()
+    {
+        Value = 0;
+    }
+    
+    /// <summary>
+    /// Resets both colors and progress to default values
+    /// </summary>
+    public void ResetAll()
+    {
+        ResetColors();
+        ResetProgress();
+    }
+    
+    /// <summary>
+    /// Sets custom colors for all stages at once
+    /// </summary>
+    public void SetCustomColors(Color blue, Color green, Color red, Color yellow, Color background)
+    {
+        BlueStageColor = blue;
+        GreenStageColor = green;
+        RedStageColor = red;
+        YellowStageColor = yellow;
+        BackgroundColor = background;
+    }
+    
+    private Color GetColorForProgress(float progress)
+    {
+        if (progress <= 25)
+        {
+            return LerpColor(BlueStageColor, GreenStageColor, progress / 25f);
+        }
+        else if (progress <= 50)
+        {
+            return LerpColor(GreenStageColor, RedStageColor, (progress - 25) / 25f);
+        }
+        else if (progress <= 75)
+        {
+            return LerpColor(RedStageColor, YellowStageColor, (progress - 50) / 25f);
+        }
+        else
+        {
+            return YellowStageColor;
+        }
+    }
+    
+    private Color LerpColor(Color fromColor, Color toColor, float weight)
+    {
+        weight = Mathf.Clamp(weight, 0, 1);
+        
+        return new Color(
+            Mathf.Lerp(fromColor.R, toColor.R, weight),
+            Mathf.Lerp(fromColor.G, toColor.G, weight),
+            Mathf.Lerp(fromColor.B, toColor.B, weight),
+            Mathf.Lerp(fromColor.A, toColor.A, weight)
+        );
+    }
+    
+    private void CheckProgress()
+    {
+        if (Value == 0) OnZeroProgress();
+        else if (Value == 25) OnQuarterProgress();
+        else if (Value == 50) OnHalfProgress();
+        else if (Value == 75) OnThreeQuarterProgress();
+        else if (Value == 100) OnFullProgress();
+    }
+    
+    private void OnZeroProgress() 
+    { 
+        // Event handling for 0%
+    }
+    
+    private void OnQuarterProgress() 
+    { 
+        // Event handling for 25%
+    }
+    
+    private void OnHalfProgress() 
+    { 
+        // Event handling for 50%
+    }
+    
+    private void OnThreeQuarterProgress() 
+    { 
+        // Event handling for 75%
+    }
+    
+    private void OnFullProgress() 
+    { 
+        // Event handling for 100%
+    }
+}
+
+var progressBar = GetNode<CustomProgressBar>("ProgressBar");
+
+// Reset everything to default
+progressBar.ResetAll();
+
+// Or just reset colors
+progressBar.ResetColors();
+
+// Or just reset progress
+progressBar.ResetProgress();
+
+// Set custom colors
+progressBar.SetCustomColors(
+    Colors.DarkBlue,
+    Colors.DarkGreen,
+    Colors.DarkRed,
+    Colors.Orange,
+    Colors.DarkGray
+);
+
+progressBar.BlueStageColor = Colors.DarkBlue;
+progressBar.BackgroundColor = Colors.Black;
+
+
+I'll show you how to create a scalable UI layout in Godot 4 using containers, particularly the HBoxContainer which is perfect for this horizontal split layout.
+Scalable UI LayoutClick to open code
+Here's how to use this in your Godot scene:
+
+Create a new scene with a Control node as the root
+Attach this script to the Control node
+Run the scene
+
+The layout will automatically:
+
+Fill the entire window
+Maintain the 25/75 split ratio when resizing
+Have a minimum width for the left panel (200 pixels)
+Scale with the window size while maintaining proportions
+
+If you want to add content to either panel, you can create methods to do so:
+csharpCopypublic void AddToLeftPanel(Control node)
+{
+    _leftPanel.AddChild(node);
+}
+
+public void AddToRightPanel(Control node)
+{
+    _rightPanel.AddChild(node);
+}
+You might also want to add containers inside each panel. Here's an extended version that includes that:
+Scalable UI Layout with Internal ContainersClick to open code
+This version includes:
+
+Internal VBoxContainers for vertical layout in each panel
+Padding and margins for better spacing
+Helper methods to add content to either panel
+An example method showing how to add content
+
+To use it:
+csharpCopyvar ui = GetNode<ScalableUI>("ScalableUI");
+
+// Add some content programmatically
+ui.AddExampleContent();
+
+// Or add custom controls
+var customControl = new Button { Text = "Custom Button" };
+ui.AddToLeftPanel(customControl);
+The UI will maintain its proportions and spacing regardless of window size, while keeping everything properly contained and organized. Would you like me to add any additional features or explain any part in more detail?
+
+
+# ScalableUI.cs
+using Godot;
+
+public partial class ScalableUI : Control
+{
+    private HBoxContainer _mainContainer;
+    private Panel _leftPanel;
+    private Panel _rightPanel;
+    private VBoxContainer _leftContainer;
+    private VBoxContainer _rightContainer;
+    
+    public override void _Ready()
+    {
+        // Make the control fill the window
+        AnchorsPreset = (int)LayoutPreset.FullRect;
+        
+        // Create the main container
+        _mainContainer = new HBoxContainer
+        {
+            AnchorsPreset = (int)LayoutPreset.FullRect
+        };
+        
+        // Left panel setup
+        _leftPanel = new Panel
+        {
+            CustomMinimumSize = new Vector2(200, 0)
+        };
+        
+        _leftContainer = new VBoxContainer
+        {
+            AnchorsPreset = (int)LayoutPreset.FullRect
+        };
+        _leftPanel.AddChild(_leftContainer);
+        
+        // Right panel setup
+        _rightPanel = new Panel();
+        _rightContainer = new VBoxContainer
+        {
+            AnchorsPreset = (int)LayoutPreset.FullRect
+        };
+        _rightPanel.AddChild(_rightContainer);
+        
+        // Add panels to main container
+        _mainContainer.AddChild(_leftPanel);
+        _mainContainer.AddChild(_rightPanel);
+        
+        // Set size flags for scaling
+        _leftPanel.SizeFlagsHorizontal = Control.SizeFlags.Expand | Control.SizeFlags.Fill;
+        _rightPanel.SizeFlagsHorizontal = Control.SizeFlags.Expand | Control.SizeFlags.Fill;
+        
+        // Set the stretch ratio for 25/75 split
+        _leftPanel.SizeFlagsStretchRatio = 25;
+        _rightPanel.SizeFlagsStretchRatio = 75;
+        
+        AddChild(_mainContainer);
+        
+        // Set panel colors
+        _leftPanel.AddThemeColorOverride("panel", new Color(0.2f, 0.2f, 0.3f));
+        _rightPanel.AddThemeColorOverride("panel", new Color(0.3f, 0.2f, 0.2f));
+        
+        // Add some padding to the containers
+        _leftContainer.AddThemeConstantOverride("separation", 10);
+        _rightContainer.AddThemeConstantOverride("separation", 10);
+        
+        // Set custom margins for the containers
+        var margin = new Margin(10, 10, 10, 10);
+        _leftContainer.Position = margin.Position;
+        _rightContainer.Position = margin.Position;
+    }
+    
+    public void AddToLeftPanel(Control node)
+    {
+        _leftContainer.AddChild(node);
+    }
+    
+    public void AddToRightPanel(Control node)
+    {
+        _rightContainer.AddChild(node);
+    }
+    
+    // Example of adding content programmatically
+    public void AddExampleContent()
+    {
+        // Add some content to the left panel
+        var leftButton = new Button { Text = "Left Panel Button" };
+        var leftLabel = new Label { Text = "Left Panel Content" };
+        AddToLeftPanel(leftButton);
+        AddToLeftPanel(leftLabel);
+        
+        // Add some content to the right panel
+        var rightButton = new Button { Text = "Right Panel Button" };
+        var rightLabel = new Label { Text = "Right Panel Content" };
+        AddToRightPanel(rightButton);
+        AddToRightPanel(rightLabel);
+    }
+}
+
+
+I'll modify the right panel to include three sections with the specified proportions using a VBoxContainer.
+Scalable UI Layout with Nested SectionsClick to open code
+The key changes in this version:
+
+The right panel (75% of total width) is now divided into three vertical sections:
+
+Top section (10% of height)
+Middle section (70% of height)
+Bottom section (20% of height)
+
+
+Each section maintains its proportions when the window is resized
+Added helper methods to add content to each section
+Added different colors to each section for easy visual debugging
+Organized the code into separate setup methods for better readability
+
+You can use it like this:
+csharpCopyvar ui = GetNode<ScalableUI>("ScalableUI");
+
+// Add example content to see the layout
+ui.AddExampleContent();
+
+// Or add custom controls to specific sections
+var topButton = new Button { Text = "Top Section Button" };
+ui.AddToRightTopSection(topButton);
+
+var middleContent = new TextEdit { Text = "Middle Section Content" };
+ui.AddToRightMiddleSection(middleContent);
+
+var bottomButton = new Button { Text = "Bottom Section Button" };
+ui.AddToRightBottomSection(bottomButton);
+Each section will maintain its proportions when the window is resized, and you can add any type of Control node to each section. The colors make it easy to see the boundaries between sections during development.
+Would you like me to add any additional features, such as:
+
+Containers within each section for better content organization
+Spacing or margin controls
+Methods to dynamically adjust the proportions
+Any other specific functionality?
+
+# ScalableUI.cs
+using Godot;
+
+public partial class ScalableUI : Control
+{
+    private HBoxContainer _mainContainer;
+    private Panel _leftPanel;
+    private Panel _rightPanel;
+    
+    // Left section container
+    private VBoxContainer _leftContainer;
+    
+    // Right section containers
+    private VBoxContainer _rightMainContainer;
+    private Panel _rightTopSection;
+    private Panel _rightMiddleSection;
+    private Panel _rightBottomSection;
+    
+    public override void _Ready()
+    {
+        SetupMainLayout();
+        SetupLeftPanel();
+        SetupRightPanel();
+        ApplyColors(); // For visual debugging
+    }
+    
+    private void SetupMainLayout()
+    {
+        // Make the control fill the window
+        AnchorsPreset = (int)LayoutPreset.FullRect;
+        
+        // Create the main container
+        _mainContainer = new HBoxContainer
+        {
+            AnchorsPreset = (int)LayoutPreset.FullRect
+        };
+        AddChild(_mainContainer);
+    }
+    
+    private void SetupLeftPanel()
+    {
+        // Left panel (25%)
+        _leftPanel = new Panel
+        {
+            CustomMinimumSize = new Vector2(200, 0)
+        };
+        
+        _leftContainer = new VBoxContainer
+        {
+            AnchorsPreset = (int)LayoutPreset.FullRect
+        };
+        
+        _leftPanel.AddChild(_leftContainer);
+        _mainContainer.AddChild(_leftPanel);
+        
+        // Set size flags for the left panel
+        _leftPanel.SizeFlagsHorizontal = Control.SizeFlags.Expand | Control.SizeFlags.Fill;
+        _leftPanel.SizeFlagsStretchRatio = 25;
+        
+        // Add margins to left container
+        var margin = new Margin(10, 10, 10, 10);
+        _leftContainer.Position = margin.Position;
+    }
+    
+    private void SetupRightPanel()
+    {
+        // Right panel (75%)
+        _rightPanel = new Panel();
+        _mainContainer.AddChild(_rightPanel);
+        
+        // Main container for right panel sections
+        _rightMainContainer = new VBoxContainer
+        {
+            AnchorsPreset = (int)LayoutPreset.FullRect
+        };
+        _rightPanel.AddChild(_rightMainContainer);
+        
+        // Top section (10%)
+        _rightTopSection = new Panel();
+        _rightMainContainer.AddChild(_rightTopSection);
+        _rightTopSection.SizeFlagsVertical = Control.SizeFlags.Expand | Control.SizeFlags.Fill;
+        _rightTopSection.SizeFlagsStretchRatio = 10;
+        
+        // Middle section (70%)
+        _rightMiddleSection = new Panel();
+        _rightMainContainer.AddChild(_rightMiddleSection);
+        _rightMiddleSection.SizeFlagsVertical = Control.SizeFlags.Expand | Control.SizeFlags.Fill;
+        _rightMiddleSection.SizeFlagsStretchRatio = 70;
+        
+        // Bottom section (20%)
+        _rightBottomSection = new Panel();
+        _rightMainContainer.AddChild(_rightBottomSection);
+        _rightBottomSection.SizeFlagsVertical = Control.SizeFlags.Expand | Control.SizeFlags.Fill;
+        _rightBottomSection.SizeFlagsStretchRatio = 20;
+        
+        // Set size flags for the right panel
+        _rightPanel.SizeFlagsHorizontal = Control.SizeFlags.Expand | Control.SizeFlags.Fill;
+        _rightPanel.SizeFlagsStretchRatio = 75;
+        
+        // Add margins to right container
+        var margin = new Margin(10, 10, 10, 10);
+        _rightMainContainer.Position = margin.Position;
+    }
+    
+    private void ApplyColors()
+    {
+        // Set different colors for each panel to make sections visible
+        _leftPanel.AddThemeColorOverride("panel", new Color(0.2f, 0.2f, 0.3f));
+        _rightTopSection.AddThemeColorOverride("panel", new Color(0.3f, 0.2f, 0.2f));
+        _rightMiddleSection.AddThemeColorOverride("panel", new Color(0.2f, 0.3f, 0.2f));
+        _rightBottomSection.AddThemeColorOverride("panel", new Color(0.2f, 0.2f, 0.4f));
+    }
+    
+    // Helper methods to add content to each section
+    public void AddToLeftPanel(Control node)
+    {
+        _leftContainer.AddChild(node);
+    }
+    
+    public void AddToRightTopSection(Control node)
+    {
+        _rightTopSection.AddChild(node);
+    }
+    
+    public void AddToRightMiddleSection(Control node)
+    {
+        _rightMiddleSection.AddChild(node);
+    }
+    
+    public void AddToRightBottomSection(Control node)
+    {
+        _rightBottomSection.AddChild(node);
+    }
+    
+    // Example method to demonstrate usage
+    public void AddExampleContent()
+    {
+        // Left panel content
+        var leftLabel = new Label { Text = "Left Panel (25%)" };
+        AddToLeftPanel(leftLabel);
+        
+        // Right top section content
+        var topLabel = new Label { Text = "Top Section (10%)" };
+        AddToRightTopSection(topLabel);
+        
+        // Right middle section content
+        var middleLabel = new Label { Text = "Middle Section (70%)" };
+        AddToRightMiddleSection(middleLabel);
+        
+        // Right bottom section content
+        var bottomLabel = new Label { Text = "Bottom Section (20%)" };
+        AddToRightBottomSection(bottomLabel);
+    }
+}
+
+this looks good. ok. another logic problem.For example
+a button. lets call it new game. needs to hide a bunch of panels on both Left side and Middle. and then turn on a series of panels on both left side and middle. it also had to do the same with buttons.
+for example on the left hand side we might have these buttons
+New Game
+Load Game
+Save Game
+Settings
+on the right we might have a panel with a text box with a story in it lets called it txtstory
+when the user clicks the button new game.  all the button on the left (New Game,Load Game,Save Game,Settings) need to hide. then the panel with txtstory needs to be hide
+then new buttons on the left needs to be showm (Character / Skills / Tower/ Town / Inventory)
+and each of those buttons will have several panels to show in the right had side. how would we best do this. I don't like the idea of hardcoding it all to work. can you think of a dynamic way to do it. maybe we make the new game item inherate from a specific class called iNewGame and any panel / button that has that then get hidden or shown when a event is called?
+
+
+I'll create a system using interfaces and events to manage UI state changes dynamically. This approach will be flexible and reusable.
+
+Ah, good catch! We can create an automatic registration system using attributes and node groups in Godot. This will allow controls to self-register based on their state.
+Auto-Registering UI State Management SystemClick to open code
+Key changes:
+
+Added a UIStateAttribute to mark controls with their state and group
+Controls now self-register through attributes instead of manual registration
+UIStateManager automatically scans the scene tree for controls with the attribute
+Created specific control classes for each type of button/panel
+No more manual group creation - groups are created automatically based on attributes
+
+To use this system:
+
+Create a new control type:
+
+csharpCopy[UIState(UIStates.CHARACTER_VIEW, "CharacterPanels")]
+public partial class CharacterPanel : Panel, IUIState
+{
+    public string StateName => UIStates.CHARACTER_VIEW;
+    public bool IsVisible { get; set; }
+    
+    public void Show() => Visible = true;
+    public void Hide() => Visible = false;
+}
+
+Just add it to the scene tree:
+
+csharpCopyvar characterPanel = new CharacterPanel();
+rightPanel.AddChild(characterPanel);
+That's it! The panel will automatically register itself with the correct state and group.
+Benefits of this approach:
+
+No manual registration required
+Controls know their own state and group
+More maintainable - adding new controls is just creating a new class
+Less error-prone - no forgetting to register controls
+More scalable - easily add new states and groups
+
+You can even have controls belong to multiple states:
+csharpCopy[UIState(UIStates.MAIN_MENU, "MainMenuButtons")]
+[UIState(UIStates.GAME_MENU, "GameMenuButtons")]
+public partial class SharedButton : Button, IUIState
+{
+    // This button will show in both states
+}
+Would you like me to add any additional features or explain any part in more detail?
+
+------------------------------------------------------------------------------------------------------------------------------
+Ah, good catch! We can create an automatic registration system using attributes and node groups in Godot. This will allow controls to self-register based on their state.
+Auto-Registering UI State Management SystemClick to open code
+Key changes:
+
+Added a UIStateAttribute to mark controls with their state and group
+Controls now self-register through attributes instead of manual registration
+UIStateManager automatically scans the scene tree for controls with the attribute
+Created specific control classes for each type of button/panel
+No more manual group creation - groups are created automatically based on attributes
+
+To use this system:
+
+Create a new control type:
+
+csharpCopy[UIState(UIStates.CHARACTER_VIEW, "CharacterPanels")]
+public partial class CharacterPanel : Panel, IUIState
+{
+    public string StateName => UIStates.CHARACTER_VIEW;
+    public bool IsVisible { get; set; }
+    
+    public void Show() => Visible = true;
+    public void Hide() => Visible = false;
+}
+
+Just add it to the scene tree:
+
+csharpCopyvar characterPanel = new CharacterPanel();
+rightPanel.AddChild(characterPanel);
+That's it! The panel will automatically register itself with the correct state and group.
+Benefits of this approach:
+
+No manual registration required
+Controls know their own state and group
+More maintainable - adding new controls is just creating a new class
+Less error-prone - no forgetting to register controls
+More scalable - easily add new states and groups
+
+You can even have controls belong to multiple states:
+csharpCopy[UIState(UIStates.MAIN_MENU, "MainMenuButtons")]
+[UIState(UIStates.GAME_MENU, "GameMenuButtons")]
+public partial class SharedButton : Button, IUIState
+{
+    // This button will show in both states
+}
+Would you like me to add any additional features or explain any part in more detail?
+------------------------------------------------------------------------------------------------
+
+Let's expand the system with additional features that would make it more robust and versatile. Here are several enhancements we could add:
+
+Transitions/Animations
+State History & Navigation
+UI Layer Management
+Save/Load UI State
+Responsive Design Support
+Event System
+
+I'll implement these expansions:
+Enhanced UI SystemClick to open code
+This expanded system adds:
+
+Animations and Transitions
+
+Smooth fade in/out
+Scale transitions
+Customizable easing and duration
+
+
+State History
+
+Back navigation support
+State history tracking
+State change events
+
+
+Layer Management
+
+Multiple UI layers (background, main, overlay, popup, modal)
+Proper z-index handling
+Easy layer switching
+
+
+Responsive Design
+
+Breakpoint system
+Layout adjustments based on screen size
+Responsive events
+
+
+Event System
+
+Custom UI events
+Event subscription/publishing
+Decoupled communication
+
+
+Enhanced State Management
+
+Async state changes
+Transition animations
+State change hooks
+
+
+
+To use these new features:
+csharpCopy// Animate state changes
+await _stateManager.ChangeStateAsync(UIStates.GAME_MENU);
+
+// Go back to previous state
+await _stateManager.GoBack();
+
+// Add control to specific layer
+_layerManager.AddToLayer(myControl, UILayer.Overlay);
+
+// Subscribe to UI events
+_eventManager.Subscribe("InventoryOpened", (data) => {
+    // Handle inventory opened
+});
+
+// Raise UI events
+_eventManager.RaiseEvent("InventoryOpened", new { ItemCount = 10 });
+Would you like me to:
+
+Add more features like UI themes or accessibility support?
+Add more example implementations?
+Explain any part in more detail?
+Add additional UI controls with specific functionality?
+
+
+# Extensions/TransitionSettings.cs
+public class TransitionSettings
+{
+    public float Duration { get; set; } = 0.3f;
+    public Tween.TransitionType TransitionType { get; set; } = Tween.TransitionType.Sine;
+    public Tween.EaseType EaseType { get; set; } = Tween.EaseType.InOut;
+    public bool UseAlpha { get; set; } = true;
+    public bool UseScale { get; set; } = false;
+}
+
+# Interfaces/IUITransitionable.cs
+public interface IUITransitionable
+{
+    TransitionSettings TransitionSettings { get; }
+    Task ShowWithTransition();
+    Task HideWithTransition();
+}
+
+# Managers/UIAnimationManager.cs
+public class UIAnimationManager : Node
+{
+    private Dictionary<IUITransitionable, Tween> _activeTweens = new Dictionary<IUITransitionable, Tween>();
+    
+    public async Task AnimateShow(Control control, TransitionSettings settings)
+    {
+        if (control is IUITransitionable transitionable)
+        {
+            // Stop any active tween
+            if (_activeTweens.ContainsKey(transitionable))
+            {
+                _activeTweens[transitionable].Kill();
+                _activeTweens.Remove(transitionable);
+            }
+            
+            control.Visible = true;
+            var tween = CreateTween();
+            _activeTweens[transitionable] = tween;
+            
+            if (settings.UseAlpha)
+            {
+                control.Modulate = new Color(1, 1, 1, 0);
+                tween.TweenProperty(control, "modulate:a", 1.0f, settings.Duration)
+                     .SetTrans(settings.TransitionType)
+                     .SetEase(settings.EaseType);
+            }
+            
+            if (settings.UseScale)
+            {
+                control.Scale = Vector2.Zero;
+                tween.TweenProperty(control, "scale", Vector2.One, settings.Duration)
+                     .SetTrans(settings.TransitionType)
+                     .SetEase(settings.EaseType);
+            }
+            
+            await ToSignal(tween, "finished");
+        }
+    }
+    
+    public async Task AnimateHide(Control control, TransitionSettings settings)
+    {
+        if (control is IUITransitionable transitionable)
+        {
+            var tween = CreateTween();
+            _activeTweens[transitionable] = tween;
+            
+            if (settings.UseAlpha)
+            {
+                tween.TweenProperty(control, "modulate:a", 0.0f, settings.Duration)
+                     .SetTrans(settings.TransitionType)
+                     .SetEase(settings.EaseType);
+            }
+            
+            if (settings.UseScale)
+            {
+                tween.TweenProperty(control, "scale", Vector2.Zero, settings.Duration)
+                     .SetTrans(settings.TransitionType)
+                     .SetEase(settings.EaseType);
+            }
+            
+            await ToSignal(tween, "finished");
+            control.Visible = false;
+        }
+    }
+}
+
+# Managers/UIHistoryManager.cs
+public class UIHistoryManager : Node
+{
+    private Stack<string> _stateHistory = new Stack<string>();
+    private string _currentState;
+    
+    public void PushState(string state)
+    {
+        if (_currentState != null)
+        {
+            _stateHistory.Push(_currentState);
+        }
+        _currentState = state;
+    }
+    
+    public string PopState()
+    {
+        if (_stateHistory.Count > 0)
+        {
+            _currentState = _stateHistory.Pop();
+            return _currentState;
+        }
+        return null;
+    }
+    
+    public void ClearHistory()
+    {
+        _stateHistory.Clear();
+    }
+}
+
+# Managers/UILayerManager.cs
+public class UILayerManager : Node
+{
+    public enum UILayer
+    {
+        Background,
+        Main,
+        Overlay,
+        Popup,
+        Modal
+    }
+    
+    private Dictionary<UILayer, CanvasLayer> _layers = new Dictionary<UILayer, CanvasLayer>();
+    
+    public override void _Ready()
+    {
+        foreach (UILayer layer in Enum.GetValues(typeof(UILayer)))
+        {
+            var canvasLayer = new CanvasLayer
+            {
+                Layer = (int)layer
+            };
+            AddChild(canvasLayer);
+            _layers[layer] = canvasLayer;
+        }
+    }
+    
+    public void AddToLayer(Control control, UILayer layer)
+    {
+        if (_layers.TryGetValue(layer, out var canvasLayer))
+        {
+            if (control.GetParent() != null)
+            {
+                control.GetParent().RemoveChild(control);
+            }
+            canvasLayer.AddChild(control);
+        }
+    }
+}
+
+# Extensions/ResponsiveContainer.cs
+public partial class ResponsiveContainer : Container
+{
+    public enum BreakPoint
+    {
+        Small,
+        Medium,
+        Large
+    }
+    
+    [Export]
+    public Vector2 SmallBreakpoint { get; set; } = new Vector2(0, 640);
+    
+    [Export]
+    public Vector2 MediumBreakpoint { get; set; } = new Vector2(641, 1200);
+    
+    [Export]
+    public Vector2 LargeBreakpoint { get; set; } = new Vector2(1201, float.MaxValue);
+    
+    private BreakPoint _currentBreakpoint = BreakPoint.Medium;
+    
+    [Signal]
+    public delegate void BreakpointChangedEventHandler(BreakPoint newBreakpoint);
+    
+    public override void _Process(double delta)
+    {
+        UpdateBreakpoint();
+    }
+    
+    private void UpdateBreakpoint()
+    {
+        var width = GetViewport().GetVisibleRect().Size.X;
+        var newBreakpoint = GetBreakpointForWidth(width);
+        
+        if (newBreakpoint != _currentBreakpoint)
+        {
+            _currentBreakpoint = newBreakpoint;
+            EmitSignal(SignalName.BreakpointChanged, _currentBreakpoint);
+            QueueSort();
+        }
+    }
+    
+    private BreakPoint GetBreakpointForWidth(float width)
+    {
+        if (width <= SmallBreakpoint.Y) return BreakPoint.Small;
+        if (width <= MediumBreakpoint.Y) return BreakPoint.Medium;
+        return BreakPoint.Large;
+    }
+}
+
+# Events/UIEventManager.cs
+public class UIEventManager : Node
+{
+    private Dictionary<string, List<Action<object>>> _eventHandlers = 
+        new Dictionary<string, List<Action<object>>>();
+    
+    public void Subscribe(string eventName, Action<object> handler)
+    {
+        if (!_eventHandlers.ContainsKey(eventName))
+        {
+            _eventHandlers[eventName] = new List<Action<object>>();
+        }
+        _eventHandlers[eventName].Add(handler);
+    }
+    
+    public void Unsubscribe(string eventName, Action<object> handler)
+    {
+        if (_eventHandlers.ContainsKey(eventName))
+        {
+            _eventHandlers[eventName].Remove(handler);
+        }
+    }
+    
+    public void RaiseEvent(string eventName, object data = null)
+    {
+        if (_eventHandlers.ContainsKey(eventName))
+        {
+            foreach (var handler in _eventHandlers[eventName])
+            {
+                handler.Invoke(data);
+            }
+        }
+    }
+}
+
+# Updated UIStateManager with new features
+public partial class UIStateManager : Node
+{
+    private UIHistoryManager _historyManager;
+    private UILayerManager _layerManager;
+    private UIAnimationManager _animationManager;
+    private UIEventManager _eventManager;
+    
+    [Signal]
+    public delegate void BeforeStateChangeEventHandler(string currentState, string newState);
+    
+    public override void _Ready()
+    {
+        base._Ready();
+        
+        _historyManager = new UIHistoryManager();
+        _layerManager = new UILayerManager();
+        _animationManager = new UIAnimationManager();
+        _eventManager = new UIEventManager();
+        
+        AddChild(_historyManager);
+        AddChild(_layerManager);
+        AddChild(_animationManager);
+        AddChild(_eventManager);
+    }
+    
+    public async Task ChangeStateAsync(string newState)
+    {
+        EmitSignal(SignalName.BeforeStateChange, CurrentState, newState);
+        _eventManager.RaiseEvent("StateChanging", new { OldState = CurrentState, NewState = newState });
+        
+        var hideTask = HideCurrentState();
+        await hideTask;
+        
+        _historyManager.PushState(newState);
+        CurrentState = newState;
+        
+        var showTask = ShowNewState(newState);
+        await showTask;
+        
+        _eventManager.RaiseEvent("StateChanged", newState);
+    }
+    
+    public async Task GoBack()
+    {
+        var previousState = _historyManager.PopState();
+        if (previousState != null)
+        {
+            await ChangeStateAsync(previousState);
+        }
+    }
+    
+    private async Task HideCurrentState()
+    {
+        var hideTasks = new List<Task>();
+        
+        foreach (var control in GetCurrentStateControls())
+        {
+            if (control is IUITransitionable transitionable)
+            {
+                hideTasks.Add(_animationManager.AnimateHide(control as Control, transitionable.TransitionSettings));
+            }
+            else
+            {
+                control.Hide();
+            }
+        }
+        
+        await Task.WhenAll(hideTasks);
+    }
+    
+    private async Task ShowNewState(string newState)
+    {
+        var showTasks = new List<Task>();
+        
+        foreach (var control in GetStateControls(newState))
+        {
+            if (control is IUITransitionable transitionable)
+            {
+                showTasks.Add(_animationManager.AnimateShow(control as Control, transitionable.TransitionSettings));
+            }
+            else
+            {
+                control.Show();
+            }
+        }
+        
+        await Task.WhenAll(showTasks);
+    }
+}
+
+# Example Usage:
+public partial class GameUI : ScalableUI
+{
+    private UIStateManager _stateManager;
+    
+    public override void _Ready()
+    {
+        base._Ready();
+        
+        _stateManager = new UIStateManager();
+        AddChild(_stateManager);
+        
+        // Subscribe to state change events
+        _stateManager.BeforeStateChange += (currentState, newState) =>
+        {
+            GD.Print($"Changing state from {currentState} to {newState}");
+        };
+        
+        // Handle responsive design
+        var responsive = new ResponsiveContainer();
+        responsive.BreakpointChanged += (BreakPoint newBreakpoint) =>
+        {
+            UpdateLayoutForBreakpoint(newBreakpoint);
+        };
+        
+        // Example of using the event system
+        var eventManager = GetNode<UIEventManager>("UIEventManager");
+        eventManager.Subscribe("PlayerHealthChanged", (data) =>
+        {
+            if (data is float health)
+            {
+                UpdateHealthUI(health);
+            }
+        });
+    }
+    
+    private void UpdateLayoutForBreakpoint(ResponsiveContainer.BreakPoint breakpoint)
+    {
+        switch (breakpoint)
+        {
+            case ResponsiveContainer.BreakPoint.Small:
+                // Adjust layout for small screens
+                break;
+            case ResponsiveContainer.BreakPoint.Medium:
+                // Adjust layout for medium screens
+                break;
+            case ResponsiveContainer.BreakPoint.Large:
+                // Adjust layout for large screens
+                break;
+        }
+    }
+    
+    private void UpdateHealthUI(float health)
+    {
+        // Update health UI elements
+    }
+}
+
+------------------------------------------------------------------------------------------------------------
+
+
+'ll expand on the Layer Management system and explain how it works in detail, along with practical examples.
+Detailed UI Layer Management SystemClick to open code
+The Layer Management system provides:
+
+Layer Hierarchy
+
+Predefined layers with specific purposes (Background to Debug)
+Each layer has its own CanvasLayer node for proper z-indexing
+Controls can be easily moved between layers
+
+
+Layer Configuration
+
+Visibility control
+Interaction control (enable/disable input)
+Opacity settings
+Background tinting
+Layer blocking (prevent interaction with lower layers)
+
+
+Automatic Layer Assignment
+
+Controls can implement IUILayerable to specify their default layer
+Layer manager handles proper parent-child relationships
+Maintains control-to-layer mapping
+
+
+Modal System
+
+Show modal windows with semi-transparent backgrounds
+Automatically disable interaction with lower layers
+Easy modal management functions
+
+
+
+Usage examples:
+csharpCopy// Basic usage
+_layerManager.AddToLayer(myControl, UILayerType.HUD);
+
+// Show a modal window
+var confirmDialog = new ConfirmationDialog();
+_layerManager.ShowModal(confirmDialog);
+
+// Configure a layer
+_layerManager.ConfigureLayer(UILayerType.Overlay, new LayerConfiguration
+{
+    IsVisible = true,
+    IsInteractable = true,
+    Opacity = 0.8f,
+    BlocksLowerLayers = false
+});
+
+// Show/hide layers
+_layerManager.ShowLayer(UILayerType.Tutorial);
+_layerManager.HideLayer(UILayerType.Debug);
+
+// Make a layer non-interactable
+_layerManager.SetLayerInteractable(UILayerType.Game, false);
+This system is particularly useful for:
+
+Managing complex UI hierarchies
+Handling modal windows and popups
+Creating tutorial overlays
+Managing HUD elements
+Debugging UI issues
+
+Would you like me to:
+
+Add more examples of specific use cases?
+Explain how to handle specific scenarios?
+Add more layer management features?
+Show how to integrate this with the state management system?
+
+# Enums/UILayerType.cs
+public enum UILayerType
+{
+    Background = 0,     // Lowest layer, for backgrounds and decorative elements
+    Game = 1,          // Main game UI elements
+    HUD = 2,           // Heads up display, status bars, minimap
+    Overlay = 3,       // Tooltips, notifications, floating information
+    Window = 4,        // Game windows like inventory, character stats
+    Modal = 5,         // Modal windows that block interaction with lower layers
+    Popup = 6,         // Popups, confirmations, alerts
+    Tutorial = 7,      // Tutorial overlays and highlights
+    Loading = 8,       // Loading screens and transitions
+    Debug = 9          // Debug information, highest layer
+}
+
+# Interfaces/IUILayerable.cs
+public interface IUILayerable
+{
+    UILayerType DefaultLayer { get; }
+    bool BlocksLowerLayers { get; }
+    Color BackgroundTint { get; }
+}
+
+# Classes/LayerConfiguration.cs
+public class LayerConfiguration
+{
+    public bool IsVisible { get; set; } = true;
+    public bool IsInteractable { get; set; } = true;
+    public float Opacity { get; set; } = 1.0f;
+    public Color BackgroundTint { get; set; } = Colors.Transparent;
+    public bool BlocksLowerLayers { get; set; }
+}
+
+# Managers/UILayerManager.cs
+public class UILayerManager : Node
+{
+    private Dictionary<UILayerType, CanvasLayer> _layers = new Dictionary<UILayerType, CanvasLayer>();
+    private Dictionary<UILayerType, LayerConfiguration> _layerConfigs = new Dictionary<UILayerType, LayerConfiguration>();
+    private Dictionary<Control, UILayerType> _controlLayerMap = new Dictionary<Control, UILayerType>();
+    
+    [Signal]
+    public delegate void LayerVisibilityChangedEventHandler(UILayerType layer, bool isVisible);
+    [Signal]
+    public delegate void LayerInteractionChangedEventHandler(UILayerType layer, bool isInteractable);
+    
+    public override void _Ready()
+    {
+        InitializeLayers();
+    }
+    
+    private void InitializeLayers()
+    {
+        // Create all layers in order
+        foreach (UILayerType layerType in Enum.GetValues(typeof(UILayerType)))
+        {
+            CreateLayer(layerType);
+        }
+    }
+    
+    private void CreateLayer(UILayerType layerType)
+    {
+        var canvasLayer = new CanvasLayer
+        {
+            Layer = (int)layerType,
+            Name = $"Layer_{layerType}"
+        };
+        
+        // Add a Panel as background for the layer
+        var background = new Panel
+        {
+            Name = $"Background_{layerType}",
+            MouseFilter = Control.MouseFilterEnum.Ignore
+        };
+        background.AnchorsPreset = (int)Control.LayoutPreset.FullRect;
+        background.Visible = false; // Initially invisible
+        
+        canvasLayer.AddChild(background);
+        AddChild(canvasLayer);
+        
+        _layers[layerType] = canvasLayer;
+        _layerConfigs[layerType] = new LayerConfiguration();
+    }
+    
+    public void AddToLayer(Control control, UILayerType? layerType = null)
+    {
+        // If no layer specified, try to get it from IUILayerable
+        if (!layerType.HasValue && control is IUILayerable layerable)
+        {
+            layerType = layerable.DefaultLayer;
+        }
+        
+        // Default to Game layer if still no layer specified
+        layerType ??= UILayerType.Game;
+        
+        // Remove from current parent if exists
+        if (control.GetParent() != null)
+        {
+            control.GetParent().RemoveChild(control);
+        }
+        
+        // Add to new layer
+        if (_layers.TryGetValue(layerType.Value, out var layer))
+        {
+            layer.AddChild(control);
+            _controlLayerMap[control] = layerType.Value;
+            
+            // Apply layer configuration
+            ApplyLayerConfigToControl(control, layerType.Value);
+        }
+    }
+    
+    private void ApplyLayerConfigToControl(Control control, UILayerType layerType)
+    {
+        if (_layerConfigs.TryGetValue(layerType, out var config))
+        {
+            control.Visible = config.IsVisible;
+            control.MouseFilter = config.IsInteractable ? 
+                Control.MouseFilterEnum.Stop : 
+                Control.MouseFilterEnum.Ignore;
+            
+            // Apply opacity
+            var modulate = control.Modulate;
+            modulate.A = config.Opacity;
+            control.Modulate = modulate;
+        }
+    }
+    
+    public void ConfigureLayer(UILayerType layerType, LayerConfiguration config)
+    {
+        _layerConfigs[layerType] = config;
+        
+        // Update background panel
+        if (_layers.TryGetValue(layerType, out var layer))
+        {
+            var background = layer.GetNode<Panel>($"Background_{layerType}");
+            background.Visible = config.BlocksLowerLayers;
+            background.Modulate = config.BackgroundTint;
+            
+            // Update all controls in this layer
+            foreach (var control in GetControlsInLayer(layerType))
+            {
+                ApplyLayerConfigToControl(control, layerType);
+            }
+        }
+    }
+    
+    public void ShowLayer(UILayerType layerType)
+    {
+        if (_layerConfigs.TryGetValue(layerType, out var config))
+        {
+            config.IsVisible = true;
+            foreach (var control in GetControlsInLayer(layerType))
+            {
+                control.Visible = true;
+            }
+            EmitSignal(SignalName.LayerVisibilityChanged, layerType, true);
+        }
+    }
+    
+    public void HideLayer(UILayerType layerType)
+    {
+        if (_layerConfigs.TryGetValue(layerType, out var config))
+        {
+            config.IsVisible = false;
+            foreach (var control in GetControlsInLayer(layerType))
+            {
+                control.Visible = false;
+            }
+            EmitSignal(SignalName.LayerVisibilityChanged, layerType, false);
+        }
+    }
+    
+    public void SetLayerInteractable(UILayerType layerType, bool interactable)
+    {
+        if (_layerConfigs.TryGetValue(layerType, out var config))
+        {
+            config.IsInteractable = interactable;
+            foreach (var control in GetControlsInLayer(layerType))
+            {
+                control.MouseFilter = interactable ? 
+                    Control.MouseFilterEnum.Stop : 
+                    Control.MouseFilterEnum.Ignore;
+            }
+            EmitSignal(SignalName.LayerInteractionChanged, layerType, interactable);
+        }
+    }
+    
+    private IEnumerable<Control> GetControlsInLayer(UILayerType layerType)
+    {
+        return _controlLayerMap.Where(kvp => kvp.Value == layerType)
+                              .Select(kvp => kvp.Key);
+    }
+    
+    // Example of how to handle modal windows
+    public void ShowModal(Control modalControl)
+    {
+        // Configure modal layer
+        ConfigureLayer(UILayerType.Modal, new LayerConfiguration
+        {
+            IsVisible = true,
+            IsInteractable = true,
+            BlocksLowerLayers = true,
+            BackgroundTint = new Color(0, 0, 0, 0.5f) // Semi-transparent black
+        });
+        
+        // Disable interaction with lower layers
+        foreach (var layerType in Enum.GetValues(typeof(UILayerType)))
+        {
+            if ((UILayerType)layerType < UILayerType.Modal)
+            {
+                SetLayerInteractable((UILayerType)layerType, false);
+            }
+        }
+        
+        AddToLayer(modalControl, UILayerType.Modal);
+    }
+    
+    public void HideModal()
+    {
+        // Hide modal layer
+        HideLayer(UILayerType.Modal);
+        
+        // Re-enable interaction with lower layers
+        foreach (var layerType in Enum.GetValues(typeof(UILayerType)))
+        {
+            if ((UILayerType)layerType < UILayerType.Modal)
+            {
+                SetLayerInteractable((UILayerType)layerType, true);
+            }
+        }
+    }
+}
+
+# Example Usage Class
+public partial class GameUI : Control
+{
+    private UILayerManager _layerManager;
+    
+    public override void _Ready()
+    {
+        _layerManager = new UILayerManager();
+        AddChild(_layerManager);
+        
+        // Example: Setting up HUD elements
+        var healthBar = new ProgressBar();
+        _layerManager.AddToLayer(healthBar, UILayerType.HUD);
+        
+        // Example: Creating a modal window
+        var inventoryWindow = new InventoryWindow();
+        _layerManager.ShowModal(inventoryWindow);
+        
+        // Example: Adding a tooltip
+        var tooltip = new TooltipPanel();
+        _layerManager.AddToLayer(tooltip, UILayerType.Overlay);
+        
+        // Example: Configure layers
+        _layerManager.ConfigureLayer(UILayerType.HUD, new LayerConfiguration
+        {
+            IsVisible = true,
+            IsInteractable = true,
+            Opacity = 0.9f
+        });
+        
+        // Example: Handling tutorial overlay
+        var tutorialOverlay = new TutorialPanel();
+        _layerManager.AddToLayer(tutorialOverlay, UILayerType.Tutorial);
+        _layerManager.ConfigureLayer(UILayerType.Tutorial, new LayerConfiguration
+        {
+            BlocksLowerLayers = true,
+            BackgroundTint = new Color(0, 0, 0, 0.3f)
+        });
+    }
+}
+
+# Example Layerable Control
+public partial class InventoryWindow : Control, IUILayerable
+{
+    public UILayerType DefaultLayer => UILayerType.Window;
+    public bool BlocksLowerLayers => false;
+    public Color BackgroundTint => Colors.Transparent;
+}

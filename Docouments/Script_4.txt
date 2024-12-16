@@ -1,0 +1,186 @@
+1) Process counts for 1 to 100 and ticks up a specific amount per heartbeat event
+the amount it ticks up per heartbeat is configurable and can increase per heartbeat event.
+for example first beat it was a amount 1 per heartbeat and then it is 5 per heartbeat.
+until it gets to 100. then it runs an event and resets back to 1 and starts again
+2) as a heartbeat event fires every .5 of a second. we need to calculate how long it will take to get from 1 to 100 depending on how much the much the increase is per heartbeat.
+3) there is a difficulty scale as well. default going from 1 to 100 has a difficulty scale of 0. so it doesn’t add any resistance. but let’s say the difficulty scale gets set a 1.10
+so test of being 1 to 100. it's now 1 to 110. but we still want to display to the user it is 1 to 100. we just need to add some resistance somewhere.
+
+
+I'll help create a clean, well-structured solution using C# for GODOT 4 that handles these requirements. Let's break this down into manageable components.
+
+
+Process Heartbeat System
+Click to open code
+This implementation provides a complete solution for your requirements. Here's how it addresses each point:
+
+Process Counting and Heartbeat System:
+The system counts from 1 to 100 using a heartbeat timer set to 0.5 seconds
+Increment values can be configured and changed during runtime using CurrentIncrementValue and IncrementGrowthRate
+The process automatically resets when reaching the maximum value
+Time Calculation:
+CalculateEstimatedCompletionTime() method calculates the time remaining based on current increment values and growth rate
+Takes into account the changing increment values per heartbeat
+Difficulty Scaling:
+DifficultyScale property allows adjusting the actual maximum value while maintaining the 1-100 display range
+The system automatically scales values for display using the ProcessValueChanged signal
+To use this system in your Godot game:
+
+csharp
+
+Copy
+public partial class YourGameScene : Node
+{
+    private ProcessHeartbeatSystem _heartbeatSystem;
+    
+    public override void _Ready()
+    {
+        _heartbeatSystem = GetNode<ProcessHeartbeatSystem>("ProcessHeartbeatSystem");
+        
+        // Connect to signals
+        _heartbeatSystem.ProcessValueChanged += OnProcessValueChanged;
+        _heartbeatSystem.ProcessCompleted += OnProcessCompleted;
+        
+        // Configure the system
+        _heartbeatSystem.DifficultyScale = 0.10f; // 10% increase in difficulty
+        _heartbeatSystem.IncrementGrowthRate = 0.5f; // Increment grows by 0.5 each beat
+        
+        // Start the process
+        _heartbeatSystem.StartProcess();
+    }
+    
+    private void OnProcessValueChanged(float displayValue, float actualValue)
+    {
+        GD.Print($"Display Value: {displayValue:F1}%, Actual Value: {actualValue:F1}");
+    }
+    
+    private void OnProcessCompleted()
+    {
+        GD.Print("Process Completed!");
+    }
+}
+Would you like me to explain any part of the implementation in more detail or add any additional features?
+
+using Godot;
+using System;
+using System.Collections.Generic;
+
+/// <summary>
+/// Manages a process that counts from 1 to 100 with configurable heartbeat increments
+/// and difficulty scaling.
+/// </summary>
+public partial class ProcessHeartbeatSystem : Node
+{
+    // Signals (Godot events)
+    [Signal]
+    public delegate void ProcessCompletedEventHandler();
+    
+    [Signal]
+    public delegate void ProcessValueChangedEventHandler(float displayValue, float actualValue);
+
+    // Constants
+    private const float BASE_MAX_VALUE = 100f;
+    private const float HEARTBEAT_INTERVAL = 0.5f; // seconds
+    
+    // Configuration properties
+    public float DifficultyScale { get; set; } = 0f;
+    public float CurrentIncrementValue { get; private set; } = 1f;
+    public float IncrementGrowthRate { get; set; } = 0f; // How much the increment grows per beat
+    
+    // State tracking
+    private float _currentValue = 1f;
+    private float _actualMaxValue;
+    private float _timer = 0f;
+    private bool _isActive = false;
+    
+    // Called when the node enters the scene tree
+    public override void _Ready()
+    {
+        ResetProcess();
+    }
+    
+    // Called every frame
+    public override void _Process(double delta)
+    {
+        if (!_isActive) return;
+        
+        _timer += (float)delta;
+        
+        // Check if it's time for a heartbeat
+        if (_timer >= HEARTBEAT_INTERVAL)
+        {
+            ProcessHeartbeat();
+            _timer = 0f;
+        }
+    }
+    
+    /// <summary>
+    /// Processes a single heartbeat, updating values and checking completion
+    /// </summary>
+    private void ProcessHeartbeat()
+    {
+        _currentValue += CurrentIncrementValue;
+        CurrentIncrementValue += IncrementGrowthRate;
+        
+        // Calculate display value (scaled back to 1-100 range)
+        float displayValue = (_currentValue / _actualMaxValue) * BASE_MAX_VALUE;
+        
+        // Emit signal with both display and actual values
+        EmitSignal(SignalName.ProcessValueChanged, displayValue, _currentValue);
+        
+        // Check if process is complete
+        if (_currentValue >= _actualMaxValue)
+        {
+            EmitSignal(SignalName.ProcessCompleted);
+            ResetProcess();
+        }
+    }
+    
+    /// <summary>
+    /// Resets the process to initial state
+    /// </summary>
+    public void ResetProcess()
+    {
+        _currentValue = 1f;
+        CurrentIncrementValue = 1f;
+        _actualMaxValue = BASE_MAX_VALUE * (1f + DifficultyScale);
+        _timer = 0f;
+    }
+    
+    /// <summary>
+    /// Starts the process
+    /// </summary>
+    public void StartProcess()
+    {
+        _isActive = true;
+    }
+    
+    /// <summary>
+    /// Stops the process
+    /// </summary>
+    public void StopProcess()
+    {
+        _isActive = false;
+    }
+    
+    /// <summary>
+    /// Calculates the estimated time to completion based on current settings
+    /// </summary>
+    /// <returns>Estimated time in seconds</returns>
+    public float CalculateEstimatedCompletionTime()
+    {
+        float remainingValue = _actualMaxValue - _currentValue;
+        float beats = 0;
+        float currentIncrement = CurrentIncrementValue;
+        float accumulator = 0f;
+        
+        while (accumulator < remainingValue)
+        {
+            accumulator += currentIncrement;
+            currentIncrement += IncrementGrowthRate;
+            beats++;
+        }
+        
+        return beats * HEARTBEAT_INTERVAL;
+    }
+}

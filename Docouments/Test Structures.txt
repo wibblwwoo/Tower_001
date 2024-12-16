@@ -1,0 +1,253 @@
+lets build these tests Performance testing for large-scale generation
+Reward scaling with progression
+Power curve vs difficulty curve,  but before you do. analysis each of the connecting classes for the test to make sure you are handling the modifier and other bonuses correctly, we have been stuck on several test where it test where the bonus was an multiplier instead of being an additional bonus, e.g analysis other tests to see how they have done it. for example for Reward scaling with progression check these tests to see how they have checked the bonus and such 
+TestPrestigeBonuses/TestPrestigeMultipliers/TestAscensionBonusCalculation/TestAscensionStatModification/TestAscensionPersistence/TestStorageRatios/TestCollectionEfficiency/TestMultiResourceCollection
+
+Test Structures
+
+Pre-Test Requirements:
+- Reset test flags (pass/fail markers)
+- Clear test results collection
+- Initialize test name and description
+- Set up test-specific logging context
+- Configure debug logging categories for test
+
+
+Core Manager Reset:
+- Reset EventManager handler registrations
+- Reset PlayerManager character cache
+- Reset TowerManager tower states
+- Reset FloorManager floor states
+- Reset ProgressionManager state
+- Each IManager should have a Reset() or similar method
+
+event Cleanup:
+- Clear all event subscriptions
+- Reset event queues
+- Clear any cached event args
+- Reset event processing flags
+- Clear event history if tracked
+
+Manager Cleanup:
+- Clear all created characters
+- Clear all tower instances
+- Reset floor generation state
+- Clear room states
+- Remove temporary modifications to managers
+
+System State Reset:
+- Reset all manager states to default
+- Clear any static state modifications
+- Reset configuration changes
+- Clear any cached data
+- Reset all enumerations to initial values
+
+Results Recording:
+- Log test execution time
+- Record peak memory usage
+- Log any performance thresholds exceeded
+- Record resource usage statistics
+- Save performance metrics to test results
+
+Results Processing:
+- Format test results
+- Log all errors encountered
+- Record test state at completion
+- Log all debug messages
+- Clear test-specific logging context
+
+Test Structures
+
+
+
+New test need to be added to TestCategory Enum
+New test classes need to inherit from BaseTestSuite
+new test classes must used the structure below.
+errors in failing an test but report to - LogError
+debugging message must go to DebugLogger.Log - if a new LogCategory is needed to be created. it must be specified.
+
+[Flags]
+public enum TestCategory
+{
+	None = 0,
+	// Core Systems
+	Character = 1 <<0,
+	Events = 1 << 1,
+	Progression = 1 << 2,
+
+	// Progression Systems
+	BasicLeveling = 1 << 3,
+	Prestige = 1 << 4,
+	Ascension = 1 << 5,
+
+	// Content Systems
+	Tower = 1 << 6,
+	Floor = 1 << 7,
+	Room = 1 << 8,
+}
+	[Flags]
+	public enum LogCategory
+	{
+		None = 0,
+		General = 1 << 0,
+		Character = 1 << 1,
+		Combat = 1 << 2,
+		Tower = 1 << 3,
+		Floor = 1 << 4,
+		Room = 1 << 5,
+		Stats = 1 << 6,
+		Events = 1 << 7,
+		Tests = 1 << 8,
+		Heartbeat = 1 << 9,  // New category
+		Progress = 1 << 10,   // New category for progression tracking
+		Rewards = 1 << 11,   // New category for progression tracking
+		Resources = 1 << 12, // Resouce Storage system
+		Resources_Collectors = 1 << 13, // resouce collection system
+		All = ~0
+	}
+
+new test class layout
+#region Test Methods
+private readonly Random _random;
+private string _currentTowerId;
+
+private readonly EventManager _eventManager;
+private readonly PlayerManager _playerManager;
+
+
+public NewTestClassName(EventManager eventManager, PlayerManager playerManager,
+						  TestConfiguration testConfig) : base(testConfig)
+{
+	_eventManager = eventManager;
+	_playerManager = playerManager;
+	_random = new Random();
+}
+
+public void RunAllTests()
+{
+if (TestConfig.IsCategoryEnabled(TestCategory.<NewTestCategory>))
+{
+	each test
+}
+
+
+--- example test class
+using Godot;
+using System;
+using System.Collections.Generic;
+using static GlobalEnums;
+
+// TestBasicEventRegistration
+// Verifies:
+// - Handler registration works correctly
+// - Events trigger registered handlers
+// - Handler removal works correctly
+// - Removed handlers don't receive events
+// - Multiple handlers can be registered for same event
+public partial class EventSystemTests : BaseTestSuite
+{
+
+	#region Tests to Run
+	// Flag to enable/disable individual tests
+	private bool _testBasicEventRegistration = true;
+	private bool _testEventRaising = true;
+	private bool _testEventQueueing = true;
+	private bool _testUIEventHandling = true;
+
+	#endregion
+
+	private bool _testPassed;
+	private string _testName;
+
+	private readonly EventManager _eventManager;
+	private readonly PlayerManager _playerManager;
+
+
+	public EventSystemTests(EventManager eventManager, PlayerManager playerManager,
+							  TestConfiguration testConfig) : base(testConfig)
+	{
+		_eventManager = eventManager;
+		_playerManager = playerManager;
+	}
+
+
+	#region Tests
+
+
+	public void RunAllTests()
+	{
+		if (TestConfig.IsCategoryEnabled(TestCategory.Events))
+		{
+			// Run individual tests
+			TestBasicEventRegistration();
+
+			// Output results
+			OutputTestResults();
+		}
+	}
+
+	private void TestBasicEventRegistration()
+	{
+		_testName = "Basic Event Registration";
+		_testPassed = true;
+
+		try
+		{
+			// Test adding and removing handlers
+			bool handlerCalled = false;
+			void TestHandler(GameEventArgs args) => handlerCalled = true;
+
+			_eventManager.AddHandler<GameEventArgs>(EventType.None, TestHandler);
+			_eventManager.RaiseEvent(EventType.None, new GameEventArgs());
+
+			if (!handlerCalled)
+			{
+				_testPassed = false;
+				LogError("Handler was not called after registration");
+			}
+
+			// Test handler removal
+			handlerCalled = false;
+			_eventManager.RemoveHandler<GameEventArgs>(EventType.None, TestHandler);
+			_eventManager.RaiseEvent(EventType.None, new GameEventArgs());
+
+			if (handlerCalled)
+			{
+				_testPassed = false;
+				LogError("Handler was called after removal");
+			}
+		}
+		catch (Exception ex)
+		{
+			_testPassed = false;
+			LogError($"Exception during test: {ex.Message}");
+		}
+
+		LogTestResult();
+	}
+	#endregion
+
+	#region Support Methods
+	private void LogError(string message)
+	{
+		TestResults.Add($"Error in {_testName}: {message}");
+	}
+
+	private void LogTestResult()
+	{
+		string result = _testPassed ? "PASSED" : "FAILED";
+		TestResults.Add($"Test {_testName}: {result}");
+	}
+
+	private void OutputTestResults()
+	{
+		GD.Print("\n=== Event System Test Results ===");
+		foreach (var result in TestResults)
+		{
+			GD.Print(result);
+		}
+		GD.Print("===============================\n");
+	}
+	#endregion 
+
+}

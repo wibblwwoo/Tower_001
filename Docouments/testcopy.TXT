@@ -1,0 +1,246 @@
+Core Idle Game Mechanics
+1. Resource Generation
+Primary Resources
+
+Basic currency generation (gold, coins, money)
+Multiple resource types (wood, stone, metal, etc.)
+Resource generation rates (per second/tick)
+Offline progress accumulation
+Resource caps and storage limits
+
+Resource Collection Methods
+
+Manual clicking/tapping
+Automatic generators
+Worker units
+Buildings/Structures
+Time-based collection
+Collection multipliers
+
+2. Progression Systems
+Upgrades
+
+Permanent upgrades
+Temporary buffs
+Percentage-based improvements
+Flat improvements
+Multiple upgrade paths
+Upgrade trees/tech trees
+Quality/tier improvements
+
+Prestige Systems
+
+Soft reset mechanics
+Multiple prestige layers
+Prestige currencies
+Prestige bonuses
+Meta-progression
+Legacy systems
+
+Unlocks
+
+Content gating
+Achievement-based unlocks
+Resource threshold unlocks
+Time-based unlocks
+Challenge completions
+Milestone rewards
+
+3. Economic Systems
+Cost Scaling
+
+Linear cost scaling
+Exponential cost scaling
+Custom growth formulas
+Dynamic pricing
+Resource sinks
+
+Markets & Trading
+
+Resource exchange rates
+Dynamic markets
+Trading with NPCs/system
+Player-to-player trading
+Market fluctuations
+Supply and demand mechanics
+
+Investment Systems
+
+Return on investment mechanics
+Time-based investments
+Risk-reward systems
+Compound interest
+Stock market simulations
+
+4. Multiplier Systems
+Growth Multipliers
+
+Time-based multipliers
+Achievement multipliers
+Collection multipliers
+Global production multipliers
+Category-specific multipliers
+
+Bonus Systems
+
+Temporary bonuses
+Permanent bonuses
+Stacking bonuses
+Multiplicative vs additive bonuses
+Conditional bonuses
+
+5. Time Mechanics
+Time Management
+
+Active time bonuses
+Offline progression
+Time warping
+Time gates
+Cooldown systems
+Energy systems
+
+Speed Mechanics
+
+Production speed upgrades
+Time compression
+Fast forward options
+Time skips
+Production queues
+
+6. Challenge Systems
+Achievements
+
+Progressive achievements
+Hidden achievements
+Meta achievements
+Achievement rewards
+Achievement multipliers
+
+Challenges
+
+Limited time challenges
+Resource management challenges
+Speed challenges
+Efficiency challenges
+Special conditions
+Challenge rewards
+
+7. Meta Systems
+Statistics
+
+Production statistics
+Time played statistics
+Achievement progress
+Historical data
+Analytics and graphs
+
+Social Features
+
+Guilds/Clans
+Cooperative play
+Competitive elements
+Trading systems
+Friend bonuses
+Global events
+
+8. Quality of Life Features
+Automation
+
+Auto-buyers
+Auto-upgraders
+Smart purchase options
+Priority systems
+Automation unlocks
+
+Interface Features
+
+Resource visibility options
+Progress tracking
+Custom notifications
+Achievement tracking
+Tutorial systems
+Settings customization
+
+9. Balance Mechanics
+Resource Conversion
+
+Basic conversions
+Complex conversion chains
+Efficiency bonuses
+Conversion limits
+By-products
+
+Synergy Systems
+
+Resource combinations
+Building synergies
+Upgrade interactions
+Multiplier stacking
+Cross-system bonuses
+
+10. Endgame Systems
+Infinite Scaling
+
+Endless modes
+Scaling difficulty
+Dynamic challenges
+Power creep management
+New game plus
+
+Content Loop
+
+Content recycling
+Difficulty scaling
+Resource scaling
+New mechanics introduction
+Endgame goals
+
+11. Special Mechanics
+Random Events
+
+Special occurrences
+Random bonuses
+Crisis management
+Opportunity events
+Limited time offers
+
+Mini-Games
+
+Side activities
+Skill-based bonuses
+Resource gambling
+Alternative gameplay
+Bonus rounds
+
+Implementation Considerations
+Performance
+
+Efficient calculation methods
+Background processing
+Resource update batching
+Optimization techniques
+Memory management
+
+Save Systems
+
+Progress saving
+Export/Import
+Cloud saves
+Anti-cheat measures
+Save backup systems
+
+Balance
+
+Resource equilibrium
+Progress pacing
+Multiple progression paths
+Power curve management
+New player experience
+
+Monetization Integration
+
+Premium currencies
+Time savers
+Cosmetic items
+Special features
+VIP systems
