@@ -16,6 +16,8 @@ public partial class UIManager : BaseManager
     private Dictionary<Type, BaseMenu> _menus;
     private BaseMenu _currentMenu;
 
+    // OLD CODE - For rollback if needed
+    /*
     public UIManager()
     {
         RegisterEventHandlers();
@@ -35,6 +37,86 @@ public partial class UIManager : BaseManager
 
         InitializeMenus();
         ShowMenu<MainMenu>();
+    }
+
+    protected override void RegisterEventHandlers()
+    {
+        if (Globals.Instance?.gameMangers?.Events != null)
+        {
+            Globals.Instance.gameMangers.Events.AddHandler<MenuEventArgs>(EventType.MenuAction, OnMenuAction);
+        }
+    }
+    */
+
+    public UIManager()
+    {
+        // Event registration moved to Setup()
+    }
+
+    // OLD CODE - For rollback if needed
+    /*
+    public override void Setup()
+    {
+        base.Setup();
+        
+        // Get the root node from game manager
+        _uiRoot = (Control)Globals.Instance.RootNode;
+        if (_uiRoot == null)
+        {
+            GD.PrintErr("UIManager: Root node not found!");
+            return;
+        }
+
+        InitializeMenus();
+        ShowMenu<MainMenu>();
+    }
+
+    protected override void RegisterEventHandlers()
+    {
+        if (Globals.Instance?.gameMangers?.Events != null)
+        {
+            Globals.Instance.gameMangers.Events.AddHandler<MenuEventArgs>(EventType.MenuAction, OnMenuAction);
+        }
+    }
+    */
+
+    // NEW CODE - Current implementation
+    public override void Setup()
+    {
+        base.Setup();
+        
+        // Get the root node from game manager
+        _uiRoot = (Control)Globals.Instance.RootNode;
+        if (_uiRoot == null)
+        {
+            GD.PrintErr("UIManager: Root node not found!");
+            return;
+        }
+
+        InitializeMenus();
+        
+        // Register event handlers after initialization
+        RegisterEventHandlers();
+        
+        // Show main menu and verify it worked
+        ShowMenu<MainMenu>();
+        if (_currentMenu == null || _currentMenu.GetType() != typeof(MainMenu))
+        {
+            GD.PrintErr("UIManager: Failed to show main menu!");
+        }
+    }
+
+    protected override void RegisterEventHandlers()
+    {
+        // Move event registration to Setup() where we know the event system exists
+        if (Globals.Instance?.gameMangers?.Events == null)
+        {
+            GD.PrintErr("UIManager: Events system not available for registration!");
+            return;
+        }
+        
+        Globals.Instance.gameMangers.Events.AddHandler<MenuEventArgs>(EventType.MenuAction, OnMenuAction);
+        GD.Print("UIManager: Successfully registered menu event handlers");
     }
 
     private void InitializeMenus()
@@ -122,12 +204,4 @@ public partial class UIManager : BaseManager
         // 2. Clean up resources
         //(GetNode("/root") as SceneTree).Quit();
     }
-
-	protected override void RegisterEventHandlers()
-	{
-		if (Globals.Instance?.gameMangers?.Events != null)
-		{
-			Globals.Instance.gameMangers.Events.AddHandler<MenuEventArgs>(EventType.MenuAction, OnMenuAction);
-		}
-	}
 }
