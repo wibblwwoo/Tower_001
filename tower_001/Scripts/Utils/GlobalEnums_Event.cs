@@ -41,14 +41,15 @@ public static partial class GlobalEnums
 		// Character Events (500-599)
 		CharacterCreated = 500,
 		CharacterStatChanged = 501,
-		CharacterStatBuffApplied = 502,
-		CharacterStatBuffRemoved = 503,
-		CharacterStatBuffExpired = 504,
-		CharacterStatThresholdCrossed = 505,
-		CharacterStatThresholdReached = 506,
-		CharacterLevelUp = 507,
-		CharacterPrestige = 508,
-		CharacterAscension = 509,
+		CharacterStatLevelUp = 502,
+		CharacterStatBuffApplied = 503,
+		CharacterStatBuffRemoved = 504,
+		CharacterStatBuffExpired = 505,
+		CharacterStatThresholdCrossed = 506,
+		CharacterStatThresholdReached = 507,
+		CharacterLevelUp = 508,
+		CharacterPrestige = 509,
+		CharacterAscension = 510,
 
 		// Combat and Reward Events (600-699)
 		CombatStarted = 600,

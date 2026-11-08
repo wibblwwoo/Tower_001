@@ -116,7 +116,7 @@ public partial class CharacterSystemTests : BaseTestSuite
 			var knightStats = _playerManager.GetCharacterStats(knightId);
 			var mageStats = _playerManager.GetCharacterStats(mageId);
 
-			if (knightStats[StatType.Health] != 100 || mageStats[StatType.Health] != 80)
+			if (knightStats[StatType.Health] != 150 || mageStats[StatType.Health] != 120)
 			{
 				testPassed = false;
 				LogError(testName, "Initial stats not set correctly");

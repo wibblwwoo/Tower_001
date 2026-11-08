@@ -65,4 +65,16 @@ public static partial class GlobalEnums
 		Bonus,
 		Event
 	}
+
+	public enum StatType
+{
+    Strength,
+    Dexterity,
+    Intelligence,
+    Stamina,
+	Speed,
+	Mana,
+	Health,
+	Defense,
+	Attack	}
 }
