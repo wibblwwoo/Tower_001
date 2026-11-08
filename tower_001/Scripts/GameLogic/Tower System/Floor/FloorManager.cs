@@ -9,6 +9,13 @@ using static GlobalEnums;
 /// </summary>
 public partial class FloorManager :BaseManager
 {
+
+	public override IEnumerable<Type> Dependencies => new[]
+{
+		typeof(EventManager),
+		typeof(TowerManager)  // Floors need Tower info
+    };
+
 	private readonly Dictionary<string, Dictionary<string, FloorData>> _floorsByTower = new();
 
 

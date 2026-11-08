@@ -10,6 +10,8 @@ public class AscensionManager : IManager
 	private readonly EventManager _eventManager;
 	private readonly PlayerManager _playerManager;
 
+	public IEnumerable<Type> Dependencies { get; }
+
 	public AscensionManager(ProgressionConfig config, PlayerManager playerManager,
 						  Dictionary<string, ProgressionData> characterProgress)
 	{

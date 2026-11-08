@@ -12,10 +12,17 @@ using System.Linq;
 /// </summary>
 public partial class UIManager : BaseManager, IDisposable
 {
+
+	public override IEnumerable<Type> Dependencies => new[]
+    {
+		typeof(EventManager),
+		typeof(UIResourceManager)  // Needs resource loading to create panels
+    };
+	
     /// <summary>
-    /// The main UI scene root control node
-    /// </summary>
-    private Control _uiRoot;
+	/// The main UI scene root control node
+	/// </summary>
+	private Control _uiRoot;
 
     /// <summary>
     /// Dictionary of all registered UI controls, indexed by their control ID
@@ -34,10 +41,17 @@ public partial class UIManager : BaseManager, IDisposable
     /// </summary>
 	private MenuManager _menuManager;
 
-    /// <summary>
-    /// Initializes a new instance of UIManager.
-    /// Sets up control collections and registers initial UI items.
-    /// </summary>
+
+	private List<ResourcePanelManager> _resourcePanels;
+
+
+
+
+
+	/// <summary>
+	/// Initializes a new instance of UIManager.
+	/// Sets up control collections and registers initial UI items.
+	/// </summary>
 	public UIManager()
 	{
 		
@@ -88,6 +102,7 @@ public partial class UIManager : BaseManager, IDisposable
 	public override void Setup()
     {
 		List<IPanel> _uiitems = new List<IPanel>();
+		_resourcePanels = new List<ResourcePanelManager>();
 		_UIControls = new Dictionary<string, IUIObject>();
 		_UIMenus = new Dictionary<string, List<IUIObject>>();
 
@@ -115,9 +130,21 @@ public partial class UIManager : BaseManager, IDisposable
 			}
 		}
 
-        
-        // Get the root node from game manager
-        _uiRoot = (Control)Globals.Instance.RootNode;
+		
+
+		// Find and initialize resource panels
+		var panels = GetListofAllIUIObjectByType(new List<ResourcePanelManager>());
+		foreach (var panel in panels)
+		{
+			if (panel is ResourcePanelManager resourcePanel)
+			{
+				_resourcePanels.Add(resourcePanel);
+				resourcePanel.Setup();
+			}
+		}
+
+		// Get the root node from game manager
+		_uiRoot = (Control)Globals.Instance.RootNode;
         if (_uiRoot == null)
         {
             GD.PrintErr("UIManager: Root node not found!");
@@ -129,6 +156,7 @@ public partial class UIManager : BaseManager, IDisposable
 
       
     }
+
 
     /// <summary>
     /// Registers event handlers for UI-related events.

@@ -196,7 +196,7 @@ public static class DebugLogger
 		{
 			lock (_fileLock)
 			{
-				File.AppendAllText(_currentLogFile, message + Environment.NewLine);
+				File.AppendAllText(_currentLogFile, message + System.Environment.NewLine);
 			}
 		}
 		catch (Exception ex)

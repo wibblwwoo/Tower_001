@@ -48,6 +48,7 @@ public static partial class GlobalEnums
 		CharacterLevelUp = 506,
 		CharacterPrestige = 507,
 		CharacterAscension = 508,
+		CharacterRankUp = 509,
 
 		// Combat and Reward Events (600-699)
 		CombatStarted = 600,
@@ -84,5 +85,13 @@ public static partial class GlobalEnums
 		ProgressionUpdated = 1005,
 
 		GameAction = 2000,
+
+		UIControlRegister = 4000,
+		UIControlAssignToContainer = 4003,
+
+		UIResourcePanelRegistration = 4000,
+
+
+		System_ManagerError = 5000,
 	}
 }

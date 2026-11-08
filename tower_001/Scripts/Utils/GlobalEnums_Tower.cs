@@ -57,8 +57,9 @@ public static partial class GlobalEnums
 		None,
 		Wind,
 		Magic,
-		Custom
-
+		Custom,
+		Boss,
+		Normal
 	}
 	public enum RewardType
 	{

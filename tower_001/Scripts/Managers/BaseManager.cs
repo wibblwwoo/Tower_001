@@ -115,4 +115,31 @@ public abstract class BaseManager : IManager
 		GD.Print($"Manager {GetType().Name} state changed from {oldState} to {newState}");
 		// Derived classes can override to handle state changes
 	}
+
+	//protected void HandleManagerError(Exception ex, ManagerErrorType errorType, bool transitionToError = true)
+	//{
+	//	var managerError = new ManagerException(
+	//		ex.Message,
+	//		GetType().Name,
+	//		CurrentState,
+	//		errorType,
+	//		ex
+	//	);
+
+	//	_errorHistory.Add((managerError, DateTime.UtcNow));
+	//	if (_errorHistory.Count > MAX_ERROR_HISTORY)
+	//		_errorHistory.RemoveAt(0);
+
+	//	// Notify via event system
+	//	if (EventManager != null)
+	//	{
+	//		var errorArgs = new ManagerErrorEventArgs(GetType(), errorType, managerError);
+	//		EventManager.RaiseEvent(EventType.System_ManagerError, errorArgs);
+	//	}
+
+	//	if (transitionToError)
+	//		TryTransitionTo(ManagerState.Error);
+
+	//	GD.PrintErr($"Manager Error [{errorType}] in {GetType().Name}: {ex.Message}");
+	//}
 }

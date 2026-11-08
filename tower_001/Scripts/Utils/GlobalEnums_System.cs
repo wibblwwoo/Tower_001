@@ -12,5 +12,12 @@ public static partial class GlobalEnums
 		ShuttingDown,
 		Disabled
 	}
-
+	public enum ManagerErrorType
+	{
+		InitializationError,
+		DependencyError,
+		StateTransitionError,
+		ResourceError,
+		OperationalError
+	}
 }

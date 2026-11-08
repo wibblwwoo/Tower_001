@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Tower_001.Scripts.GameLogic.Balance;
 using static GlobalEnums;
 
 /// <summary>
@@ -9,47 +10,101 @@ using static GlobalEnums;
 /// </summary>
 public partial class ProgressionData
 {
-	// Existing properties
-	public int Level { get; set; } = 1;
-	public float CurrentExp { get; set; } = 0;
-	public int PrestigeLevel { get; set; } = 0;
-	public long AscensionLevel { get; set; } = 0;
+    // Core progression properties
+    public int Level { get; set; } = 1;
+    public float CurrentExp { get; set; } = 0;
+    public int PrestigeLevel { get; set; } = 0;
+    public long AscensionLevel { get; set; } = 0;
+    public int CurrentRank => Character?.Rank.CurrentRank ?? 1;
 
-	// New properties for enhanced progression tracking
+    // Reference to the character this progression belongs to
+    private readonly Character Character;
 
-	// Experience tracking
-	public Dictionary<ExperienceSource, float> LifetimeExperience { get; private set; } = new();
-	public float HighestExperienceGain { get; private set; } = 0;
+    // Experience tracking
+    public Dictionary<ExperienceSource, float> LifetimeExperience { get; private set; } = new();
+    public float HighestExperienceGain { get; private set; } = 0;
 
-	// Achievement tracking
-	public HashSet<string> CompletedAchievements { get; private set; } = new();
-	public Dictionary<string, float> AchievementProgress { get; private set; } = new();
+    // Achievement tracking
+    public HashSet<string> CompletedAchievements { get; private set; } = new();
+    public Dictionary<string, float> AchievementProgress { get; private set; } = new();
 
-	// Milestone tracking
-	public HashSet<ProgressionMilestoneType> ReachedMilestones { get; private set; } = new();
-	public Dictionary<string, DateTime> MilestoneTimestamps { get; private set; } = new();
+    // Milestone tracking
+    public HashSet<ProgressionMilestoneType> ReachedMilestones { get; private set; } = new();
+    public Dictionary<string, DateTime> MilestoneTimestamps { get; private set; } = new();
 
-	// Multiplier tracking
-	public Dictionary<string, float> ActiveMultipliers { get; private set; } = new();
-	public Dictionary<string, DateTime> MultiplierExpirations { get; private set; } = new();
+    // Multiplier tracking
+    public Dictionary<string, float> ActiveMultipliers { get; private set; } = new();
+    public Dictionary<string, DateTime> MultiplierExpirations { get; private set; } = new();
 
-	// Time tracking
-	public TimeSpan TotalPlayTime { get; private set; } = TimeSpan.Zero;
-	public DateTime LastLoginTime { get; private set; }
-	public Dictionary<string, TimeSpan> ActivityPlayTimes { get; private set; } = new();
+    // Time tracking
+    public TimeSpan TotalPlayTime { get; private set; } = TimeSpan.Zero;
+    public DateTime LastLoginTime { get; private set; }
+    public Dictionary<string, TimeSpan> ActivityPlayTimes { get; private set; } = new();
 
-	
+    private readonly ProgressionConfig _config;
 
-	private readonly ProgressionConfig _config;
+    // Constructor
+    public ProgressionData(ProgressionConfig config, Character character)
+    {
+        _config = config;
+        Character = character;
+        LastLoginTime = DateTime.UtcNow;
+        InitializeCollections();
+    }
 
-	// Constructor
-	public ProgressionData(ProgressionConfig config)
-	{
-		_config = config;
-		LastLoginTime = DateTime.UtcNow;
-		InitializeCollections();
-	}
+    public float CalculateExperienceMultiplier(ExperienceSource source)
+    {
+        float baseMultiplier = _config.ExperienceMultipliers.GetValueOrDefault(source, 1.0f);
+        float achievementBonus = CalculateAchievementBonus();
+        float timeBonus = CalculateTimeBonus();
+        float milestoneBonus = CalculateMilestoneBonus();
+        float rankBonus = GetRankExperienceMultiplier();
 
+        return baseMultiplier * (1 + achievementBonus + timeBonus + milestoneBonus) * rankBonus;
+    }
+
+    private float GetRankExperienceMultiplier()
+    {
+        return ProgressionRequirements.RankExpMultipliers.GetValueOrDefault(CurrentRank, 1.0f);
+    }
+
+    public bool CheckPrestigeRequirements(int targetPrestigeLevel)
+    {
+        if (!ProgressionRequirements.Prestige.Requirements.TryGetValue(targetPrestigeLevel, out var req))
+            return false;
+
+        return Level >= req.MinimumLevel &&
+               Character.Power >= req.MinimumPower &&
+               CurrentRank >= req.MinimumRank;
+    }
+
+    private float CalculateAchievementBonus()
+    {
+        return CompletedAchievements.Count * _config.AchievementBonusMultiplier;
+    }
+
+    private float CalculateTimeBonus()
+    {
+        float hoursPlayed = (float)TotalPlayTime.TotalHours;
+        return Math.Min(_config.TimeBasedMultiplierCap,
+            hoursPlayed * _config.TimeBasedMultiplierBase);
+    }
+
+    private float CalculateMilestoneBonus()
+    {
+        float bonus = 0f;
+
+        if (_config.LevelMilestoneMultipliers.TryGetValue(Level, out float levelBonus))
+            bonus += levelBonus;
+
+        if (_config.PrestigeMilestoneMultipliers.TryGetValue(PrestigeLevel, out float prestigeBonus))
+            bonus += prestigeBonus;
+
+        if (_config.AscensionMilestoneMultipliers.TryGetValue(AscensionLevel, out float ascensionBonus))
+            bonus += ascensionBonus;
+
+        return bonus;
+    }
 	private void InitializeCollections()
 	{
 		foreach (ExperienceSource source in Enum.GetValues(typeof(ExperienceSource)))
@@ -66,8 +121,7 @@ public partial class ProgressionData
 			{ "Questing", TimeSpan.Zero }
 		};
 	}
-
-	// Enhanced calculation methods
+    // Enhanced calculation methods
 	public float GetEffectiveMultiplier(ExperienceSource source)
 	{
 		float baseMultiplier = _config.ExperienceMultipliers.GetValueOrDefault(source, 1.0f);
@@ -148,4 +202,6 @@ public partial class ProgressionData
 	{
 		return _config.AscensionCosts.TryGetValue(targetLevel, out long cost);
 	}
+
+	[Previous methods remain the same...]
 }

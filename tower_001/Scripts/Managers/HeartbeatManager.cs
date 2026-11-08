@@ -27,6 +27,13 @@ public partial class HeartbeatManager : BaseManager
 	private TimeSpan _totalGameTime;
 	private TimeSpan _sessionTime;
 
+	public override IEnumerable<Type> Dependencies => new[]
+	{
+		typeof(EventManager),
+		typeof(WorldManager),   // Need world ready before ticks
+        typeof(PlayerManager)   // Need player ready before ticks
+    };
+
 	public HeartbeatManager()
 	{
 		
@@ -39,9 +46,9 @@ public partial class HeartbeatManager : BaseManager
 	}
 	public override void Setup()
 	{
-		base.Setup();
 		_tickStopwatch = new Stopwatch();
 		_gameStartTime = DateTime.UtcNow;
+		base.Setup();
 		Pause();
 	}
 
